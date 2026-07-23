@@ -197,8 +197,6 @@ export default function InputTab({
             <tbody>
               {allDates.map((date) => {
                 const meta = dailyMeta[date] || {};
-                const channel = channelMap[meta.channelId];
-                const rebateEligible = !!(channel && channel.rebateApplicable);
                 return (
                   <tr key={date} className="border-b border-stone-100">
                     <td className="py-1 pr-2 font-medium">{date}</td>
@@ -218,12 +216,11 @@ export default function InputTab({
                     </td>
                     <td className="py-1 pr-2">
                       <select
-                        className="border rounded px-1 py-0.5 text-xs disabled:opacity-40"
+                        className="border rounded px-1 py-0.5 text-xs"
                         value={meta.clientId || ""}
-                        disabled={!rebateEligible}
                         onChange={(e) => setDayField(date, "clientId", e.target.value)}
                       >
-                        <option value="">{rebateEligible ? "(選択)" : "対象外"}</option>
+                        <option value="">(未選択・リベート対象外)</option>
                         {rebateClients.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.name}

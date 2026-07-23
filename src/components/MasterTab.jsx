@@ -17,6 +17,7 @@ export default function MasterTab({
   exactMatchExists,
   createProductFromQuery,
   updateProduct,
+  commitProductRename,
   costRatioDraft,
   handleCostRatioChange,
   setEditingRatio,
@@ -46,6 +47,7 @@ export default function MasterTab({
   materialListOpen,
   setMaterialListOpen,
   updateMaterial,
+  commitMaterialRename,
   removeMaterial,
   rebateForm,
   setRebateForm,
@@ -422,9 +424,15 @@ export default function MasterTab({
                               value={p.name}
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => updateProduct(p.id, "name", e.target.value)}
-                              onBlur={() => setRenamingId(null)}
+                              onBlur={() => {
+                                commitProductRename(p.id);
+                                setRenamingId(null);
+                              }}
                               onKeyDown={(e) => {
-                                if (e.key === "Enter") setRenamingId(null);
+                                if (e.key === "Enter") {
+                                  commitProductRename(p.id);
+                                  setRenamingId(null);
+                                }
                               }}
                             />
                           ) : (
@@ -556,6 +564,7 @@ export default function MasterTab({
                         className="border rounded px-1 py-0.5 w-28"
                         value={m.name}
                         onChange={(e) => updateMaterial(m.id, "name", e.target.value)}
+                        onBlur={() => commitMaterialRename(m.id)}
                       />
                     </td>
                     <td className="py-1 pr-2">

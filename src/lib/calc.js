@@ -78,7 +78,6 @@ export function computeDailyRows({ allDates, sales, expenses, dailyMeta, channel
     const daySales = sales.filter((s) => s.date === date);
     const dayExpenses = expenses.filter((e) => e.date === date);
     const meta = dailyMeta[date] || {};
-    const channel = channelMap[meta.channelId];
 
     // 原価小計は「売上登録時にスナップショットした原価」を使う(その後マスタが変わっても遡って変化しない)
     const salesWithCost = daySales.map((s) => ({
@@ -89,7 +88,9 @@ export function computeDailyRows({ allDates, sales, expenses, dailyMeta, channel
     const 客数 = new Set(daySales.map((s) => s.orderId)).size;
     const 値引前 = salesWithCost.reduce((a, s) => a + s.amount, 0);
 
-    const rebateApplies = !!(channel && channel.rebateApplicable && meta.clientId);
+    // リベート適用可否は販売形態のフラグではなく「委託先が選ばれているか」で判定する
+    // (販売形態マスタは実データに名前列しか無いため)
+    const rebateApplies = !!meta.clientId;
     const rebateRate = rebateApplies ? rebateMap[meta.clientId]?.rate || 0 : 0;
     const リベート = rebateApplies ? 値引前 * rebateRate : 0;
 

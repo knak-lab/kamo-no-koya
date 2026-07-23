@@ -1,45 +1,55 @@
 // =============================================================
 //  カモの小屋 収益分析アプリ — シートアクセス層
-//  既存の syncFromSquare (syncOrders/syncCatalog) が書き込むシート
-//  (売上_Square / 商品マスター) は読み取り専用として扱い、
-//  ここでは一切書き込まない。
+//
+//  このスプレッドシートには、既存のSquare同期(売上_Square/商品マスター)に加えて、
+//  旧AppSheet運用時代からの実データシート(原材料・資材マスタ/レシピ/セット内訳マスタ/
+//  リベート/販売形態/経費/日次集計/TODO/サブタスク)が既に存在する。
+//  これらは「列名」で対応づけて読み書きし(位置依存にしない)、想定外の列は
+//  クリアせず素通し保存することでデータを壊さない。
+//
+//  識別子の方針: 商品・材料は元データに固有IDが無く名前で参照されているため、
+//  id === name として扱う(商品マスター_原価管理・原材料・資材マスタ)。
+//  経費・TODO・サブタスク・リベートは元データに固有ID列があるためそれを使う。
 // =============================================================
 
-// 既存GAS(existing-sync.gs)も同名の定数 SPREADSHEET_ID を宣言しているため、
-// 同一Apps Scriptプロジェクトに両ファイルを置くと "Identifier has already
-// been declared" になってしまう。ここでは別名にして値だけ揃える。
 const KAMO_SPREADSHEET_ID = "1qMzUrUaCCI4lTMwQMKVyOeW2F5yDyQEJgqU-B1jAOEY";
 
-// ---- 既存シート(読み取り専用) ----
+// ---- 既存シート(Square同期・読み取り専用) ----
 const SALES_SHEET_NAME = "売上_Square";
-const SALES_HDR = ["id", "日付", "商品名", "数量", "金額(円)", "支払方法", "取得日時"];
 const SALES_COST_COLS = ["unitCostAtSale", "costSubtotal"]; // 8,9列目に追加(stampCostSnapshotのみが書く)
 const CATALOG_SHEET_NAME = "商品マスター";
 
-// ---- 新規シート ----
+// ---- 旧AppSheet運用時代からの実データシート(列名ベースで対応づけ) ----
+const SHEET_MATERIALS = "原材料・資材マスタ";
+const MATERIALS_FIELD_BY_HEADER = { "区分": "category", "材料名": "name", "仕入単価(g単位)": "unitPrice", "更新日": "updatedAt", "単位": "unit" };
+
+const SHEET_SET_BREAKDOWN = "セット内訳マスタ";
+const SET_BREAKDOWN_FIELD_BY_HEADER = { "内訳ID": "id", "セット商品名": "productId", "区分": "kindLabel", "構成商品名": "refId", "数量": "qty", "備考": "memo" };
+
+const SHEET_REBATE_CLIENTS = "リベート";
+const REBATE_FIELD_BY_HEADER = { "ID": "id", "販売先": "name", "リベート率": "rateRaw", "メモ": "memo" };
+
+const SHEET_SALES_CHANNELS = "販売形態";
+
+const SHEET_EXPENSES = "経費";
+const EXPENSES_FIELD_BY_HEADER = { "ID": "id", "日付": "date", "項目": "item", "利用時間": "hours", "金額": "amount", "メモ": "memo", "対象日付": "targetDate" };
+
+const SHEET_DAILY_META = "日次集計";
+const DAILY_META_FIELD_BY_HEADER = { "日付": "date", "年月": "yearMonth", "販売先": "clientName", "販売形態": "channelName" };
+
+const SHEET_TODOS = "TODO";
+const TODOS_FIELD_BY_HEADER = { "タスクID": "id", "カテゴリ": "category", "タスク": "task", "期限": "deadline", "ステータス": "status", "snoozed": "snoozed" };
+
+const SHEET_SUBTASKS = "サブタスク";
+const SUBTASKS_FIELD_BY_HEADER = { "サブタスクID": "id", "親タスクID": "parentTaskId", "分類": "legacyCategory", "サブタスク名": "name", "担当": "assignee", "期限": "deadline", "ステータス": "status", "snoozed": "snoozed" };
+
+// ---- このアプリ専用の新規シート(実データとの衝突なし) ----
 const SHEET_PRODUCTS = "商品マスター_原価管理";
 const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion"];
 
-const SHEET_RECIPES = "レシピ";
-const RECIPES_HDR = ["productId", "servings", "ingredientsJson", "packagingJson"];
-
-const SHEET_SET_BREAKDOWN = "セット内訳";
-const SET_BREAKDOWN_HDR = ["id", "productId", "kind", "refId", "qty"];
-
-const SHEET_MATERIALS = "材料・包材マスタ";
-const MATERIALS_HDR = ["id", "name", "category", "unit", "unitPrice"];
-
-const SHEET_REBATE_CLIENTS = "販売先マスタ";
-const REBATE_CLIENTS_HDR = ["id", "name", "rate", "memo"];
-
-const SHEET_SALES_CHANNELS = "販売形態マスタ";
-const SALES_CHANNELS_HDR = ["id", "name", "rebateApplicable"];
-const SALES_CHANNELS_SEED = [
-  ["f1", "店舗販売", false],
-  ["f2", "委託販売", true],
-  ["f3", "EC販売", false],
-  ["f4", "イベント出店", false],
-];
+const SHEET_RECIPES = "レシピ"; // 実データ採用(20材料+5梱包材の横持ち形式)
+const RECIPE_MAX_INGREDIENTS = 20;
+const RECIPE_MAX_PACKAGING = 5;
 
 const SHEET_EXPENSE_RATES = "経費マスタ_時間単価";
 const EXPENSE_RATES_HDR = ["item", "hourlyRate"];
@@ -48,12 +58,6 @@ const EXPENSE_RATES_SEED = [
   ["店舗利用料(製造)", 1200],
   ["人件費", 1100],
 ];
-
-const SHEET_EXPENSES = "経費";
-const EXPENSES_HDR = ["id", "date", "item", "amount"];
-
-const SHEET_DAILY_META = "日次設定";
-const DAILY_META_HDR = ["date", "channelId", "clientId"];
 
 const SHEET_MGMT_BUDGETS = "月次目標";
 const MGMT_BUDGETS_HDR = ["yearMonth", "salesBudget", "grossMarginRatio", "profitBudget"];
@@ -64,12 +68,6 @@ const FIN_BUDGETS_HDR = ["yearMonth", "rawMaterialBudget", "otherExpenseBudget",
 const SHEET_SETTINGS = "設定";
 const SETTINGS_HDR = ["squareSyncFromSquare"];
 const SETTINGS_SEED = [[true]];
-
-const SHEET_TODOS = "TODO";
-const TODOS_HDR = ["id", "category", "task", "deadline", "status", "snoozed"];
-
-const SHEET_SUBTASKS = "サブタスク";
-const SUBTASKS_HDR = ["id", "parentTaskId", "name", "assignee", "deadline", "status", "snoozed"];
 
 const SHEET_SYNC_LOG = "Square同期ログ";
 const SYNC_LOG_HDR = ["timestamp", "type", "status", "message"];
@@ -102,6 +100,11 @@ function getOrCreateSheet_(name, headers, seedRows, textCols) {
     });
   }
   return sheet;
+}
+
+// 名前だけでシートを取得する(存在しなければnull。新規作成はしない = 実データシート専用)
+function getExistingSheet_(name) {
+  return getSs_().getSheetByName(name) || null;
 }
 
 function getDataRows_(sheet) {
@@ -159,8 +162,65 @@ function cellToStr_(val) {
   return String(val === null || val === undefined ? "" : val);
 }
 
+function yearMonthOfGas_(dateStr) {
+  const parts = String(dateStr || "").split("-");
+  if (parts.length < 2) return "";
+  return parts[0] + "/" + parts[1];
+}
+
+// 実データシート用: 列名ベースの汎用読み取り(位置に依存しない)
+function readByHeaderName_(sheet) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return [];
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const rows = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  return rows
+    .filter(function (r) {
+      return r.some(function (v) {
+        return v !== "" && v !== null && v !== undefined;
+      });
+    })
+    .map(function (r) {
+      const obj = {};
+      headers.forEach(function (h, i) {
+        if (h) obj[h] = r[i];
+      });
+      return obj;
+    });
+}
+
+// 実データシートに無い列を末尾に追加する(既存列・既存データは一切変更しない)
+function ensureColumn_(sheet, headerName) {
+  const lastCol = sheet.getLastColumn();
+  const headers = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+  const idx = headers.indexOf(headerName);
+  if (idx >= 0) return idx + 1;
+  const col = lastCol + 1;
+  sheet.getRange(1, col).setValue(headerName);
+  return col;
+}
+
+// 実データシート用: 列名ベースの汎用書き込み(今のシートの列順に合わせて書く。
+// fieldByHeaderに無い列=未対応の列はそのまま空にせず前回値を保てないため、
+// 呼び出し側で必ず全列をfieldByHeaderに含めること)
+function writeByHeaderOrder_(sheet, objects, fieldByHeader) {
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  clearDataRows_(sheet);
+  if (!objects || objects.length === 0) return;
+  const rows = objects.map(function (o) {
+    return headers.map(function (h) {
+      const field = fieldByHeader[h];
+      const v = field ? o[field] : undefined;
+      return v === undefined || v === null ? "" : v;
+    });
+  });
+  sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+}
+
 // ─────────────────────────────────────────
-//  商品マスター_原価管理
+//  商品マスター_原価管理(新規シート。id = name)
 // ─────────────────────────────────────────
 
 function getProducts_() {
@@ -177,119 +237,199 @@ function saveProducts_(products) {
 }
 
 // ─────────────────────────────────────────
-//  レシピ({productId: {servings, ingredients:[], packaging:[]}})
+//  レシピ(実データ採用。商品名をキーに、材料・資材1〜20 / 梱包材1〜5 の横持ち)
 // ─────────────────────────────────────────
 
+function recipeHeaders_() {
+  const headers = ["商品名", "カテゴリ", "分割数"];
+  for (let i = 1; i <= RECIPE_MAX_INGREDIENTS; i++) {
+    headers.push("材料・資材" + i + "_材料名", "材料・資材" + i + "_分量");
+  }
+  for (let i = 1; i <= RECIPE_MAX_PACKAGING; i++) {
+    headers.push("梱包材" + i + "_材料名", "梱包材" + i + "_分量");
+  }
+  return headers;
+}
+
 function getRecipes_() {
-  const sheet = getOrCreateSheet_(SHEET_RECIPES, RECIPES_HDR);
+  const sheet = getOrCreateSheet_(SHEET_RECIPES, recipeHeaders_());
+  const objs = readByHeaderName_(sheet);
   const recipes = {};
-  getDataRows_(sheet).forEach(function (r) {
-    const productId = String(r[0] || "");
+  objs.forEach(function (o) {
+    const productId = o["商品名"];
     if (!productId) return;
-    recipes[productId] = {
-      servings: r[1] === "" ? "" : Number(r[1]),
-      ingredients: safeParseJson_(r[2], []),
-      packaging: safeParseJson_(r[3], []),
+    const ingredients = [];
+    for (let i = 1; i <= RECIPE_MAX_INGREDIENTS; i++) {
+      const name = o["材料・資材" + i + "_材料名"];
+      if (!name) continue;
+      const amount = o["材料・資材" + i + "_分量"];
+      ingredients.push({ id: "ing" + i, materialId: String(name), amount: amount === "" || amount === undefined ? 0 : Number(amount) });
+    }
+    const packaging = [];
+    for (let i = 1; i <= RECIPE_MAX_PACKAGING; i++) {
+      const name = o["梱包材" + i + "_材料名"];
+      if (!name) continue;
+      const amount = o["梱包材" + i + "_分量"];
+      packaging.push({ id: "pack" + i, materialId: String(name), amount: amount === "" || amount === undefined ? 0 : Number(amount) });
+    }
+    recipes[String(productId)] = {
+      servings: o["分割数"] === "" || o["分割数"] === undefined ? "" : Number(o["分割数"]),
+      ingredients: ingredients,
+      packaging: packaging,
+      legacyCategory: o["カテゴリ"] || "",
     };
   });
   return recipes;
 }
 
 function saveRecipes_(recipes) {
-  const sheet = getOrCreateSheet_(SHEET_RECIPES, RECIPES_HDR);
+  const headers = recipeHeaders_();
+  const sheet = getOrCreateSheet_(SHEET_RECIPES, headers);
   clearDataRows_(sheet);
-  const rows = Object.keys(recipes || {}).map(function (pid) {
-    const r = recipes[pid];
-    return [pid, r.servings, JSON.stringify(r.ingredients || []), JSON.stringify(r.packaging || [])];
+  const rows = Object.keys(recipes || {}).map(function (productId) {
+    const r = recipes[productId] || {};
+    const row = [productId, r.legacyCategory || "", r.servings === "" || r.servings === undefined || r.servings === null ? "" : r.servings];
+    const ingredients = (r.ingredients || []).slice(0, RECIPE_MAX_INGREDIENTS);
+    for (let i = 0; i < RECIPE_MAX_INGREDIENTS; i++) {
+      const ing = ingredients[i];
+      row.push(ing ? ing.materialId : "", ing ? ing.amount : "");
+    }
+    const packaging = (r.packaging || []).slice(0, RECIPE_MAX_PACKAGING);
+    for (let i = 0; i < RECIPE_MAX_PACKAGING; i++) {
+      const pk = packaging[i];
+      row.push(pk ? pk.materialId : "", pk ? pk.amount : "");
+    }
+    return row;
   });
-  writeRows_(sheet, rows, RECIPES_HDR.length);
-}
-
-function safeParseJson_(text, fallback) {
-  if (!text) return fallback;
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    return fallback;
-  }
+  writeRows_(sheet, rows, headers.length);
 }
 
 // ─────────────────────────────────────────
-//  セット内訳({productId: [{id, kind, refId, qty}]})
+//  原材料・資材マスタ(実データ採用。id = 材料名。単位列は新設)
+// ─────────────────────────────────────────
+
+function getMaterials_() {
+  const sheet = getExistingSheet_(SHEET_MATERIALS);
+  if (!sheet) return [];
+  ensureColumn_(sheet, "単位");
+  const objs = readByHeaderName_(sheet);
+  return objs
+    .filter(function (o) {
+      return o["材料名"];
+    })
+    .map(function (o) {
+      const category = o["区分"] || "";
+      const unit = o["単位"] || (category === "包材" ? "個" : "g");
+      return { id: String(o["材料名"]), name: String(o["材料名"]), category: category, unitPrice: Number(o["仕入単価(g単位)"]) || 0, unit: unit };
+    });
+}
+
+function saveMaterials_(materials) {
+  const sheet = getExistingSheet_(SHEET_MATERIALS);
+  if (!sheet) return; // 実データシートが無ければ何もしない(誤って新規作成しない)
+  ensureColumn_(sheet, "単位");
+  const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  const objects = (materials || []).map(function (m) {
+    return { category: m.category, name: m.name, unitPrice: m.unitPrice, updatedAt: today, unit: m.unit };
+  });
+  writeByHeaderOrder_(sheet, objects, MATERIALS_FIELD_BY_HEADER);
+}
+
+// ─────────────────────────────────────────
+//  セット内訳マスタ(実データ採用。区分「構成商品」/「梱包・資材」)
 // ─────────────────────────────────────────
 
 function getSetBreakdowns_() {
-  const sheet = getOrCreateSheet_(SHEET_SET_BREAKDOWN, SET_BREAKDOWN_HDR);
+  const sheet = getExistingSheet_(SHEET_SET_BREAKDOWN);
+  if (!sheet) return {};
+  const objs = readByHeaderName_(sheet);
   const map = {};
-  getDataRows_(sheet).forEach(function (r) {
-    const id = String(r[0] || "");
-    const productId = String(r[1] || "");
+  objs.forEach(function (o) {
+    const id = o["内訳ID"];
+    const productId = o["セット商品名"];
     if (!id || !productId) return;
     if (!map[productId]) map[productId] = [];
-    map[productId].push({ id: id, kind: r[2], refId: String(r[3]), qty: r[4] === "" ? "" : Number(r[4]) });
+    map[productId].push({
+      id: String(id),
+      kind: o["区分"] === "構成商品" ? "component" : "material",
+      refId: String(o["構成商品名"] || ""),
+      qty: o["数量"] === "" || o["数量"] === undefined ? "" : Number(o["数量"]),
+      memo: o["備考"] || "",
+    });
   });
   return map;
 }
 
 function saveSetBreakdowns_(setBreakdowns) {
-  const sheet = getOrCreateSheet_(SHEET_SET_BREAKDOWN, SET_BREAKDOWN_HDR);
-  clearDataRows_(sheet);
-  const rows = [];
+  const sheet = getExistingSheet_(SHEET_SET_BREAKDOWN);
+  if (!sheet) return;
+  const objects = [];
   Object.keys(setBreakdowns || {}).forEach(function (productId) {
     (setBreakdowns[productId] || []).forEach(function (row) {
-      rows.push([row.id, productId, row.kind, row.refId, row.qty]);
+      objects.push({
+        id: row.id,
+        productId: productId,
+        kindLabel: row.kind === "component" ? "構成商品" : "梱包・資材",
+        refId: row.refId,
+        qty: row.qty,
+        memo: row.memo || "",
+      });
     });
   });
-  writeRows_(sheet, rows, SET_BREAKDOWN_HDR.length);
+  writeByHeaderOrder_(sheet, objects, SET_BREAKDOWN_FIELD_BY_HEADER);
 }
 
 // ─────────────────────────────────────────
-//  材料・包材マスタ
-// ─────────────────────────────────────────
-
-function getMaterials_() {
-  const sheet = getOrCreateSheet_(SHEET_MATERIALS, MATERIALS_HDR);
-  return rowsToObjects_(MATERIALS_HDR, getDataRows_(sheet)).map(function (m) {
-    return { id: String(m.id), name: m.name || "", category: m.category || "", unit: m.unit || "", unitPrice: Number(m.unitPrice) || 0 };
-  });
-}
-
-function saveMaterials_(materials) {
-  const sheet = getOrCreateSheet_(SHEET_MATERIALS, MATERIALS_HDR);
-  clearDataRows_(sheet);
-  writeRows_(sheet, objectsToRows_(MATERIALS_HDR, materials), MATERIALS_HDR.length);
-}
-
-// ─────────────────────────────────────────
-//  販売先(委託先)マスタ
+//  リベート(販売先・委託先マスタ。実データ採用)
+//  リベート率は「15」のような百分率の数値として保存されている前提(15 => 0.15)。
+//  1以下の値はすでに小数(0.15)とみなしてそのまま扱う簡易ヒューリスティック。
 // ─────────────────────────────────────────
 
 function getRebateClients_() {
-  const sheet = getOrCreateSheet_(SHEET_REBATE_CLIENTS, REBATE_CLIENTS_HDR);
-  return rowsToObjects_(REBATE_CLIENTS_HDR, getDataRows_(sheet)).map(function (c) {
-    return { id: String(c.id), name: c.name || "", rate: Number(c.rate) || 0, memo: c.memo || "" };
-  });
+  const sheet = getExistingSheet_(SHEET_REBATE_CLIENTS);
+  if (!sheet) return [];
+  const objs = readByHeaderName_(sheet);
+  return objs
+    .filter(function (o) {
+      return o["ID"];
+    })
+    .map(function (o) {
+      const raw = Number(o["リベート率"]) || 0;
+      return { id: String(o["ID"]), name: o["販売先"] || "", rate: raw > 1 ? raw / 100 : raw, memo: o["メモ"] || "" };
+    });
 }
 
 function saveRebateClients_(rebateClients) {
-  const sheet = getOrCreateSheet_(SHEET_REBATE_CLIENTS, REBATE_CLIENTS_HDR);
-  clearDataRows_(sheet);
-  writeRows_(sheet, objectsToRows_(REBATE_CLIENTS_HDR, rebateClients), REBATE_CLIENTS_HDR.length);
+  const sheet = getExistingSheet_(SHEET_REBATE_CLIENTS);
+  if (!sheet) return;
+  const objects = (rebateClients || []).map(function (c) {
+    return { id: c.id, name: c.name, rateRaw: Math.round((Number(c.rate) || 0) * 1000) / 10, memo: c.memo || "" };
+  });
+  writeByHeaderOrder_(sheet, objects, REBATE_FIELD_BY_HEADER);
 }
 
 // ─────────────────────────────────────────
-//  販売形態マスタ(読み取り専用・シート作成時にseed)
+//  販売形態(実データ採用・読み取り専用。id = name。リベート適用可否のフラグは無く、
+//  「委託先が選択されているか」で判定するため、ここでは名前の一覧のみ返す)
 // ─────────────────────────────────────────
 
 function getSalesChannels_() {
-  const sheet = getOrCreateSheet_(SHEET_SALES_CHANNELS, SALES_CHANNELS_HDR, SALES_CHANNELS_SEED);
-  return rowsToObjects_(SALES_CHANNELS_HDR, getDataRows_(sheet)).map(function (c) {
-    return { id: String(c.id), name: c.name || "", rebateApplicable: c.rebateApplicable === true || c.rebateApplicable === "TRUE" };
+  const sheet = getExistingSheet_(SHEET_SALES_CHANNELS);
+  if (!sheet) return [];
+  const objs = readByHeaderName_(sheet);
+  const seen = {};
+  const channels = [];
+  objs.forEach(function (o) {
+    const name = o["販売形態"];
+    if (!name || seen[name]) return;
+    seen[name] = true;
+    channels.push({ id: String(name), name: String(name) });
   });
+  return channels;
 }
 
 // ─────────────────────────────────────────
-//  経費マスタ(時間単価)
+//  経費マスタ(時間単価)— このアプリ専用シート(全員共通の単一時給)
 // ─────────────────────────────────────────
 
 function getExpenseRates_() {
@@ -312,49 +452,84 @@ function saveExpenseRates_(expenseRates) {
 }
 
 // ─────────────────────────────────────────
-//  経費
+//  経費(実データ採用。集計には「日付」列を使用。「対象日付」「利用時間」「メモ」は
+//  UIには出さないがそのまま素通しで保存する)
 // ─────────────────────────────────────────
 
 function getExpenses_() {
-  const sheet = getOrCreateSheet_(SHEET_EXPENSES, EXPENSES_HDR, null, [2]);
-  return rowsToObjects_(EXPENSES_HDR, getDataRows_(sheet)).map(function (e) {
-    return { id: String(e.id), date: cellToStr_(e.date), item: e.item || "", amount: Number(e.amount) || 0 };
-  });
+  const sheet = getExistingSheet_(SHEET_EXPENSES);
+  if (!sheet) return [];
+  const objs = readByHeaderName_(sheet);
+  return objs
+    .filter(function (o) {
+      return o["ID"];
+    })
+    .map(function (o) {
+      return {
+        id: String(o["ID"]),
+        date: cellToStr_(o["日付"]),
+        item: o["項目"] || "",
+        amount: Number(o["金額"]) || 0,
+        hours: o["利用時間"] === "" || o["利用時間"] === undefined ? undefined : Number(o["利用時間"]),
+        memo: o["メモ"] || "",
+        targetDate: o["対象日付"] ? cellToStr_(o["対象日付"]) : "",
+      };
+    });
 }
 
 function saveExpenses_(expenses) {
-  const sheet = getOrCreateSheet_(SHEET_EXPENSES, EXPENSES_HDR, null, [2]);
-  clearDataRows_(sheet);
-  writeRows_(sheet, objectsToRows_(EXPENSES_HDR, expenses), EXPENSES_HDR.length, [2]);
+  const sheet = getExistingSheet_(SHEET_EXPENSES);
+  if (!sheet) return;
+  const objects = (expenses || []).map(function (e) {
+    return {
+      id: e.id,
+      date: e.date,
+      item: e.item,
+      hours: e.hours !== undefined ? e.hours : "",
+      amount: e.amount,
+      memo: e.memo || "",
+      targetDate: e.targetDate || e.date,
+    };
+  });
+  writeByHeaderOrder_(sheet, objects, EXPENSES_FIELD_BY_HEADER);
+  // 日付列がテキストのまま保持されるように(日付型への自動変換を防ぐ)
+  const dateCol = ensureColumn_(sheet, "日付");
+  const rows = Math.max(sheet.getMaxRows() - 1, 1);
+  sheet.getRange(2, dateCol, rows, 1).setNumberFormat("@");
 }
 
 // ─────────────────────────────────────────
-//  日次設定({date: {channelId, clientId}})
+//  日次集計(実データ採用。{date: {channelId, clientId}} ※値は名前そのもの)
 // ─────────────────────────────────────────
 
 function getDailyMeta_() {
-  const sheet = getOrCreateSheet_(SHEET_DAILY_META, DAILY_META_HDR, null, [1]);
+  const sheet = getExistingSheet_(SHEET_DAILY_META);
+  if (!sheet) return {};
+  const objs = readByHeaderName_(sheet);
   const map = {};
-  getDataRows_(sheet).forEach(function (r) {
-    const date = cellToStr_(r[0]);
+  objs.forEach(function (o) {
+    const date = cellToStr_(o["日付"]);
     if (!date) return;
-    map[date] = { channelId: String(r[1] || ""), clientId: String(r[2] || "") };
+    map[date] = { channelId: o["販売形態"] || "", clientId: o["販売先"] || "" };
   });
   return map;
 }
 
 function saveDailyMeta_(dailyMeta) {
-  const sheet = getOrCreateSheet_(SHEET_DAILY_META, DAILY_META_HDR, null, [1]);
-  clearDataRows_(sheet);
-  const rows = Object.keys(dailyMeta || {}).map(function (date) {
+  const sheet = getExistingSheet_(SHEET_DAILY_META);
+  if (!sheet) return;
+  const objects = Object.keys(dailyMeta || {}).map(function (date) {
     const m = dailyMeta[date] || {};
-    return [date, m.channelId || "", m.clientId || ""];
+    return { date: date, yearMonth: yearMonthOfGas_(date), clientName: m.clientId || "", channelName: m.channelId || "" };
   });
-  writeRows_(sheet, rows, DAILY_META_HDR.length, [1]);
+  writeByHeaderOrder_(sheet, objects, DAILY_META_FIELD_BY_HEADER);
+  const dateCol = ensureColumn_(sheet, "日付");
+  const rows = Math.max(sheet.getMaxRows() - 1, 1);
+  sheet.getRange(2, dateCol, rows, 1).setNumberFormat("@");
 }
 
 // ─────────────────────────────────────────
-//  月次目標({yearMonth: {salesBudget, grossMarginRatio, profitBudget}})
+//  月次目標 / 月次PL予算 / 設定 — このアプリ専用シート(実データとの衝突なし)
 // ─────────────────────────────────────────
 
 function getMgmtBudgets_() {
@@ -378,10 +553,6 @@ function saveMgmtBudgets_(mgmtBudgets) {
   writeRows_(sheet, rows, MGMT_BUDGETS_HDR.length, [1]);
 }
 
-// ─────────────────────────────────────────
-//  月次PL予算({yearMonth: {rawMaterialBudget, otherExpenseBudget, profitBudget}})
-// ─────────────────────────────────────────
-
 function getFinBudgets_() {
   const sheet = getOrCreateSheet_(SHEET_FIN_BUDGETS, FIN_BUDGETS_HDR, null, [1]);
   const map = {};
@@ -403,10 +574,6 @@ function saveFinBudgets_(finBudgets) {
   writeRows_(sheet, rows, FIN_BUDGETS_HDR.length, [1]);
 }
 
-// ─────────────────────────────────────────
-//  設定(1行のみ)
-// ─────────────────────────────────────────
-
 function getSettings_() {
   const sheet = getOrCreateSheet_(SHEET_SETTINGS, SETTINGS_HDR, SETTINGS_SEED);
   const rows = getDataRows_(sheet);
@@ -421,52 +588,75 @@ function saveSettings_(settings) {
 }
 
 // ─────────────────────────────────────────
-//  TODO・サブタスク
+//  TODO・サブタスク(実データ採用。snoozed列は新設)
 // ─────────────────────────────────────────
 
 function getTodos_() {
-  const sheet = getOrCreateSheet_(SHEET_TODOS, TODOS_HDR, null, [4]);
-  return rowsToObjects_(TODOS_HDR, getDataRows_(sheet)).map(function (t) {
-    return {
-      id: String(t.id),
-      category: t.category || "",
-      task: t.task || "",
-      deadline: cellToStr_(t.deadline),
-      status: t.status || "未着手",
-      snoozed: t.snoozed === true || t.snoozed === "TRUE",
-    };
-  });
+  const sheet = getExistingSheet_(SHEET_TODOS);
+  if (!sheet) return [];
+  ensureColumn_(sheet, "snoozed");
+  const objs = readByHeaderName_(sheet);
+  return objs
+    .filter(function (o) {
+      return o["タスクID"];
+    })
+    .map(function (o) {
+      return {
+        id: String(o["タスクID"]),
+        category: o["カテゴリ"] || "",
+        task: o["タスク"] || "",
+        deadline: cellToStr_(o["期限"]),
+        status: o["ステータス"] || "未着手",
+        snoozed: o["snoozed"] === true || o["snoozed"] === "TRUE",
+      };
+    });
 }
 
 function saveTodos_(todos) {
-  const sheet = getOrCreateSheet_(SHEET_TODOS, TODOS_HDR, null, [4]);
-  clearDataRows_(sheet);
-  writeRows_(sheet, objectsToRows_(TODOS_HDR, todos), TODOS_HDR.length, [4]);
+  const sheet = getExistingSheet_(SHEET_TODOS);
+  if (!sheet) return;
+  ensureColumn_(sheet, "snoozed");
+  writeByHeaderOrder_(sheet, todos || [], TODOS_FIELD_BY_HEADER);
+  const deadlineCol = ensureColumn_(sheet, "期限");
+  const rows = Math.max(sheet.getMaxRows() - 1, 1);
+  sheet.getRange(2, deadlineCol, rows, 1).setNumberFormat("@");
 }
 
 function getSubtasks_() {
-  const sheet = getOrCreateSheet_(SHEET_SUBTASKS, SUBTASKS_HDR, null, [5]);
-  return rowsToObjects_(SUBTASKS_HDR, getDataRows_(sheet)).map(function (s) {
-    return {
-      id: String(s.id),
-      parentTaskId: String(s.parentTaskId),
-      name: s.name || "",
-      assignee: s.assignee || "",
-      deadline: cellToStr_(s.deadline),
-      status: s.status || "未着手",
-      snoozed: s.snoozed === true || s.snoozed === "TRUE",
-    };
-  });
+  const sheet = getExistingSheet_(SHEET_SUBTASKS);
+  if (!sheet) return [];
+  ensureColumn_(sheet, "snoozed");
+  const objs = readByHeaderName_(sheet);
+  return objs
+    .filter(function (o) {
+      return o["サブタスクID"];
+    })
+    .map(function (o) {
+      return {
+        id: String(o["サブタスクID"]),
+        parentTaskId: String(o["親タスクID"] || ""),
+        name: o["サブタスク名"] || "",
+        assignee: o["担当"] || "",
+        deadline: cellToStr_(o["期限"]),
+        status: o["ステータス"] || "未着手",
+        snoozed: o["snoozed"] === true || o["snoozed"] === "TRUE",
+        legacyCategory: o["分類"] || "", // 使途不明の既存列。UIには出さずそのまま保持する
+      };
+    });
 }
 
 function saveSubtasks_(subtasks) {
-  const sheet = getOrCreateSheet_(SHEET_SUBTASKS, SUBTASKS_HDR, null, [5]);
-  clearDataRows_(sheet);
-  writeRows_(sheet, objectsToRows_(SUBTASKS_HDR, subtasks), SUBTASKS_HDR.length, [5]);
+  const sheet = getExistingSheet_(SHEET_SUBTASKS);
+  if (!sheet) return;
+  ensureColumn_(sheet, "snoozed");
+  writeByHeaderOrder_(sheet, subtasks || [], SUBTASKS_FIELD_BY_HEADER);
+  const deadlineCol = ensureColumn_(sheet, "期限");
+  const rows = Math.max(sheet.getMaxRows() - 1, 1);
+  sheet.getRange(2, deadlineCol, rows, 1).setNumberFormat("@");
 }
 
 // ─────────────────────────────────────────
-//  Square同期ログ(追記のみ)
+//  Square同期ログ(追記のみ)— このアプリ専用シート
 // ─────────────────────────────────────────
 
 function appendSyncLog_(type, status, message) {
@@ -510,7 +700,7 @@ function getCatalogReadOnly_() {
 
 // 売上_Squareを読み取り専用で整形。orderId は id 列(order.id + "_" + item.uid/name)から
 // 最後の "_" 区切りを取り除いて復元(既存シートに独立した伝票ID列が無いための推定ロジック)。
-// 商品名から 商品マスター_原価管理.name への一致で productId を解決する。
+// productId は 商品名 そのもの(商品マスター_原価管理も id=name のため突き合わせ不要)。
 function getSales_() {
   const sheet = getSalesSheetReadOnly_();
   if (!sheet) return [];
@@ -525,12 +715,6 @@ function getSales_() {
   const costIdx = headers.indexOf("unitCostAtSale");
   const costSubIdx = headers.indexOf("costSubtotal");
 
-  const products = getProducts_();
-  const nameToProduct = {};
-  products.forEach(function (p) {
-    nameToProduct[p.name] = p;
-  });
-
   return data
     .slice(1)
     .filter(function (r) {
@@ -539,18 +723,13 @@ function getSales_() {
     .map(function (r) {
       const id = String(r[idIdx]);
       const orderId = id.indexOf("_") >= 0 ? id.slice(0, id.lastIndexOf("_")) : id;
-      const name = String(r[nameIdx] || "");
-      const product = nameToProduct[name];
-      const productId = product ? product.id : name;
-      const qty = Number(r[qtyIdx]) || 0;
-      const amount = Number(r[amountIdx]) || 0;
       const row = {
         id: id,
         orderId: orderId,
         date: cellToStr_(r[dateIdx]),
-        productId: productId,
-        qty: qty,
-        amount: amount,
+        productId: String(r[nameIdx] || ""),
+        qty: Number(r[qtyIdx]) || 0,
+        amount: Number(r[amountIdx]) || 0,
       };
       if (costIdx >= 0 && r[costIdx] !== "" && r[costIdx] !== undefined && r[costIdx] !== null) {
         row.unitCostAtSale = Number(r[costIdx]);

@@ -257,14 +257,11 @@ export default function SummaryTab({
                   <tbody>
                     {dailyRows.map((d) => {
                       const channel = channelMap[d.channelId];
-                      const rebateEligible = !!(channel && channel.rebateApplicable);
                       return (
                         <tr key={d.date} className="border-b border-stone-100">
                           <td className="py-1 pr-2 font-medium">{d.date}</td>
                           <td className="py-1 pr-2 text-stone-600">{channel?.name || "(未選択)"}</td>
-                          <td className="py-1 pr-2 text-stone-600">
-                            {rebateEligible ? rebateMap[d.clientId]?.name || "(未選択)" : "対象外"}
-                          </td>
+                          <td className="py-1 pr-2 text-stone-600">{rebateMap[d.clientId]?.name || "(未選択)"}</td>
                           <td className="py-1 pr-2 tabular-nums">{d.客数}</td>
                           <td className="py-1 pr-2 tabular-nums">{yen(d.客単価)}</td>
                           <td className="py-1 pr-2 tabular-nums">{yen(d.値引前)}</td>

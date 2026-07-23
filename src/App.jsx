@@ -249,13 +249,45 @@ export default function App() {
   );
 
   // ========== ハンドラ: 材料マスタ ==========
+  // 材料・商品は既存データ(原材料・資材マスタ/レシピ/セット内訳マスタ)が名前をキーにしているため、
+  // id = name として扱う。名前の変更は commitMaterialRename/commitProductRename で
+  // レシピ・セット内訳側の参照も連動して書き換える(id自体は編集中は変えず、確定時にのみ変更する)。
   const addMaterial = () => {
-    if (!materialForm.name || materialForm.unitPrice === "") return;
-    setMaterials((prev) => [...prev, { id: uid(), ...materialForm, unitPrice: Number(materialForm.unitPrice) }]);
+    const trimmed = materialForm.name.trim();
+    if (!trimmed || materialForm.unitPrice === "") return;
+    if (materials.some((m) => m.id === trimmed)) return; // 同名は追加しない
+    setMaterials((prev) => [...prev, { id: trimmed, name: trimmed, category: materialForm.category, unit: materialForm.unit, unitPrice: Number(materialForm.unitPrice) }]);
     setMaterialForm({ name: "", category: RAW, unit: "g", unitPrice: "" });
   };
   const updateMaterial = (id, field, value) => {
     setMaterials((prev) => prev.map((m) => (m.id === id ? { ...m, [field]: field === "unitPrice" ? Number(value) : value } : m)));
+  };
+  const commitMaterialRename = (id) => {
+    const material = materials.find((m) => m.id === id);
+    if (!material) return;
+    const trimmed = (material.name || "").trim();
+    if (!trimmed || trimmed === id) return;
+    if (materials.some((m) => m.id !== id && m.id === trimmed)) return; // 既存の別材料と同名なら変更しない
+    setMaterials((prev) => prev.map((m) => (m.id === id ? { ...m, id: trimmed, name: trimmed } : m)));
+    setRecipes((prev) => {
+      const next = {};
+      Object.keys(prev).forEach((pid) => {
+        const r = prev[pid];
+        next[pid] = {
+          ...r,
+          ingredients: r.ingredients.map((ing) => (ing.materialId === id ? { ...ing, materialId: trimmed } : ing)),
+          packaging: r.packaging.map((pk) => (pk.materialId === id ? { ...pk, materialId: trimmed } : pk)),
+        };
+      });
+      return next;
+    });
+    setSetBreakdowns((prev) => {
+      const next = {};
+      Object.keys(prev).forEach((pid) => {
+        next[pid] = prev[pid].map((row) => (row.kind === "material" && row.refId === id ? { ...row, refId: trimmed } : row));
+      });
+      return next;
+    });
   };
   const removeMaterial = (id) => setMaterials((prev) => prev.filter((m) => m.id !== id));
 
@@ -276,10 +308,40 @@ export default function App() {
   const updateProduct = (id, field, value) => {
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: field === "price" ? Number(value) : value } : p)));
   };
+  const commitProductRename = (id) => {
+    const product = products.find((p) => p.id === id);
+    if (!product) return;
+    const trimmed = (product.name || "").trim();
+    if (!trimmed || trimmed === id) return;
+    if (products.some((p) => p.id !== id && p.id === trimmed)) return; // 既存の別商品と同名なら変更しない
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, id: trimmed, name: trimmed } : p)));
+    setRecipes((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      next[trimmed] = next[id];
+      delete next[id];
+      return next;
+    });
+    setSetBreakdowns((prev) => {
+      const next = {};
+      Object.keys(prev).forEach((pid) => {
+        const rows = prev[pid].map((row) => (row.kind === "component" && row.refId === id ? { ...row, refId: trimmed } : row));
+        next[pid === id ? trimmed : pid] = rows;
+      });
+      return next;
+    });
+    if (selectedProductId === id) setSelectedProductId(trimmed);
+  };
   const createProductFromQuery = (name) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const id = uid();
+    if (products.some((p) => p.id === trimmed)) {
+      setSelectedProductId(trimmed);
+      setProductQuery("");
+      setComboOpen(false);
+      return;
+    }
+    const id = trimmed; // 既存データ(レシピ・セット内訳マスタ)が商品名をキーにしているためidは名前そのもの
     setProducts((prev) => [...prev, { id, name: trimmed, price: 0, kind: kindMode }]);
     setRecipes((prev) => ({ ...prev, [id]: { servings: 1, ingredients: [], packaging: [] } }));
     setSetBreakdowns((prev) => ({ ...prev, [id]: [] }));
@@ -387,7 +449,9 @@ export default function App() {
       if (!expenseForm.amount) return;
       amount = Number(expenseForm.amount);
     }
-    setExpenses((prev) => [...prev, { id: uid(), date: expenseForm.date, item: expenseForm.item, amount }]);
+    const entry = { id: uid(), date: expenseForm.date, item: expenseForm.item, amount };
+    if (isHourly) entry.hours = Number(expenseForm.hours);
+    setExpenses((prev) => [...prev, entry]);
     setExpenseForm((f) => ({ ...f, amount: "", hours: "" }));
   };
   const removeExpense = (id) => setExpenses((prev) => prev.filter((x) => x.id !== id));
@@ -621,6 +685,7 @@ export default function App() {
             exactMatchExists={exactMatchExists}
             createProductFromQuery={createProductFromQuery}
             updateProduct={updateProduct}
+            commitProductRename={commitProductRename}
             costRatioDraft={costRatioDraft}
             handleCostRatioChange={handleCostRatioChange}
             setEditingRatio={setEditingRatio}
@@ -650,6 +715,7 @@ export default function App() {
             materialListOpen={materialListOpen}
             setMaterialListOpen={setMaterialListOpen}
             updateMaterial={updateMaterial}
+            commitMaterialRename={commitMaterialRename}
             removeMaterial={removeMaterial}
             rebateForm={rebateForm}
             setRebateForm={setRebateForm}

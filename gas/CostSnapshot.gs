@@ -61,14 +61,6 @@ function computeProductCosts_(products, recipes, setBreakdowns, materialMap) {
   return costs;
 }
 
-// 商品名から 商品マスター_原価管理 の商品を探す(stampCostSnapshot・getSales_共通の突き合わせルール)
-function resolveProductByName_(products, name) {
-  for (let i = 0; i < products.length; i++) {
-    if (products[i].name === name) return products[i];
-  }
-  return null;
-}
-
 // 売上_Squareの8列目(unitCostAtSale)が空の行だけを対象に原価をスナップショットする。
 // 一度書き込んだ行は以後の原価改定の影響を受けない(設計書1章・6章)。
 function stampCostSnapshot() {
@@ -109,8 +101,8 @@ function stampCostSnapshot() {
 
       const name = String(row[2] || "");
       const qty = Number(row[3]) || 0;
-      const product = resolveProductByName_(products, name);
-      const cost = product && costs[product.id] ? costs[product.id].原価 : 0;
+      // 商品マスター_原価管理は id = name のため、名前をそのままキーに引ける
+      const cost = costs[name] ? costs[name].原価 : 0;
       const costSubtotal = cost * qty;
 
       sheet.getRange(2 + i, 8, 1, 2).setValues([[cost, costSubtotal]]);
@@ -146,7 +138,7 @@ function syncCatalogFromSquare() {
         updated++;
       } else {
         const p = {
-          id: Utilities.getUuid(),
+          id: row.name, // 商品マスター_原価管理は id = name(レシピ・セット内訳・売上と同じキーで揃える)
           name: row.name,
           price: row.price,
           kind: "single",
