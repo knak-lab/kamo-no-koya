@@ -1,0 +1,199 @@
+// ============================================================
+// お菓子屋 経営ノート - Google Apps Script
+// Square API → スプレッドシート 自動連携
+// ============================================================
+
+// ▼▼▼ ここだけ設定してください ▼▼▼
+const SQUARE_ACCESS_TOKEN = "<REDACTED_SQUARE_ACCESS_TOKEN>"; // 実際の値はApps Scriptエディタ側のみに保持(git管理外)
+const SPREADSHEET_ID      = "1qMzUrUaCCI4lTMwQMKVyOeW2F5yDyQEJgqU-B1jAOEY";
+// ▲▲▲ 設定ここまで ▲▲▲
+
+const SQUARE_BASE_URL = "https://connect.squareup.com/v2";
+
+// ============================================================
+// メイン実行関数（毎日自動実行される）
+// ============================================================
+function syncFromSquare() {
+  try {
+    syncOrders();
+    syncCatalog();
+    Logger.log("✅ Square同期完了");
+  } catch (e) {
+    Logger.log("❌ エラー: " + e.message);
+  }
+}
+
+// ============================================================
+// 売上データ取得（過去30日分）
+// ============================================================
+function syncOrders() {
+  const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet   = ss.getSheetByName("売上_Square");
+  if (!sheet) {
+    sheet = ss.insertSheet("売上_Square");
+    sheet.appendRow(["id","日付","商品名","数量","金額(円)","支払方法","取得日時"]);
+    sheet.getRange(1,1,1,7).setFontWeight("bold").setBackground("#c8956c").setFontColor("#ffffff");
+  }
+
+  // 既存IDを取得（重複防止）
+  const existing = new Set();
+  const lastRow  = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2,1,lastRow-1,1).getValues().forEach(r => existing.add(r[0]));
+  }
+
+  // 30日前から今日まで
+  const now   = new Date();
+  const begin = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const beginStr = begin.toISOString();
+
+  let cursor = null;
+  let newRows = [];
+
+  do {
+    const body = {
+      location_ids: getLocationIds(),
+      query: {
+        filter: {
+          date_time_filter: {
+            created_at: { start_at: beginStr }
+          },
+          state_filter: { states: ["COMPLETED"] }
+        },
+        sort: { sort_field: "CREATED_AT", sort_order: "DESC" }
+      },
+      limit: 100
+    };
+    if (cursor) body.cursor = cursor;
+
+    const res  = squarePost("/orders/search", body);
+    const orders = res.orders || [];
+    cursor = res.cursor || null;
+
+    orders.forEach(order => {
+      const orderDate = order.created_at ? order.created_at.slice(0,10) : "";
+      const payment   = order.tenders?.[0]?.type || "不明";
+
+      (order.line_items || []).forEach(item => {
+        const uid = order.id + "_" + (item.uid || item.name);
+        if (existing.has(uid)) return;
+
+        const qty    = Number(item.quantity) || 1;
+        const amount = item.total_money ? Math.round(item.total_money.amount / 1) : 0;
+        // Squareは金額を最小通貨単位で返す（JPYは1円単位）
+
+        newRows.push([
+          uid,
+          orderDate,
+          item.name || "不明",
+          qty,
+          amount,
+          payment,
+          new Date().toLocaleString("ja-JP")
+        ]);
+        existing.add(uid);
+      });
+    });
+  } while (cursor);
+
+  if (newRows.length > 0) {
+    sheet.getRange(sheet.getLastRow()+1, 1, newRows.length, 7).setValues(newRows);
+    Logger.log(`売上 ${newRows.length}件 追加`);
+  } else {
+    Logger.log("売上: 新規データなし");
+  }
+}
+
+// ============================================================
+// 商品マスター取得
+// ============================================================
+function syncCatalog() {
+  const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet   = ss.getSheetByName("商品マスター");
+  if (!sheet) {
+    sheet = ss.insertSheet("商品マスター");
+    sheet.appendRow(["id","商品名","価格(円)","カテゴリ","更新日時"]);
+    sheet.getRange(1,1,1,5).setFontWeight("bold").setBackground("#8fbc8f").setFontColor("#ffffff");
+  }
+
+  const res   = squareGet("/catalog/list?types=ITEM");
+  const items = res.objects || [];
+
+  // 全件上書き
+  if (sheet.getLastRow() > 1) {
+    sheet.getRange(2, 1, sheet.getLastRow()-1, 5).clearContent();
+  }
+
+  const rows = [];
+  items.forEach(obj => {
+    const item = obj.item_data;
+    if (!item) return;
+    const category = item.category_id || "";
+    (item.variations || []).forEach(v => {
+      const price = v.item_variation_data?.price_money?.amount || 0;
+      rows.push([
+        v.id,
+        item.name + (v.item_variation_data?.name && v.item_variation_data.name !== "標準" ? " / " + v.item_variation_data.name : ""),
+        price,
+        category,
+        new Date().toLocaleString("ja-JP")
+      ]);
+    });
+  });
+
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, 5).setValues(rows);
+  }
+  Logger.log(`商品マスター ${rows.length}件 同期`);
+}
+
+// ============================================================
+// ロケーションID取得（お店のID）
+// ============================================================
+function getLocationIds() {
+  const res = squareGet("/locations");
+  return (res.locations || []).map(l => l.id);
+}
+
+// ============================================================
+// Square API ヘルパー
+// ============================================================
+function squareGet(path) {
+  const res = UrlFetchApp.fetch(SQUARE_BASE_URL + path, {
+    method: "GET",
+    headers: {
+      "Authorization": "Bearer " + SQUARE_ACCESS_TOKEN,
+      "Square-Version": "2024-01-18",
+      "Content-Type": "application/json"
+    },
+    muteHttpExceptions: true
+  });
+  return JSON.parse(res.getContentText());
+}
+
+function squarePost(path, body) {
+  const res = UrlFetchApp.fetch(SQUARE_BASE_URL + path, {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + SQUARE_ACCESS_TOKEN,
+      "Square-Version": "2024-01-18",
+      "Content-Type": "application/json"
+    },
+    payload: JSON.stringify(body),
+    muteHttpExceptions: true
+  });
+  return JSON.parse(res.getContentText());
+}
+
+// ============================================================
+// 手動テスト用（最初に一度実行して確認）
+// ============================================================
+function testConnection() {
+  const res = squareGet("/locations");
+  if (res.locations) {
+    Logger.log("✅ 接続成功！ロケーション数: " + res.locations.length);
+    res.locations.forEach(l => Logger.log("  - " + l.name + " (" + l.id + ")"));
+  } else {
+    Logger.log("❌ 接続失敗: " + JSON.stringify(res));
+  }
+}
