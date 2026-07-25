@@ -159,7 +159,12 @@ function cellToStr_(val) {
     const d = String(val.getDate()).padStart(2, "0");
     return y + "-" + m + "-" + d;
   }
-  return String(val === null || val === undefined ? "" : val);
+  const s = String(val === null || val === undefined ? "" : val);
+  // 旧AppSheet時代のデータ等、スラッシュ区切り("YYYY/M/D")のテキスト日付が
+  // Date型に変換されずそのまま残っている場合があるため、ハイフン区切りに正規化する
+  const slashDate = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (slashDate) return slashDate[1] + "-" + slashDate[2].padStart(2, "0") + "-" + slashDate[3].padStart(2, "0");
+  return s;
 }
 
 function yearMonthOfGas_(dateStr) {
