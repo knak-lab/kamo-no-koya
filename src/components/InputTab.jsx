@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Plus, Trash2, ChevronDown, ChevronRight, Pencil } from "lucide-react";
 import { yen, RAW_MATERIAL_ITEM } from "../lib/constants";
 
@@ -27,6 +28,22 @@ export default function InputTab({
   expenses,
   removeExpense,
 }) {
+  const [openYears, setOpenYears] = useState({});
+  const [openMonths, setOpenMonths] = useState({});
+  const [openDates, setOpenDates] = useState({});
+  const toggleYear = (y) => setOpenYears((prev) => ({ ...prev, [y]: !prev[y] }));
+  const toggleMonth = (key) => setOpenMonths((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleDate = (d) => setOpenDates((prev) => ({ ...prev, [d]: !prev[d] }));
+
+  // 日次設定の対象日を 年 > 月 > 日 のツリーにまとめる(settingDatesは既にソート済み)
+  const settingDateTree = {};
+  settingDates.forEach((date) => {
+    const [y, m] = date.split("-");
+    settingDateTree[y] = settingDateTree[y] || {};
+    settingDateTree[y][m] = settingDateTree[y][m] || [];
+    settingDateTree[y][m].push(date);
+  });
+
   return (
     <>
       {/* 目標(月単位・売上/粗利率/利益) */}
@@ -184,56 +201,106 @@ export default function InputTab({
       <section className="bg-white rounded-lg border border-stone-200 p-4">
         <h2 className="font-semibold mb-1">日次設定(販売形態・委託先)</h2>
         <p className="text-xs text-stone-500 mb-3">
-          「委託販売」などリベート対象の形態を選んだ日だけ、隣で委託先を選べます。
+          「委託販売」などリベート対象の形態を選んだ日だけ、隣で委託先を選べます。年・月・日をクリックして開閉できます。
         </p>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-left text-stone-500 border-b">
-                <th className="py-1 pr-2">日付</th>
-                <th className="py-1 pr-2">販売形態</th>
-                <th className="py-1 pr-2">委託先(販売先)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {settingDates.map((date) => {
-                const meta = dailyMeta[date] || {};
-                return (
-                  <tr key={date} className="border-b border-stone-100">
-                    <td className="py-1 pr-2 font-medium">{date}</td>
-                    <td className="py-1 pr-2">
-                      <select
-                        className="border rounded px-1 py-0.5 text-xs"
-                        value={meta.channelId || ""}
-                        onChange={(e) => setDayField(date, "channelId", e.target.value)}
-                      >
-                        <option value="">(未選択)</option>
-                        {salesChannels.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="py-1 pr-2">
-                      <select
-                        className="border rounded px-1 py-0.5 text-xs"
-                        value={meta.clientId || ""}
-                        onChange={(e) => setDayField(date, "clientId", e.target.value)}
-                      >
-                        <option value="">(未選択・リベート対象外)</option>
-                        {rebateClients.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="text-xs space-y-1">
+          {Object.keys(settingDateTree)
+            .sort()
+            .map((year) => {
+              const months = settingDateTree[year];
+              const yearCount = Object.values(months).reduce((a, arr) => a + arr.length, 0);
+              return (
+                <div key={year} className="border border-stone-200 rounded-md">
+                  <button
+                    onClick={() => toggleYear(year)}
+                    className="w-full flex items-center gap-1 px-2 py-1.5 text-left font-medium hover:bg-stone-50"
+                  >
+                    {openYears[year] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    {year}年({yearCount}件)
+                  </button>
+                  {openYears[year] && (
+                    <div className="pl-4 pb-1 space-y-1">
+                      {Object.keys(months)
+                        .sort()
+                        .map((month) => {
+                          const dates = months[month];
+                          const monthKey = `${year}-${month}`;
+                          return (
+                            <div key={monthKey}>
+                              <button
+                                onClick={() => toggleMonth(monthKey)}
+                                className="w-full flex items-center gap-1 px-2 py-1 text-left hover:bg-stone-50"
+                              >
+                                {openMonths[monthKey] ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                                {month}月({dates.length}件)
+                              </button>
+                              {openMonths[monthKey] && (
+                                <div className="pl-4 space-y-0.5">
+                                  {dates.map((date) => {
+                                    const meta = dailyMeta[date] || {};
+                                    const clientName = meta.clientId ? rebateClients.find((c) => c.id === meta.clientId)?.name : "";
+                                    return (
+                                      <div key={date} className="border-b border-stone-100">
+                                        <button
+                                          onClick={() => toggleDate(date)}
+                                          className="w-full flex items-center gap-1 px-2 py-1 text-left hover:bg-stone-50"
+                                        >
+                                          {openDates[date] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                          <span className="font-medium">{date}</span>
+                                          {(meta.channelId || clientName) && (
+                                            <span className="text-stone-400">
+                                              {meta.channelId}
+                                              {clientName ? ` / ${clientName}` : ""}
+                                            </span>
+                                          )}
+                                        </button>
+                                        {openDates[date] && (
+                                          <div className="flex flex-wrap gap-3 px-2 pb-2 pt-1">
+                                            <div>
+                                              <label className="block text-stone-500 mb-0.5">販売形態</label>
+                                              <select
+                                                className="border rounded px-1 py-0.5 text-xs"
+                                                value={meta.channelId || ""}
+                                                onChange={(e) => setDayField(date, "channelId", e.target.value)}
+                                              >
+                                                <option value="">(未選択)</option>
+                                                {salesChannels.map((c) => (
+                                                  <option key={c.id} value={c.id}>
+                                                    {c.name}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label className="block text-stone-500 mb-0.5">委託先(販売先)</label>
+                                              <select
+                                                className="border rounded px-1 py-0.5 text-xs"
+                                                value={meta.clientId || ""}
+                                                onChange={(e) => setDayField(date, "clientId", e.target.value)}
+                                              >
+                                                <option value="">(未選択・リベート対象外)</option>
+                                                {rebateClients.map((c) => (
+                                                  <option key={c.id} value={c.id}>
+                                                    {c.name}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
         </div>
       </section>
 
