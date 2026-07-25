@@ -443,7 +443,7 @@ export default function MasterTab({
 
         {productListOpen && (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="min-w-full whitespace-nowrap text-xs">
               <thead>
                 <tr className="text-left text-stone-500 border-b">
                   <th className="py-1 pr-2">商品名</th>
