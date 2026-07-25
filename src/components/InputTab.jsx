@@ -12,7 +12,7 @@ export default function InputTab({
   setEditingTargetMonth,
   removeTargetMonth,
   setMgmtBudgetField,
-  allDates,
+  settingDates,
   dailyMeta,
   channelMap,
   salesChannels,
@@ -196,7 +196,7 @@ export default function InputTab({
               </tr>
             </thead>
             <tbody>
-              {allDates.map((date) => {
+              {settingDates.map((date) => {
                 const meta = dailyMeta[date] || {};
                 return (
                   <tr key={date} className="border-b border-stone-100">

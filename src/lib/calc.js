@@ -72,6 +72,13 @@ export function computeAllDates({ sales, expenses, dailyMeta }) {
   return [...s].sort();
 }
 
+// ========== 日次設定(販売形態・委託先)の対象日付 ==========
+// 経費しかない日は販売形態の設定対象にしない(Square売上がある日・既に設定済みの日のみ)
+export function computeSettingDates({ sales, dailyMeta }) {
+  const s = new Set([...sales.map((s) => s.date), ...Object.keys(dailyMeta)]);
+  return [...s].sort();
+}
+
 // ========== 日次集計(売上_Square + 経費 → 自動生成) ==========
 export function computeDailyRows({ allDates, sales, expenses, dailyMeta, channelMap, rebateMap, productCosts }) {
   return allDates.map((date) => {

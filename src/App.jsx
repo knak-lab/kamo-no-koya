@@ -13,6 +13,7 @@ import {
 import {
   computeProductCosts,
   computeAllDates,
+  computeSettingDates,
   computeDailyRows,
   computeAllYearMonths,
   computeMonthlyRows,
@@ -217,6 +218,7 @@ export default function App() {
 
   // ========== 日次・月次集計 ==========
   const allDates = useMemo(() => computeAllDates({ sales, expenses, dailyMeta }), [sales, expenses, dailyMeta]);
+  const settingDates = useMemo(() => computeSettingDates({ sales, dailyMeta }), [sales, dailyMeta]);
   const dailyRows = useMemo(
     () => computeDailyRows({ allDates, sales, expenses, dailyMeta, channelMap, rebateMap, productCosts }),
     [allDates, sales, expenses, dailyMeta, channelMap, rebateMap, productCosts]
@@ -620,7 +622,7 @@ export default function App() {
             setEditingTargetMonth={setEditingTargetMonth}
             removeTargetMonth={removeTargetMonth}
             setMgmtBudgetField={setMgmtBudgetField}
-            allDates={allDates}
+            settingDates={settingDates}
             dailyMeta={dailyMeta}
             channelMap={channelMap}
             salesChannels={salesChannels}
