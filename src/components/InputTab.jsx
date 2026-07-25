@@ -1,5 +1,5 @@
 import { Plus, Trash2, ChevronDown, ChevronRight, Pencil } from "lucide-react";
-import { yen, RAW_MATERIAL_ITEM, EXPENSE_ITEMS } from "../lib/constants";
+import { yen, RAW_MATERIAL_ITEM } from "../lib/constants";
 
 export default function InputTab({
   targetForm,
@@ -21,6 +21,7 @@ export default function InputTab({
   expenseForm,
   setExpenseForm,
   isHourlyExpenseItem,
+  expenseItemOptions,
   expenseRates,
   addExpense,
   expenses,
@@ -259,7 +260,7 @@ export default function InputTab({
               value={expenseForm.item}
               onChange={(e) => setExpenseForm((f) => ({ ...f, item: e.target.value, amount: "", hours: "" }))}
             >
-              {EXPENSE_ITEMS.map((it) => (
+              {expenseItemOptions.map((it) => (
                 <option key={it} value={it}>
                   {it}
                 </option>

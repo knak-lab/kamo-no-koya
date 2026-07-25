@@ -1,5 +1,5 @@
 import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, PlusCircle } from "lucide-react";
-import { yen, pct, RAW, PACK, UNITS, HOURLY_ITEMS } from "../lib/constants";
+import { yen, pct, RAW, PACK, UNITS } from "../lib/constants";
 
 export default function MasterTab({
   selectedProduct,
@@ -58,6 +58,10 @@ export default function MasterTab({
   updateRebateClient,
   removeRebateClient,
   expenseRates,
+  expenseRateForm,
+  setExpenseRateForm,
+  addExpenseRate,
+  removeExpenseRate,
   expenseRateListOpen,
   setExpenseRateListOpen,
   updateExpenseRate,
@@ -71,8 +75,7 @@ export default function MasterTab({
 }) {
   return (
     <>
-      {selectedProduct && (
-        <section className="bg-white rounded-lg border border-stone-200 p-4">
+      <section className="bg-white rounded-lg border border-stone-200 p-4">
           <div className="flex flex-col gap-3 mb-1">
             <div>
               <div className="text-xs text-stone-500 mb-1">区分(検索・新規登録の対象)</div>
@@ -143,6 +146,8 @@ export default function MasterTab({
               )}
             </div>
 
+            {selectedProduct && (
+            <>
             <div>
               <div className="text-xs text-stone-500">編集中の商品</div>
               <div className="text-sm font-semibold">{selectedProduct.name}</div>
@@ -215,8 +220,12 @@ export default function MasterTab({
                 />
               </div>
             )}
+            </>
+            )}
           </div>
 
+          {selectedProduct && (
+          <>
           {/* 材料リスト(単品のみ) */}
           {(selectedProduct.kind || "single") !== "set" && (
             <div className="mt-3">
@@ -371,8 +380,9 @@ export default function MasterTab({
               })}
             </div>
           </div>
+          </>
+          )}
         </section>
-      )}
 
       {/* 商品マスター一覧 */}
       <section className="bg-white rounded-lg border border-stone-200 p-4">
@@ -713,15 +723,39 @@ export default function MasterTab({
       <section className="bg-white rounded-lg border border-stone-200 p-4">
         <h2 className="font-semibold mb-1">経費マスタ(時間単価)</h2>
         <p className="text-xs text-stone-500 mb-3">
-          店舗利用料(製造・販売/製造)と人件費は時間単価で管理します。入力タブで時間を入れると自動で金額を計算します。
+          時間単価で管理する項目です(店舗利用料・人件費など)。入力タブで時間を入れると自動で金額を計算します。項目は自由に追加できます。
         </p>
+
+        <div className="flex flex-wrap gap-2 items-end mb-3 text-sm">
+          <div>
+            <label className="block text-xs text-stone-500 mb-1">項目名</label>
+            <input
+              className="border rounded px-2 py-1 w-40"
+              value={expenseRateForm.name}
+              onChange={(e) => setExpenseRateForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="臨時スタッフ人件費"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-stone-500 mb-1">時間単価(円/時)</label>
+            <input
+              type="number"
+              className="border rounded px-2 py-1 w-24"
+              value={expenseRateForm.rate}
+              onChange={(e) => setExpenseRateForm((f) => ({ ...f, rate: e.target.value }))}
+            />
+          </div>
+          <button onClick={addExpenseRate} className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800">
+            <Plus size={14} /> 追加
+          </button>
+        </div>
 
         <button
           onClick={() => setExpenseRateListOpen((v) => !v)}
           className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 font-medium"
         >
           {expenseRateListOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          登録済み一覧({HOURLY_ITEMS.length}件)
+          登録済み一覧({Object.keys(expenseRates).length}件)
         </button>
 
         {expenseRateListOpen && (
@@ -731,10 +765,11 @@ export default function MasterTab({
                 <tr className="text-left text-stone-500 border-b">
                   <th className="py-1 pr-2">項目</th>
                   <th className="py-1 pr-2">時間単価(円/時)</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
-                {HOURLY_ITEMS.map((item) => (
+                {Object.keys(expenseRates).map((item) => (
                   <tr key={item} className="border-b border-stone-100">
                     <td className="py-1 pr-2">{item}</td>
                     <td className="py-1 pr-2">
@@ -749,6 +784,11 @@ export default function MasterTab({
                         />
                         <span className="text-stone-400">/ 時間</span>
                       </div>
+                    </td>
+                    <td>
+                      <button onClick={() => removeExpenseRate(item)}>
+                        <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                      </button>
                     </td>
                   </tr>
                 ))}

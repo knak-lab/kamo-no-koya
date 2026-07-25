@@ -8,19 +8,13 @@ export const yearMonthOf = (dateStr) => {
 };
 
 export const RAW = "原材料";
-export const PACK = "包材";
+export const PACK = "梱包・資材";
 export const UNITS = ["g", "個"];
 
-export const EXPENSE_ITEMS = [
-  "原材料・資材仕入",
-  "店舗利用料(製造・販売)",
-  "店舗利用料(製造)",
-  "人件費",
-  "備品・消耗品費",
-  "その他固定費",
-];
 export const RAW_MATERIAL_ITEM = "原材料・資材仕入";
-export const HOURLY_ITEMS = ["店舗利用料(製造・販売)", "店舗利用料(製造)", "人件費"];
+// 経費入力の「項目」候補のうち、時間単価(経費マスタ)に連動しない固定カテゴリ。
+// 時間単価の項目は経費マスタ(expenseRates)のキーとして動的に管理される。
+export const FIXED_EXPENSE_ITEMS = [RAW_MATERIAL_ITEM, "備品・消耗品費", "その他固定費"];
 export const COLOR_POSITIVE = "#2563eb"; // 黒字(青)
 export const COLOR_NEGATIVE = "#dc2626"; // 赤字(赤)
 

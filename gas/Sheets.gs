@@ -201,22 +201,66 @@ function ensureColumn_(sheet, headerName) {
   return col;
 }
 
-// 実データシート用: 列名ベースの汎用書き込み(今のシートの列順に合わせて書く。
-// fieldByHeaderに無い列=未対応の列はそのまま空にせず前回値を保てないため、
-// 呼び出し側で必ず全列をfieldByHeaderに含めること)
-function writeByHeaderOrder_(sheet, objects, fieldByHeader) {
+// 実データシート用: 列名ベースの部分書き込み。
+// fieldByHeaderに含まれる列(=アプリが認識している列)だけを対象に、keyHeaderの値で
+// 既存行とマッチングして更新する。fieldByHeaderに無い列(AppSheetの数式列や未対応列)は
+// 読み取りも書き込みもせず、セル範囲そのものに一切触れない(clearContentもしない)。
+//   - 既存行(keyHeaderの値が一致): 対応する列のセルだけを上書き
+//   - 新規のキー: 末尾に行を追記し、対応する列だけを埋める(それ以外の列は空欄のまま)
+//   - 既存のキーが今回のobjectsに含まれない(削除): その行の対応列だけを空欄化する。
+//     行自体の削除・詰め直しはしない(他列の既存データを残すため)。削除が積み重なると
+//     対応列だけが空欄の行がシート上に残ることになる点に注意。
+function writeByHeaderOrder_(sheet, objects, fieldByHeader, keyHeader) {
   const lastCol = sheet.getLastColumn();
-  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  clearDataRows_(sheet);
-  if (!objects || objects.length === 0) return;
-  const rows = objects.map(function (o) {
-    return headers.map(function (h) {
-      const field = fieldByHeader[h];
-      const v = field ? o[field] : undefined;
-      return v === undefined || v === null ? "" : v;
-    });
+  const lastRow = sheet.getLastRow();
+  const headers = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+
+  const managedCols = [];
+  Object.keys(fieldByHeader).forEach(function (h) {
+    const idx = headers.indexOf(h);
+    if (idx >= 0) managedCols.push({ field: fieldByHeader[h], col: idx + 1 });
   });
-  sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+
+  const keyIdx = headers.indexOf(keyHeader);
+  if (keyIdx < 0) throw new Error("writeByHeaderOrder_: キー列が見つからない(" + keyHeader + " in " + sheet.getName() + ")");
+  const keyField = fieldByHeader[keyHeader];
+  const keyCol = keyIdx + 1;
+
+  const existingKeys = lastRow >= 2 ? sheet.getRange(2, keyCol, lastRow - 1, 1).getValues().map(function (r) { return String(r[0]); }) : [];
+
+  const objByKey = {};
+  (objects || []).forEach(function (o) {
+    const k = o[keyField] === undefined || o[keyField] === null ? "" : String(o[keyField]);
+    if (k) objByKey[k] = o;
+  });
+
+  // 既存行: 対応列だけを列単位でまとめて上書き(キーが今回に無ければ対応列のみ空欄化)
+  if (existingKeys.length > 0) {
+    managedCols.forEach(function (c) {
+      const colValues = existingKeys.map(function (key) {
+        const obj = objByKey[key];
+        const v = obj ? obj[c.field] : "";
+        return [v === undefined || v === null ? "" : v];
+      });
+      sheet.getRange(2, c.col, colValues.length, 1).setValues(colValues);
+    });
+  }
+
+  // 新規行: 末尾に追記(対応列だけを埋める。それ以外の列は空欄のまま)
+  const newKeys = Object.keys(objByKey).filter(function (k) { return existingKeys.indexOf(k) < 0; });
+  if (newKeys.length > 0) {
+    const startRow = sheet.getLastRow() + 1;
+    const newRows = newKeys.map(function (k) {
+      const obj = objByKey[k];
+      const row = new Array(lastCol).fill("");
+      managedCols.forEach(function (c) {
+        const v = obj[c.field];
+        row[c.col - 1] = v === undefined || v === null ? "" : v;
+      });
+      return row;
+    });
+    sheet.getRange(startRow, 1, newRows.length, lastCol).setValues(newRows);
+  }
 }
 
 // ─────────────────────────────────────────
@@ -319,7 +363,7 @@ function getMaterials_() {
     })
     .map(function (o) {
       const category = o["区分"] || "";
-      const unit = o["単位"] || (category === "包材" ? "個" : "g");
+      const unit = o["単位"] || (category === "梱包・資材" ? "個" : "g");
       return { id: String(o["材料名"]), name: String(o["材料名"]), category: category, unitPrice: Number(o["仕入単価(g単位)"]) || 0, unit: unit };
     });
 }
@@ -332,7 +376,7 @@ function saveMaterials_(materials) {
   const objects = (materials || []).map(function (m) {
     return { category: m.category, name: m.name, unitPrice: m.unitPrice, updatedAt: today, unit: m.unit };
   });
-  writeByHeaderOrder_(sheet, objects, MATERIALS_FIELD_BY_HEADER);
+  writeByHeaderOrder_(sheet, objects, MATERIALS_FIELD_BY_HEADER, "材料名");
 }
 
 // ─────────────────────────────────────────
@@ -376,7 +420,7 @@ function saveSetBreakdowns_(setBreakdowns) {
       });
     });
   });
-  writeByHeaderOrder_(sheet, objects, SET_BREAKDOWN_FIELD_BY_HEADER);
+  writeByHeaderOrder_(sheet, objects, SET_BREAKDOWN_FIELD_BY_HEADER, "内訳ID");
 }
 
 // ─────────────────────────────────────────
@@ -405,7 +449,7 @@ function saveRebateClients_(rebateClients) {
   const objects = (rebateClients || []).map(function (c) {
     return { id: c.id, name: c.name, rateRaw: Math.round((Number(c.rate) || 0) * 1000) / 10, memo: c.memo || "" };
   });
-  writeByHeaderOrder_(sheet, objects, REBATE_FIELD_BY_HEADER);
+  writeByHeaderOrder_(sheet, objects, REBATE_FIELD_BY_HEADER, "ID");
 }
 
 // ─────────────────────────────────────────
@@ -491,7 +535,7 @@ function saveExpenses_(expenses) {
       targetDate: e.targetDate || e.date,
     };
   });
-  writeByHeaderOrder_(sheet, objects, EXPENSES_FIELD_BY_HEADER);
+  writeByHeaderOrder_(sheet, objects, EXPENSES_FIELD_BY_HEADER, "ID");
   // 日付列がテキストのまま保持されるように(日付型への自動変換を防ぐ)
   const dateCol = ensureColumn_(sheet, "日付");
   const rows = Math.max(sheet.getMaxRows() - 1, 1);
@@ -522,7 +566,7 @@ function saveDailyMeta_(dailyMeta) {
     const m = dailyMeta[date] || {};
     return { date: date, yearMonth: yearMonthOfGas_(date), clientName: m.clientId || "", channelName: m.channelId || "" };
   });
-  writeByHeaderOrder_(sheet, objects, DAILY_META_FIELD_BY_HEADER);
+  writeByHeaderOrder_(sheet, objects, DAILY_META_FIELD_BY_HEADER, "日付");
   const dateCol = ensureColumn_(sheet, "日付");
   const rows = Math.max(sheet.getMaxRows() - 1, 1);
   sheet.getRange(2, dateCol, rows, 1).setNumberFormat("@");
@@ -616,7 +660,7 @@ function saveTodos_(todos) {
   const sheet = getExistingSheet_(SHEET_TODOS);
   if (!sheet) return;
   ensureColumn_(sheet, "snoozed");
-  writeByHeaderOrder_(sheet, todos || [], TODOS_FIELD_BY_HEADER);
+  writeByHeaderOrder_(sheet, todos || [], TODOS_FIELD_BY_HEADER, "タスクID");
   const deadlineCol = ensureColumn_(sheet, "期限");
   const rows = Math.max(sheet.getMaxRows() - 1, 1);
   sheet.getRange(2, deadlineCol, rows, 1).setNumberFormat("@");
@@ -649,7 +693,7 @@ function saveSubtasks_(subtasks) {
   const sheet = getExistingSheet_(SHEET_SUBTASKS);
   if (!sheet) return;
   ensureColumn_(sheet, "snoozed");
-  writeByHeaderOrder_(sheet, subtasks || [], SUBTASKS_FIELD_BY_HEADER);
+  writeByHeaderOrder_(sheet, subtasks || [], SUBTASKS_FIELD_BY_HEADER, "サブタスクID");
   const deadlineCol = ensureColumn_(sheet, "期限");
   const rows = Math.max(sheet.getMaxRows() - 1, 1);
   sheet.getRange(2, deadlineCol, rows, 1).setNumberFormat("@");
@@ -739,6 +783,52 @@ function getSales_() {
       }
       return row;
     });
+}
+
+// ─────────────────────────────────────────
+//  デバッグ: 実データシートの生ヘッダー行確認(読み取り専用)
+//
+//  シートの作成・データの変更は一切行わない(getSheetByNameのみ使用。
+//  getOrCreateSheet_は使わない=見つからなければ何もせずexists:falseを返す)。
+// ─────────────────────────────────────────
+
+function debugGetRawHeaders_() {
+  const targets = [
+    { name: SHEET_RECIPES, fieldByHeader: null }, // レシピは列名対応づけ未実装のため対応表なし(要実データ確認)
+    { name: SHEET_EXPENSES, fieldByHeader: EXPENSES_FIELD_BY_HEADER },
+    { name: SHEET_TODOS, fieldByHeader: TODOS_FIELD_BY_HEADER },
+    { name: SHEET_SUBTASKS, fieldByHeader: SUBTASKS_FIELD_BY_HEADER },
+    { name: SHEET_MATERIALS, fieldByHeader: MATERIALS_FIELD_BY_HEADER },
+    { name: SHEET_SET_BREAKDOWN, fieldByHeader: SET_BREAKDOWN_FIELD_BY_HEADER },
+    { name: SHEET_REBATE_CLIENTS, fieldByHeader: REBATE_FIELD_BY_HEADER },
+    { name: SHEET_SALES_CHANNELS, fieldByHeader: null }, // 読み取り専用(名前一覧のみ)
+    { name: SHEET_DAILY_META, fieldByHeader: DAILY_META_FIELD_BY_HEADER },
+  ];
+  const ss = getSs_();
+  const result = {};
+  targets.forEach(function (t) {
+    const sheet = ss.getSheetByName(t.name);
+    if (!sheet) {
+      result[t.name] = { exists: false };
+      return;
+    }
+    const lastCol = sheet.getLastColumn();
+    const lastRow = sheet.getLastRow();
+    const headers = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+    const mappedHeaders = t.fieldByHeader ? Object.keys(t.fieldByHeader) : [];
+    const unmappedHeaders = headers.filter(function (h) {
+      return h !== "" && h !== null && mappedHeaders.indexOf(h) < 0;
+    });
+    result[t.name] = {
+      exists: true,
+      columnCount: lastCol,
+      rowCount: Math.max(lastRow - 1, 0),
+      headers: headers,
+      mappedHeaders: mappedHeaders,
+      unmappedHeaders: unmappedHeaders,
+    };
+  });
+  return result;
 }
 
 // ─────────────────────────────────────────

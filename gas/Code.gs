@@ -2,7 +2,9 @@
 //  カモの小屋 収益分析アプリ — GAS Web App エントリポイント
 //
 //  API: doGet/doPost の2エンドポイントのみ。
-//    GET  → 常に getAll_() の内容を返す
+//    GET ?action=debugHeaders → 実データ9シートの生ヘッダー行を返す(読み取り専用。
+//        シートの作成・変更は一切行わない)
+//    GET (それ以外)            → getAll_() の内容を返す
 //    POST → body.action で分岐 ("saveAll" / "syncCatalogFromSquare")
 //
 //  CORSはブラウザのプリフライト(OPTIONS)を回避するため、フロント側の
@@ -22,6 +24,9 @@ function isAuthorized_(token) {
 function doGet(e) {
   if (!isAuthorized_(e.parameter.token)) return err_("Unauthorized");
   try {
+    if (e.parameter.action === "debugHeaders") {
+      return ok_({ headers: debugGetRawHeaders_() });
+    }
     return ok_(getAll_());
   } catch (ex) {
     return err_(String(ex));

@@ -4,8 +4,8 @@ import {
   uid,
   RAW,
   PACK,
-  EXPENSE_ITEMS,
-  HOURLY_ITEMS,
+  RAW_MATERIAL_ITEM,
+  FIXED_EXPENSE_ITEMS,
   TODO_CATEGORIES,
   STAFF_OPTIONS,
   TABS,
@@ -86,14 +86,15 @@ export default function App() {
   const [finBudgets, setFinBudgets] = useState({});
 
   // 売上入力フォームは廃止(Squareが正のデータのため、ここでは追加しない)
-  const [expenseForm, setExpenseForm] = useState({ date: todayStr(), item: EXPENSE_ITEMS[0], amount: "", hours: "" });
+  const [expenseForm, setExpenseForm] = useState({ date: todayStr(), item: RAW_MATERIAL_ITEM, amount: "", hours: "" });
 
-  // 経費マスタ(店舗利用料2パターン・人件費の時間単価)
+  // 経費マスタ(時間単価。店舗利用料2パターン・人件費が初期値だが、項目名は動的に追加できる)
   const [expenseRates, setExpenseRates] = useState({
     "店舗利用料(製造・販売)": 1500,
     "店舗利用料(製造)": 1200,
     人件費: 1100,
   });
+  const [expenseRateForm, setExpenseRateForm] = useState({ name: "", rate: "" });
   const [expenseRateListOpen, setExpenseRateListOpen] = useState(false);
 
   // Square連携: 商品マスタの正がどちらか(true=Square→アプリ, false=アプリ→Square)
@@ -438,7 +439,12 @@ export default function App() {
   const exactMatchExists = products.some((p) => p.kind === kindMode && p.name === productQuery.trim());
 
   // ========== ハンドラ: 経費・日次設定(売上はSquareから同期される想定のため、追加ハンドラはなし) ==========
-  const isHourlyExpenseItem = (item) => HOURLY_ITEMS.includes(item);
+  const isHourlyExpenseItem = (item) => Object.prototype.hasOwnProperty.call(expenseRates, item);
+  const expenseItemOptions = [
+    RAW_MATERIAL_ITEM,
+    ...Object.keys(expenseRates).filter((it) => it !== RAW_MATERIAL_ITEM),
+    ...FIXED_EXPENSE_ITEMS.filter((it) => it !== RAW_MATERIAL_ITEM),
+  ];
   const addExpense = () => {
     const isHourly = isHourlyExpenseItem(expenseForm.item);
     let amount;
@@ -456,6 +462,18 @@ export default function App() {
   };
   const removeExpense = (id) => setExpenses((prev) => prev.filter((x) => x.id !== id));
   const updateExpenseRate = (item, value) => setExpenseRates((prev) => ({ ...prev, [item]: Number(value) || 0 }));
+  const addExpenseRate = () => {
+    const trimmed = expenseRateForm.name.trim();
+    if (!trimmed) return;
+    setExpenseRates((prev) => ({ ...prev, [trimmed]: Number(expenseRateForm.rate) || 0 }));
+    setExpenseRateForm({ name: "", rate: "" });
+  };
+  const removeExpenseRate = (item) =>
+    setExpenseRates((prev) => {
+      const next = { ...prev };
+      delete next[item];
+      return next;
+    });
 
   // --- ハンドラ: TODO・サブタスク ---
   const addTodo = () => {
@@ -611,6 +629,7 @@ export default function App() {
             expenseForm={expenseForm}
             setExpenseForm={setExpenseForm}
             isHourlyExpenseItem={isHourlyExpenseItem}
+            expenseItemOptions={expenseItemOptions}
             expenseRates={expenseRates}
             addExpense={addExpense}
             expenses={expenses}
@@ -726,6 +745,10 @@ export default function App() {
             updateRebateClient={updateRebateClient}
             removeRebateClient={removeRebateClient}
             expenseRates={expenseRates}
+            expenseRateForm={expenseRateForm}
+            setExpenseRateForm={setExpenseRateForm}
+            addExpenseRate={addExpenseRate}
+            removeExpenseRate={removeExpenseRate}
             expenseRateListOpen={expenseRateListOpen}
             setExpenseRateListOpen={setExpenseRateListOpen}
             updateExpenseRate={updateExpenseRate}
