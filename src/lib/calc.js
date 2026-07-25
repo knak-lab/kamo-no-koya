@@ -34,26 +34,22 @@ export function computeProductCosts({ products, recipes, setBreakdowns, material
       costs[p.id] = { 製造原価計, 製造原価単価, 梱包材費計, 材料費, 梱包材費, 原価, 限界利益, 限界利益率, 原価率 };
     });
 
-  // パス2: セット商品(内訳の構成商品=単品の原価×数量 + 梱包・資材=単価そのまま を積み上げ)
+  // パス2: セット商品(内訳の構成商品=単品の原価×数量、梱包・資材=単価そのまま を積み上げ)
   products
     .filter((p) => p.kind === "set")
     .forEach((p) => {
       const rows = getBreakdown(setBreakdowns, p.id);
-      const 材料費 = rows.reduce((sum, row) => {
+      let 材料費 = 0;
+      let 梱包材費 = 0;
+      rows.forEach((row) => {
         if (row.kind === "component") {
           const compCost = costs[row.refId]?.原価 || 0;
-          return sum + compCost * (Number(row.qty) || 0);
+          材料費 += compCost * (Number(row.qty) || 0);
+        } else {
+          const mat = materialMap[row.refId];
+          梱包材費 += mat ? mat.unitPrice : 0; // 梱包・資材は数量を掛けない(数量欄は記録用)
         }
-        const mat = materialMap[row.refId];
-        return sum + (mat ? mat.unitPrice : 0); // 梱包・資材は数量を掛けない(数量欄は記録用)
-      }, 0);
-
-      // セット自身のレシピ(あれば)の包材リストを「セットを包む外箱」の費用として加算
-      const recipe = getRecipe(recipes, p.id);
-      const 梱包材費 = recipe.packaging.reduce((sum, pk) => {
-        const mat = materialMap[pk.materialId];
-        return sum + (mat ? mat.unitPrice * (Number(pk.amount) || 0) : 0);
-      }, 0);
+      });
 
       const 原価 = 材料費 + 梱包材費;
       const 限界利益 = p.price - 原価;

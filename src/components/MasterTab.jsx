@@ -308,14 +308,24 @@ export default function MasterTab({
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-sm font-medium">セット内訳</h3>
-                <button
-                  onClick={() => addDraftBreakdownRow("component")}
-                  className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
-                >
-                  <Plus size={12} /> 構成商品を追加
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => addDraftBreakdownRow("component")}
+                    className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
+                  >
+                    <Plus size={12} /> 構成商品を追加
+                  </button>
+                  <button
+                    onClick={() => addDraftBreakdownRow("material")}
+                    className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
+                  >
+                    <Plus size={12} /> 梱包・資材を追加
+                  </button>
+                </div>
               </div>
-              <p className="text-[10px] text-stone-400 mb-2">構成商品は「数量×原価」で計算されます。</p>
+              <p className="text-[10px] text-stone-400 mb-2">
+                構成商品は「数量×原価」、梱包・資材は数量に関わらず単価そのままで計算されます(外箱など)。
+              </p>
               <div className="space-y-1">
                 {productDraft.breakdown.map((row) => {
                   const unitCost = row.kind === "component" ? productCosts[row.refId]?.原価 || 0 : materialMap[row.refId]?.unitPrice || 0;
@@ -366,50 +376,52 @@ export default function MasterTab({
             </div>
           )}
 
-          {/* 包材リスト */}
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="text-sm font-medium">{productDraft.kind === "set" ? "包材(セット全体の外箱など)" : "包材"}</h3>
-              <button
-                onClick={() => addDraftIngredientRow("packaging")}
-                className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
-              >
-                <Plus size={12} /> 包材を追加
-              </button>
+          {/* 包材リスト(単品のみ。セットの梱包・資材はセット内訳で管理) */}
+          {productDraft.kind !== "set" && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-sm font-medium">包材</h3>
+                <button
+                  onClick={() => addDraftIngredientRow("packaging")}
+                  className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
+                >
+                  <Plus size={12} /> 包材を追加
+                </button>
+              </div>
+              <div className="space-y-1">
+                {productDraft.packaging.map((row) => {
+                  const mat = materialMap[row.materialId];
+                  return (
+                    <div key={row.id} className="flex items-center gap-2 text-xs">
+                      <select
+                        className="border rounded px-2 py-1 flex-1"
+                        value={row.materialId}
+                        onChange={(e) => updateDraftIngredientRow("packaging", row.id, "materialId", e.target.value)}
+                      >
+                        {packMaterials.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        className="border rounded px-2 py-1 w-20"
+                        value={row.amount}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => updateDraftIngredientRow("packaging", row.id, "amount", e.target.value)}
+                      />
+                      <span className="text-stone-500 w-6">{mat?.unit || "個"}</span>
+                      <span className="w-20 text-right tabular-nums text-stone-500">{yen((mat?.unitPrice || 0) * row.amount)}</span>
+                      <button onClick={() => removeDraftIngredientRow("packaging", row.id)}>
+                        <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="space-y-1">
-              {productDraft.packaging.map((row) => {
-                const mat = materialMap[row.materialId];
-                return (
-                  <div key={row.id} className="flex items-center gap-2 text-xs">
-                    <select
-                      className="border rounded px-2 py-1 flex-1"
-                      value={row.materialId}
-                      onChange={(e) => updateDraftIngredientRow("packaging", row.id, "materialId", e.target.value)}
-                    >
-                      {packMaterials.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      className="border rounded px-2 py-1 w-20"
-                      value={row.amount}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) => updateDraftIngredientRow("packaging", row.id, "amount", e.target.value)}
-                    />
-                    <span className="text-stone-500 w-6">{mat?.unit || "個"}</span>
-                    <span className="w-20 text-right tabular-nums text-stone-500">{yen((mat?.unitPrice || 0) * row.amount)}</span>
-                    <button onClick={() => removeDraftIngredientRow("packaging", row.id)}>
-                      <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          )}
           </>
           )}
         </section>
