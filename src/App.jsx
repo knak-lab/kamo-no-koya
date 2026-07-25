@@ -51,7 +51,6 @@ export default function App() {
   // ========== 商品マスター(単品・セット)+ レシピ ==========
   const [products, setProducts] = useState([]);
   const [recipes, setRecipes] = useState({});
-  const [selectedProductId, setSelectedProductId] = useState(null);
   const [productListOpen, setProductListOpen] = useState(false);
   const [productQuery, setProductQuery] = useState("");
   const [comboOpen, setComboOpen] = useState(false);
@@ -59,6 +58,11 @@ export default function App() {
   const [editingRatio, setEditingRatio] = useState(false);
   const [costRatioDraft, setCostRatioDraft] = useState("");
   const [kindMode, setKindMode] = useState("single"); // 検索・新規登録の対象("single"|"set")
+
+  // 商品マスタの編集ドラフト: 検索/新規登録→編集画面表示→「保存」で初めてproducts/recipes/setBreakdownsに反映される
+  const [productDraft, setProductDraft] = useState(null);
+  const [productDraftSnapshot, setProductDraftSnapshot] = useState(null);
+  const [pendingProductSwitch, setPendingProductSwitch] = useState(null);
 
   // セット商品の内訳(構成商品 or 梱包・資材の行の可変長リスト)
   const [setBreakdowns, setSetBreakdowns] = useState({}); // { [productId]: [{id, kind:'component'|'material', refId, qty}] }
@@ -140,7 +144,6 @@ export default function App() {
         setSquareSyncFromSquare(data.settings?.squareSyncFromSquare ?? true);
         setSales(data.sales || []);
         setSquareSyncLog(data.squareSyncLog || []);
-        if ((data.products || []).length > 0) setSelectedProductId(data.products[0].id);
         hasLoadedRef.current = true;
         setSaveState("idle");
       } catch (e) {
@@ -333,106 +336,174 @@ export default function App() {
       });
       return next;
     });
-    if (selectedProductId === id) setSelectedProductId(trimmed);
-  };
-  const createProductFromQuery = (name) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    if (products.some((p) => p.id === trimmed)) {
-      setSelectedProductId(trimmed);
-      setProductQuery("");
-      setComboOpen(false);
-      return;
-    }
-    const id = trimmed; // 既存データ(レシピ・セット内訳マスタ)が商品名をキーにしているためidは名前そのもの
-    setProducts((prev) => [...prev, { id, name: trimmed, price: 0, kind: kindMode }]);
-    setRecipes((prev) => ({ ...prev, [id]: { servings: 1, ingredients: [], packaging: [] } }));
-    setSetBreakdowns((prev) => ({ ...prev, [id]: [] }));
-    setSelectedProductId(id);
-    setComboOpen(false);
   };
 
-  // --- セット内訳(構成商品・梱包資材)の可変長リスト ---
-  const addBreakdownRow = (productId, kind) => {
-    const defaultRef = kind === "component" ? singleProducts.find((p) => p.id !== productId)?.id : materials[0]?.id;
-    setSetBreakdowns((prev) => ({
+  // --- 商品編集ドラフト(検索/新規登録→編集画面→「保存」で初めて確定するまでの一時編集state) ---
+  const buildDraftFromProduct = (product) => {
+    const recipe = getRecipe(recipes, product.id);
+    return {
+      id: product.id,
+      isNew: false,
+      name: product.name,
+      price: product.price,
+      kind: product.kind || "single",
+      servings: recipe.servings,
+      ingredients: recipe.ingredients,
+      packaging: recipe.packaging,
+      breakdown: getBreakdown(setBreakdowns, product.id),
+    };
+  };
+  const buildNewDraft = (name, kind) => ({
+    id: name,
+    isNew: true,
+    name,
+    price: 0,
+    kind,
+    servings: 1,
+    ingredients: [],
+    packaging: [],
+    breakdown: [],
+  });
+  const openProductDraft = (product) => {
+    const draft = buildDraftFromProduct(product);
+    setProductDraft(draft);
+    setProductDraftSnapshot(JSON.stringify(draft));
+    setProductQuery("");
+    setComboOpen(false);
+  };
+  const openNewProductDraft = (name, kind) => {
+    setProductDraft(buildNewDraft(name, kind));
+    setProductDraftSnapshot(null);
+    setProductQuery("");
+    setComboOpen(false);
+  };
+  const isProductDraftDirty = () => {
+    if (!productDraft) return false;
+    if (productDraft.isNew) return true;
+    return JSON.stringify(productDraft) !== productDraftSnapshot;
+  };
+  const requestOpenProduct = (product) => {
+    if (isProductDraftDirty()) {
+      setPendingProductSwitch(() => () => openProductDraft(product));
+      return;
+    }
+    openProductDraft(product);
+  };
+  const requestCreateProduct = (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const existing = products.find((p) => p.id === trimmed);
+    const action = existing ? () => openProductDraft(existing) : () => openNewProductDraft(trimmed, kindMode);
+    if (isProductDraftDirty()) {
+      setPendingProductSwitch(() => action);
+      return;
+    }
+    action();
+  };
+  const confirmDiscardAndSwitchProduct = () => {
+    const action = pendingProductSwitch;
+    setPendingProductSwitch(null);
+    if (action) action();
+  };
+  const cancelPendingProductSwitch = () => setPendingProductSwitch(null);
+
+  const saveProductDraft = () => {
+    if (!productDraft) return;
+    const { id, name, price, kind, servings, ingredients, packaging, breakdown, isNew } = productDraft;
+    if (isNew) {
+      setProducts((prev) => [...prev, { id, name, price, kind }]);
+    } else {
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, price, kind } : p)));
+    }
+    setRecipes((prev) => ({ ...prev, [id]: { servings, ingredients, packaging } }));
+    setSetBreakdowns((prev) => ({ ...prev, [id]: breakdown }));
+    setProductDraft(null);
+    setProductDraftSnapshot(null);
+  };
+  const cancelProductDraft = () => {
+    setProductDraft(null);
+    setProductDraftSnapshot(null);
+  };
+
+  const updateDraftField = (field, value) => {
+    setProductDraft((prev) => ({ ...prev, [field]: field === "price" ? Number(value) : value }));
+  };
+  const updateDraftServings = (rawValue) => {
+    const value = rawValue === "" ? "" : Number(rawValue);
+    setProductDraft((prev) => ({ ...prev, servings: value }));
+  };
+  const addDraftIngredientRow = (kind) => {
+    const defaultMaterial = kind === "ingredients" ? rawMaterials[0]?.id : packMaterials[0]?.id;
+    const defaultAmount = kind === "packaging" ? 1 : 0;
+    setProductDraft((prev) => ({ ...prev, [kind]: [...prev[kind], { id: uid(), materialId: defaultMaterial, amount: defaultAmount }] }));
+  };
+  const updateDraftIngredientRow = (kind, rowId, field, value) => {
+    setProductDraft((prev) => ({
       ...prev,
-      [productId]: [...(prev[productId] || []), { id: uid(), kind, refId: defaultRef, qty: 1 }],
+      [kind]: prev[kind].map((row) =>
+        row.id === rowId ? { ...row, [field]: field === "amount" ? (value === "" ? "" : Number(value)) : value } : row
+      ),
     }));
   };
-  const updateBreakdownRow = (productId, rowId, field, value) => {
-    setSetBreakdowns((prev) => ({
+  const removeDraftIngredientRow = (kind, rowId) => {
+    setProductDraft((prev) => ({ ...prev, [kind]: prev[kind].filter((row) => row.id !== rowId) }));
+  };
+  const addDraftBreakdownRow = (kind) => {
+    const defaultRef = kind === "component" ? singleProducts.find((p) => p.id !== productDraft.id)?.id : materials[0]?.id;
+    setProductDraft((prev) => ({ ...prev, breakdown: [...prev.breakdown, { id: uid(), kind, refId: defaultRef, qty: 1 }] }));
+  };
+  const updateDraftBreakdownRow = (rowId, field, value) => {
+    setProductDraft((prev) => ({
       ...prev,
-      [productId]: (prev[productId] || []).map((row) =>
+      breakdown: prev.breakdown.map((row) =>
         row.id === rowId ? { ...row, [field]: field === "qty" ? (value === "" ? "" : Number(value)) : value } : row
       ),
     }));
   };
-  const removeBreakdownRow = (productId, rowId) => {
-    setSetBreakdowns((prev) => ({ ...prev, [productId]: (prev[productId] || []).filter((row) => row.id !== rowId) }));
-  };
-  const updateServings = (productId, rawValue) => {
-    const value = rawValue === "" ? "" : Number(rawValue);
-    setRecipes((prev) => ({ ...prev, [productId]: { ...getRecipe(prev, productId), servings: value } }));
-  };
-  const addIngredientRow = (productId, kind) => {
-    const defaultMaterial = kind === "ingredients" ? rawMaterials[0]?.id : packMaterials[0]?.id;
-    const defaultAmount = kind === "packaging" ? 1 : 0;
-    setRecipes((prev) => {
-      const r = getRecipe(prev, productId);
-      return { ...prev, [productId]: { ...r, [kind]: [...r[kind], { id: uid(), materialId: defaultMaterial, amount: defaultAmount }] } };
-    });
-  };
-  const updateIngredientRow = (productId, kind, rowId, field, value) => {
-    setRecipes((prev) => {
-      const r = getRecipe(prev, productId);
-      return {
-        ...prev,
-        [productId]: {
-          ...r,
-          [kind]: r[kind].map((row) =>
-            row.id === rowId ? { ...row, [field]: field === "amount" ? (value === "" ? "" : Number(value)) : value } : row
-          ),
-        },
-      };
-    });
-  };
-  const removeIngredientRow = (productId, kind, rowId) => {
-    setRecipes((prev) => {
-      const r = getRecipe(prev, productId);
-      return { ...prev, [productId]: { ...r, [kind]: r[kind].filter((row) => row.id !== rowId) } };
-    });
+  const removeDraftBreakdownRow = (rowId) => {
+    setProductDraft((prev) => ({ ...prev, breakdown: prev.breakdown.filter((row) => row.id !== rowId) }));
   };
 
-  const selectedRecipe = getRecipe(recipes, selectedProductId);
-  const selectedProduct = products.find((p) => p.id === selectedProductId);
-  const selectedCost = productCosts[selectedProductId];
-
-  useEffect(() => {
-    setProductQuery("");
-  }, [selectedProductId]);
-
-  // 検索・登録モードのトグルを、選択中商品の区分と同期させる
-  useEffect(() => {
-    if (selectedProduct) setKindMode(selectedProduct.kind || "single");
+  const draftCost = useMemo(() => {
+    if (!productDraft) return null;
+    const mergedProducts = [
+      ...products.filter((p) => p.id !== productDraft.id),
+      { id: productDraft.id, name: productDraft.name, price: productDraft.price, kind: productDraft.kind },
+    ];
+    const mergedRecipes = {
+      ...recipes,
+      [productDraft.id]: { servings: productDraft.servings, ingredients: productDraft.ingredients, packaging: productDraft.packaging },
+    };
+    const mergedBreakdowns = { ...setBreakdowns, [productDraft.id]: productDraft.breakdown };
+    const costs = computeProductCosts({ products: mergedProducts, recipes: mergedRecipes, setBreakdowns: mergedBreakdowns, materialMap });
+    return costs[productDraft.id];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProductId]);
+  }, [productDraft, products, recipes, setBreakdowns, materialMap]);
+
+  // 検索・登録モードのトグルを、編集中商品の区分と同期させる
+  useEffect(() => {
+    if (productDraft) setKindMode(productDraft.kind || "single");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productDraft?.id]);
 
   useEffect(() => {
     if (editingRatio) return;
-    if (!selectedProduct || !selectedCost) return;
-    const ratio = selectedProduct.price > 0 ? (selectedCost.原価 / selectedProduct.price) * 100 : 0;
+    if (!productDraft || !draftCost) {
+      setCostRatioDraft("");
+      return;
+    }
+    const ratio = productDraft.price > 0 ? (draftCost.原価 / productDraft.price) * 100 : 0;
     setCostRatioDraft(ratio ? ratio.toFixed(1) : "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProductId, selectedProduct?.price, selectedCost?.原価, editingRatio]);
+  }, [productDraft?.id, productDraft?.price, draftCost?.原価, editingRatio]);
 
   const handleCostRatioChange = (value) => {
     setCostRatioDraft(value);
     const rate = Number(value);
-    if (!selectedCost || !rate || rate <= 0) return;
-    const rawPrice = selectedCost.原価 / (rate / 100);
+    if (!draftCost || !rate || rate <= 0) return;
+    const rawPrice = draftCost.原価 / (rate / 100);
     const newPrice = Math.ceil(rawPrice / 50) * 50;
-    updateProduct(selectedProductId, "price", newPrice);
+    updateDraftField("price", newPrice);
   };
 
   const comboMatches = productQuery.trim()
@@ -691,11 +762,23 @@ export default function App() {
 
         {tab === "master" && (
           <MasterTab
-            selectedProduct={selectedProduct}
-            selectedRecipe={selectedRecipe}
-            selectedCost={selectedCost}
-            selectedProductId={selectedProductId}
-            setSelectedProductId={setSelectedProductId}
+            productDraft={productDraft}
+            draftCost={draftCost}
+            saveProductDraft={saveProductDraft}
+            cancelProductDraft={cancelProductDraft}
+            updateDraftField={updateDraftField}
+            updateDraftServings={updateDraftServings}
+            addDraftIngredientRow={addDraftIngredientRow}
+            updateDraftIngredientRow={updateDraftIngredientRow}
+            removeDraftIngredientRow={removeDraftIngredientRow}
+            addDraftBreakdownRow={addDraftBreakdownRow}
+            updateDraftBreakdownRow={updateDraftBreakdownRow}
+            removeDraftBreakdownRow={removeDraftBreakdownRow}
+            pendingProductSwitch={pendingProductSwitch}
+            confirmDiscardAndSwitchProduct={confirmDiscardAndSwitchProduct}
+            cancelPendingProductSwitch={cancelPendingProductSwitch}
+            requestOpenProduct={requestOpenProduct}
+            requestCreateProduct={requestCreateProduct}
             kindMode={kindMode}
             setKindMode={setKindMode}
             productQuery={productQuery}
@@ -704,25 +787,16 @@ export default function App() {
             setComboOpen={setComboOpen}
             comboMatches={comboMatches}
             exactMatchExists={exactMatchExists}
-            createProductFromQuery={createProductFromQuery}
             updateProduct={updateProduct}
             commitProductRename={commitProductRename}
             costRatioDraft={costRatioDraft}
             handleCostRatioChange={handleCostRatioChange}
             setEditingRatio={setEditingRatio}
-            updateServings={updateServings}
             rawMaterials={rawMaterials}
             packMaterials={packMaterials}
             materials={materials}
             materialMap={materialMap}
-            addIngredientRow={addIngredientRow}
-            updateIngredientRow={updateIngredientRow}
-            removeIngredientRow={removeIngredientRow}
             singleProducts={singleProducts}
-            getBreakdown={(pid) => getBreakdown(setBreakdowns, pid)}
-            addBreakdownRow={addBreakdownRow}
-            updateBreakdownRow={updateBreakdownRow}
-            removeBreakdownRow={removeBreakdownRow}
             productCosts={productCosts}
             products={products}
             productListOpen={productListOpen}

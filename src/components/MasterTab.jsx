@@ -2,11 +2,23 @@ import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, PlusCircle } from "luc
 import { yen, pct, RAW, PACK, UNITS } from "../lib/constants";
 
 export default function MasterTab({
-  selectedProduct,
-  selectedRecipe,
-  selectedCost,
-  selectedProductId,
-  setSelectedProductId,
+  productDraft,
+  draftCost,
+  saveProductDraft,
+  cancelProductDraft,
+  updateDraftField,
+  updateDraftServings,
+  addDraftIngredientRow,
+  updateDraftIngredientRow,
+  removeDraftIngredientRow,
+  addDraftBreakdownRow,
+  updateDraftBreakdownRow,
+  removeDraftBreakdownRow,
+  pendingProductSwitch,
+  confirmDiscardAndSwitchProduct,
+  cancelPendingProductSwitch,
+  requestOpenProduct,
+  requestCreateProduct,
   kindMode,
   setKindMode,
   productQuery,
@@ -15,25 +27,16 @@ export default function MasterTab({
   setComboOpen,
   comboMatches,
   exactMatchExists,
-  createProductFromQuery,
   updateProduct,
   commitProductRename,
   costRatioDraft,
   handleCostRatioChange,
   setEditingRatio,
-  updateServings,
   rawMaterials,
   packMaterials,
   materials,
   materialMap,
-  addIngredientRow,
-  updateIngredientRow,
-  removeIngredientRow,
   singleProducts,
-  getBreakdown,
-  addBreakdownRow,
-  updateBreakdownRow,
-  removeBreakdownRow,
   productCosts,
   products,
   productListOpen,
@@ -119,11 +122,7 @@ export default function MasterTab({
                         type="button"
                         className="w-full text-left px-2 py-1.5 hover:bg-amber-50"
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => {
-                          setSelectedProductId(p.id);
-                          setProductQuery("");
-                          setComboOpen(false);
-                        }}
+                        onClick={() => requestOpenProduct(p)}
                       >
                         {p.name}
                         <span className="text-stone-400 ml-1">({yen(p.price)})</span>
@@ -136,7 +135,7 @@ export default function MasterTab({
                         type="button"
                         className="w-full text-left px-2 py-1.5 hover:bg-amber-50 text-amber-700 flex items-center gap-1"
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => createProductFromQuery(productQuery)}
+                        onClick={() => requestCreateProduct(productQuery)}
                       >
                         <PlusCircle size={12} />「{productQuery}」を{kindMode === "set" ? "セット" : "単品"}として新規登録
                       </button>
@@ -145,12 +144,27 @@ export default function MasterTab({
                 </ul>
               )}
             </div>
+          </div>
 
-            {selectedProduct && (
-            <>
-            <div>
-              <div className="text-xs text-stone-500">編集中の商品</div>
-              <div className="text-sm font-semibold">{selectedProduct.name}</div>
+          {productDraft && (
+          <>
+          <div className="flex flex-col gap-3 mb-1 mt-3 pt-3 border-t border-stone-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-stone-500">編集中の商品{productDraft.isNew ? "(新規)" : ""}</div>
+                <div className="text-sm font-semibold">{productDraft.name}</div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={cancelProductDraft}
+                  className="px-3 py-1.5 text-xs rounded border border-stone-300 text-stone-600 hover:bg-stone-50"
+                >
+                  キャンセル
+                </button>
+                <button onClick={saveProductDraft} className="px-3 py-1.5 text-xs rounded bg-amber-700 text-white hover:bg-amber-800">
+                  保存
+                </button>
+              </div>
             </div>
 
             <div>
@@ -162,9 +176,9 @@ export default function MasterTab({
                 ].map((opt) => (
                   <button
                     key={opt.value}
-                    onClick={() => updateProduct(selectedProductId, "kind", opt.value)}
+                    onClick={() => updateDraftField("kind", opt.value)}
                     className={`px-3 py-1 rounded ${
-                      (selectedProduct.kind || "single") === opt.value ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"
+                      (productDraft.kind || "single") === opt.value ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"
                     }`}
                   >
                     {opt.label}
@@ -178,8 +192,8 @@ export default function MasterTab({
               <input
                 type="number"
                 className="border rounded px-2 py-1 text-sm w-28"
-                value={selectedProduct.price}
-                onChange={(e) => updateProduct(selectedProductId, "price", e.target.value)}
+                value={productDraft.price}
+                onChange={(e) => updateDraftField("price", e.target.value)}
               />
             </div>
 
@@ -201,72 +215,68 @@ export default function MasterTab({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs bg-stone-100 rounded-md p-3">
               <div>
                 <div className="text-stone-500">製造原価計</div>
-                <div className="tabular-nums font-medium">{yen(selectedCost?.製造原価計)}</div>
+                <div className="tabular-nums font-medium">{yen(draftCost?.製造原価計)}</div>
               </div>
               <div>
                 <div className="text-stone-500">製造原価単価(÷分割数)</div>
-                <div className="tabular-nums font-medium">{yen(selectedCost?.製造原価単価)}</div>
+                <div className="tabular-nums font-medium">{yen(draftCost?.製造原価単価)}</div>
               </div>
               <div>
                 <div className="text-stone-500">包材費計</div>
-                <div className="tabular-nums font-medium">{yen(selectedCost?.梱包材費計)}</div>
+                <div className="tabular-nums font-medium">{yen(draftCost?.梱包材費計)}</div>
               </div>
               <div>
                 <div className="text-stone-500">原価(1個あたり)</div>
-                <div className="tabular-nums font-semibold">{yen(selectedCost?.原価)}</div>
+                <div className="tabular-nums font-semibold">{yen(draftCost?.原価)}</div>
               </div>
               <div>
                 <div className="text-stone-500">原価率</div>
-                <div className="tabular-nums font-semibold">{pct(selectedCost?.原価率)}</div>
+                <div className="tabular-nums font-semibold">{pct(draftCost?.原価率)}</div>
               </div>
               <div>
                 <div className="text-stone-500">限界利益率</div>
-                <div className="tabular-nums font-semibold">{pct(selectedCost?.限界利益率)}</div>
+                <div className="tabular-nums font-semibold">{pct(draftCost?.限界利益率)}</div>
               </div>
             </div>
 
-            {(selectedProduct.kind || "single") !== "set" && (
+            {(productDraft.kind || "single") !== "set" && (
               <div className="flex items-center gap-2 text-xs">
                 <label className="text-stone-500">分割数(何個分作れるか)</label>
                 <input
                   type="number"
                   min={1}
                   className="border rounded px-2 py-1 w-16"
-                  value={selectedRecipe.servings}
-                  onChange={(e) => updateServings(selectedProductId, e.target.value)}
+                  value={productDraft.servings}
+                  onChange={(e) => updateDraftServings(e.target.value)}
                   onBlur={(e) => {
-                    if (e.target.value === "" || Number(e.target.value) < 1) updateServings(selectedProductId, "1");
+                    if (e.target.value === "" || Number(e.target.value) < 1) updateDraftServings("1");
                   }}
                 />
               </div>
             )}
-            </>
-            )}
           </div>
 
-          {selectedProduct && (
-          <>
           {/* 材料リスト(単品のみ) */}
-          {(selectedProduct.kind || "single") !== "set" && (
+          {(productDraft.kind || "single") !== "set" && (
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-sm font-medium">材料</h3>
                 <button
-                  onClick={() => addIngredientRow(selectedProductId, "ingredients")}
+                  onClick={() => addDraftIngredientRow("ingredients")}
                   className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
                 >
                   <Plus size={12} /> 材料を追加
                 </button>
               </div>
               <div className="space-y-1">
-                {selectedRecipe.ingredients.map((row) => {
+                {productDraft.ingredients.map((row) => {
                   const mat = materialMap[row.materialId];
                   return (
                     <div key={row.id} className="flex items-center gap-2 text-xs">
                       <select
                         className="border rounded px-2 py-1 flex-1"
                         value={row.materialId}
-                        onChange={(e) => updateIngredientRow(selectedProductId, "ingredients", row.id, "materialId", e.target.value)}
+                        onChange={(e) => updateDraftIngredientRow("ingredients", row.id, "materialId", e.target.value)}
                       >
                         {rawMaterials.map((m) => (
                           <option key={m.id} value={m.id}>
@@ -279,11 +289,11 @@ export default function MasterTab({
                         className="border rounded px-2 py-1 w-20"
                         value={row.amount}
                         onFocus={(e) => e.target.select()}
-                        onChange={(e) => updateIngredientRow(selectedProductId, "ingredients", row.id, "amount", e.target.value)}
+                        onChange={(e) => updateDraftIngredientRow("ingredients", row.id, "amount", e.target.value)}
                       />
                       <span className="text-stone-500 w-6">{mat?.unit || "g"}</span>
                       <span className="w-20 text-right tabular-nums text-stone-500">{yen((mat?.unitPrice || 0) * row.amount)}</span>
-                      <button onClick={() => removeIngredientRow(selectedProductId, "ingredients", row.id)}>
+                      <button onClick={() => removeDraftIngredientRow("ingredients", row.id)}>
                         <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
                       </button>
                     </div>
@@ -294,12 +304,12 @@ export default function MasterTab({
           )}
 
           {/* セット内訳(セットのみ) */}
-          {selectedProduct.kind === "set" && (
+          {productDraft.kind === "set" && (
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-sm font-medium">セット内訳</h3>
                 <button
-                  onClick={() => addBreakdownRow(selectedProductId, "component")}
+                  onClick={() => addDraftBreakdownRow("component")}
                   className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
                 >
                   <Plus size={12} /> 構成商品を追加
@@ -307,7 +317,7 @@ export default function MasterTab({
               </div>
               <p className="text-[10px] text-stone-400 mb-2">構成商品は「数量×原価」で計算されます。</p>
               <div className="space-y-1">
-                {getBreakdown(selectedProductId).map((row) => {
+                {productDraft.breakdown.map((row) => {
                   const unitCost = row.kind === "component" ? productCosts[row.refId]?.原価 || 0 : materialMap[row.refId]?.unitPrice || 0;
                   const lineCost = row.kind === "component" ? unitCost * (Number(row.qty) || 0) : unitCost;
                   return (
@@ -322,11 +332,11 @@ export default function MasterTab({
                       <select
                         className="border rounded px-2 py-1 flex-1"
                         value={row.refId || ""}
-                        onChange={(e) => updateBreakdownRow(selectedProductId, row.id, "refId", e.target.value)}
+                        onChange={(e) => updateDraftBreakdownRow(row.id, "refId", e.target.value)}
                       >
                         {row.kind === "component"
                           ? singleProducts
-                              .filter((p) => p.id !== selectedProductId)
+                              .filter((p) => p.id !== productDraft.id)
                               .map((p) => (
                                 <option key={p.id} value={p.id}>
                                   {p.name}
@@ -343,10 +353,10 @@ export default function MasterTab({
                         className="border rounded px-2 py-1 w-16"
                         value={row.qty}
                         onFocus={(e) => e.target.select()}
-                        onChange={(e) => updateBreakdownRow(selectedProductId, row.id, "qty", e.target.value)}
+                        onChange={(e) => updateDraftBreakdownRow(row.id, "qty", e.target.value)}
                       />
                       <span className="w-24 text-right tabular-nums text-stone-500">{yen(lineCost)}</span>
-                      <button onClick={() => removeBreakdownRow(selectedProductId, row.id)}>
+                      <button onClick={() => removeDraftBreakdownRow(row.id)}>
                         <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
                       </button>
                     </div>
@@ -359,23 +369,23 @@ export default function MasterTab({
           {/* 包材リスト */}
           <div className="mt-4">
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-sm font-medium">{selectedProduct.kind === "set" ? "包材(セット全体の外箱など)" : "包材"}</h3>
+              <h3 className="text-sm font-medium">{productDraft.kind === "set" ? "包材(セット全体の外箱など)" : "包材"}</h3>
               <button
-                onClick={() => addIngredientRow(selectedProductId, "packaging")}
+                onClick={() => addDraftIngredientRow("packaging")}
                 className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
               >
                 <Plus size={12} /> 包材を追加
               </button>
             </div>
             <div className="space-y-1">
-              {selectedRecipe.packaging.map((row) => {
+              {productDraft.packaging.map((row) => {
                 const mat = materialMap[row.materialId];
                 return (
                   <div key={row.id} className="flex items-center gap-2 text-xs">
                     <select
                       className="border rounded px-2 py-1 flex-1"
                       value={row.materialId}
-                      onChange={(e) => updateIngredientRow(selectedProductId, "packaging", row.id, "materialId", e.target.value)}
+                      onChange={(e) => updateDraftIngredientRow("packaging", row.id, "materialId", e.target.value)}
                     >
                       {packMaterials.map((m) => (
                         <option key={m.id} value={m.id}>
@@ -388,11 +398,11 @@ export default function MasterTab({
                       className="border rounded px-2 py-1 w-20"
                       value={row.amount}
                       onFocus={(e) => e.target.select()}
-                      onChange={(e) => updateIngredientRow(selectedProductId, "packaging", row.id, "amount", e.target.value)}
+                      onChange={(e) => updateDraftIngredientRow("packaging", row.id, "amount", e.target.value)}
                     />
                     <span className="text-stone-500 w-6">{mat?.unit || "個"}</span>
                     <span className="w-20 text-right tabular-nums text-stone-500">{yen((mat?.unitPrice || 0) * row.amount)}</span>
-                    <button onClick={() => removeIngredientRow(selectedProductId, "packaging", row.id)}>
+                    <button onClick={() => removeDraftIngredientRow("packaging", row.id)}>
                       <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
                     </button>
                   </div>
@@ -442,8 +452,8 @@ export default function MasterTab({
                   return (
                     <tr
                       key={p.id}
-                      className={`border-b border-stone-100 cursor-pointer ${selectedProductId === p.id ? "bg-amber-50" : ""}`}
-                      onClick={() => setSelectedProductId(p.id)}
+                      className={`border-b border-stone-100 cursor-pointer ${productDraft?.id === p.id ? "bg-amber-50" : ""}`}
+                      onClick={() => requestOpenProduct(p)}
                     >
                       <td className="py-1 pr-2 font-medium">
                         <div className="flex items-center gap-1">
@@ -477,7 +487,7 @@ export default function MasterTab({
                           >
                             <Pencil size={11} className="text-stone-300 hover:text-amber-700" />
                           </button>
-                          {selectedProductId === p.id && <ChevronDown size={12} className="text-amber-700" />}
+                          {productDraft?.id === p.id && <ChevronDown size={12} className="text-amber-700" />}
                         </div>
                       </td>
                       <td className="py-1 pr-2">
@@ -889,6 +899,27 @@ export default function MasterTab({
               </button>
               <button onClick={confirmSquareSyncToggle} className="px-3 py-1.5 text-sm rounded bg-amber-700 text-white hover:bg-amber-800">
                 実行する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 商品編集の未保存確認ダイアログ */}
+      {pendingProductSwitch && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
+            <h3 className="font-semibold text-sm mb-2">確認</h3>
+            <p className="text-sm text-stone-700 mb-4">編集中の内容が保存されていません。保存せずに移動しますか?</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={cancelPendingProductSwitch}
+                className="px-3 py-1.5 text-sm rounded border border-stone-300 text-stone-600 hover:bg-stone-50"
+              >
+                キャンセル
+              </button>
+              <button onClick={confirmDiscardAndSwitchProduct} className="px-3 py-1.5 text-sm rounded bg-red-600 text-white hover:bg-red-700">
+                破棄して移動
               </button>
             </div>
           </div>
