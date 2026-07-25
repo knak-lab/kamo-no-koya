@@ -1,0 +1,18 @@
+{
+  "name": "カモの小屋 収益分析",
+  "short_name": "カモの小屋",
+  "description": "カモの小屋 収益分析アプリ",
+  "start_url": "/kamo-no-koya/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#b45309",
+  "background_color": "#fafaf9",
+  "icons": [
+    {
+      "src": "/kamo-no-koya/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
