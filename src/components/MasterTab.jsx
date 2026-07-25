@@ -154,6 +154,26 @@ export default function MasterTab({
             </div>
 
             <div>
+              <div className="text-xs text-stone-500 mb-1">区分</div>
+              <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs">
+                {[
+                  { value: "single", label: "単品" },
+                  { value: "set", label: "セット" },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => updateProduct(selectedProductId, "kind", opt.value)}
+                    className={`px-3 py-1 rounded ${
+                      (selectedProduct.kind || "single") === opt.value ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
               <label className="block text-xs text-stone-500 mb-1">価格(円)</label>
               <input
                 type="number"
