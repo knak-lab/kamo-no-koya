@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import {
   BarChart,
@@ -34,7 +35,12 @@ export default function SummaryTab({
   dailyRows,
   channelMap,
   rebateMap,
+  sales,
+  productMap,
 }) {
+  const [salesDetailOpen, setSalesDetailOpen] = useState(false);
+  const salesSorted = [...sales].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
   return (
     <>
       {/* 月次予実 */}
@@ -286,6 +292,52 @@ export default function SummaryTab({
             <p className="text-xs text-stone-500">
               月次の目標(売上・粗利率・利益)は「入力」タブの「目標」セクションで編集できます。
             </p>
+          </div>
+        )}
+      </section>
+
+      {/* 売上明細(Square由来・読み取り専用) */}
+      <section className="bg-white rounded-lg border border-stone-200 p-4">
+        <h2 className="font-semibold mb-1">売上明細</h2>
+        <p className="text-xs text-stone-500 mb-3">Squareから同期された売上を1件ずつ表示します(読み取り専用)。</p>
+        <button
+          onClick={() => setSalesDetailOpen((v) => !v)}
+          className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 font-medium"
+        >
+          {salesDetailOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          登録済み一覧({salesSorted.length}件)
+        </button>
+
+        {salesDetailOpen && (
+          <div className="overflow-x-auto mt-2">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-stone-500 border-b">
+                  <th className="py-1 pr-2">日付</th>
+                  <th className="py-1 pr-2">商品名</th>
+                  <th className="py-1 pr-2">数量</th>
+                  <th className="py-1 pr-2">金額</th>
+                  <th className="py-1 pr-2">原価(単価)</th>
+                  <th className="py-1 pr-2">原価(小計)</th>
+                  <th className="py-1 pr-2">粗利</th>
+                </tr>
+              </thead>
+              <tbody>
+                {salesSorted.map((s) => (
+                  <tr key={s.id} className="border-b border-stone-100">
+                    <td className="py-1 pr-2 font-medium">{s.date}</td>
+                    <td className="py-1 pr-2">{productMap[s.productId]?.name || s.productId}</td>
+                    <td className="py-1 pr-2 tabular-nums">{s.qty}</td>
+                    <td className="py-1 pr-2 tabular-nums">{yen(s.amount)}</td>
+                    <td className="py-1 pr-2 tabular-nums text-stone-500">{s.unitCostAtSale !== undefined ? yen(s.unitCostAtSale) : "-"}</td>
+                    <td className="py-1 pr-2 tabular-nums text-stone-500">{s.costSubtotal !== undefined ? yen(s.costSubtotal) : "-"}</td>
+                    <td className="py-1 pr-2 tabular-nums font-medium">
+                      {s.costSubtotal !== undefined ? yen(s.amount - s.costSubtotal) : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>

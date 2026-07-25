@@ -730,6 +730,8 @@ export default function App() {
             dailyRows={dailyRows}
             channelMap={channelMap}
             rebateMap={rebateMap}
+            sales={sales}
+            productMap={productMap}
           />
         )}
 
