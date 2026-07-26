@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import DateAccordion from "./DateAccordion";
 import {
   BarChart,
   Bar,
@@ -38,9 +38,6 @@ export default function SummaryTab({
   sales,
   productMap,
 }) {
-  const [salesDetailOpen, setSalesDetailOpen] = useState(false);
-  const salesSorted = [...sales].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
-
   return (
     <>
       {/* 月次予実 */}
@@ -240,53 +237,65 @@ export default function SummaryTab({
             <div>
               <h3 className="font-medium text-sm mb-1">日次集計(自動生成)</h3>
               <p className="text-xs text-stone-500 mb-2">
-                販売形態・委託先は「入力」タブの日次設定で選びます。ここは自動計算の結果表示のみです。
+                販売形態・委託先は「入力」タブの日次設定で選びます。ここは自動計算の結果表示のみです。年・月・日をクリックして開閉できます。
               </p>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="text-left text-stone-500 border-b">
-                      <th className="py-1 pr-2">日付</th>
-                      <th className="py-1 pr-2">販売形態</th>
-                      <th className="py-1 pr-2">委託先</th>
-                      <th className="py-1 pr-2">客数</th>
-                      <th className="py-1 pr-2">客単価</th>
-                      <th className="py-1 pr-2">売上(値引前)</th>
-                      <th className="py-1 pr-2">リベート</th>
-                      <th className="py-1 pr-2">売上(日次)</th>
-                      <th className="py-1 pr-2">原価(標準)</th>
-                      <th className="py-1 pr-2">粗利</th>
-                      <th className="py-1 pr-2">その他経費</th>
-                      <th className="py-1 pr-2">営業利益(管理)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dailyRows.map((d) => {
-                      const channel = channelMap[d.channelId];
-                      return (
-                        <tr key={d.date} className="border-b border-stone-100">
-                          <td className="py-1 pr-2 font-medium">{d.date}</td>
-                          <td className="py-1 pr-2 text-stone-600">{channel?.name || "(未選択)"}</td>
-                          <td className="py-1 pr-2 text-stone-600">{rebateMap[d.clientId]?.name || "(未選択)"}</td>
-                          <td className="py-1 pr-2 tabular-nums">{d.客数}</td>
-                          <td className="py-1 pr-2 tabular-nums">{yen(d.客単価)}</td>
-                          <td className="py-1 pr-2 tabular-nums">{yen(d.値引前)}</td>
-                          <td className="py-1 pr-2 tabular-nums text-red-600">{d.リベート ? `-${yen(d.リベート)}` : "-"}</td>
-                          <td className="py-1 pr-2 tabular-nums font-medium">{yen(d.売上_日次)}</td>
-                          <td className="py-1 pr-2 tabular-nums text-stone-500">{yen(d.原価標準_日次)}</td>
-                          <td className="py-1 pr-2 tabular-nums">{yen(d.粗利_日次)}</td>
-                          <td className="py-1 pr-2 tabular-nums text-stone-500">{yen(d.その他経費_日次)}</td>
-                          <td
-                            className={`py-1 pr-2 tabular-nums font-semibold ${d.営業利益_管理_日次 >= 0 ? "text-emerald-700" : "text-red-600"}`}
-                          >
-                            {yen(d.営業利益_管理_日次)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <DateAccordion
+                items={dailyRows}
+                getDate={(d) => d.date}
+                renderDay={([d]) => {
+                  const channel = channelMap[d.channelId];
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-stone-50 rounded p-2">
+                      <div>
+                        <div className="text-stone-500">販売形態</div>
+                        <div>{channel?.name || "(未選択)"}</div>
+                      </div>
+                      <div>
+                        <div className="text-stone-500">委託先</div>
+                        <div>{rebateMap[d.clientId]?.name || "(未選択)"}</div>
+                      </div>
+                      <div>
+                        <div className="text-stone-500">客数</div>
+                        <div className="tabular-nums">{d.客数}</div>
+                      </div>
+                      <div>
+                        <div className="text-stone-500">客単価</div>
+                        <div className="tabular-nums">{yen(d.客単価)}</div>
+                      </div>
+                      <div>
+                        <div className="text-stone-500">売上(値引前)</div>
+                        <div className="tabular-nums">{yen(d.値引前)}</div>
+                      </div>
+                      <div>
+                        <div className="text-stone-500">リベート</div>
+                        <div className="tabular-nums text-red-600">{d.リベート ? `-${yen(d.リベート)}` : "-"}</div>
+                      </div>
+                      <div>
+                        <div className="text-stone-500">売上(日次)</div>
+                        <div className="tabular-nums font-medium">{yen(d.売上_日次)}</div>
+                      </div>
+                      <div>
+                        <div className="text-stone-500">原価(標準)</div>
+                        <div className="tabular-nums text-stone-500">{yen(d.原価標準_日次)}</div>
+                      </div>
+                      <div>
+                        <div className="text-stone-500">粗利</div>
+                        <div className="tabular-nums">{yen(d.粗利_日次)}</div>
+                      </div>
+                      <div>
+                        <div className="text-stone-500">その他経費</div>
+                        <div className="tabular-nums text-stone-500">{yen(d.その他経費_日次)}</div>
+                      </div>
+                      <div>
+                        <div className="text-stone-500">営業利益(管理)</div>
+                        <div className={`tabular-nums font-semibold ${d.営業利益_管理_日次 >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                          {yen(d.営業利益_管理_日次)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }}
+              />
             </div>
 
             <p className="text-xs text-stone-500">
@@ -299,47 +308,43 @@ export default function SummaryTab({
       {/* 売上明細(Square由来・読み取り専用) */}
       <section className="bg-white rounded-lg border border-stone-200 p-4">
         <h2 className="font-semibold mb-1">売上明細</h2>
-        <p className="text-xs text-stone-500 mb-3">Squareから同期された売上を1件ずつ表示します(読み取り専用)。</p>
-        <button
-          onClick={() => setSalesDetailOpen((v) => !v)}
-          className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 font-medium"
-        >
-          {salesDetailOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          登録済み一覧({salesSorted.length}件)
-        </button>
-
-        {salesDetailOpen && (
-          <div className="overflow-x-auto mt-2">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-left text-stone-500 border-b">
-                  <th className="py-1 pr-2">日付</th>
-                  <th className="py-1 pr-2">商品名</th>
-                  <th className="py-1 pr-2">数量</th>
-                  <th className="py-1 pr-2">金額</th>
-                  <th className="py-1 pr-2">原価(単価)</th>
-                  <th className="py-1 pr-2">原価(小計)</th>
-                  <th className="py-1 pr-2">粗利</th>
-                </tr>
-              </thead>
-              <tbody>
-                {salesSorted.map((s) => (
-                  <tr key={s.id} className="border-b border-stone-100">
-                    <td className="py-1 pr-2 font-medium">{s.date}</td>
-                    <td className="py-1 pr-2">{productMap[s.productId]?.name || s.productId}</td>
-                    <td className="py-1 pr-2 tabular-nums">{s.qty}</td>
-                    <td className="py-1 pr-2 tabular-nums">{yen(s.amount)}</td>
-                    <td className="py-1 pr-2 tabular-nums text-stone-500">{s.unitCostAtSale !== undefined ? yen(s.unitCostAtSale) : "-"}</td>
-                    <td className="py-1 pr-2 tabular-nums text-stone-500">{s.costSubtotal !== undefined ? yen(s.costSubtotal) : "-"}</td>
-                    <td className="py-1 pr-2 tabular-nums font-medium">
-                      {s.costSubtotal !== undefined ? yen(s.amount - s.costSubtotal) : "-"}
-                    </td>
+        <p className="text-xs text-stone-500 mb-3">
+          Squareから同期された売上を1件ずつ表示します(読み取り専用)。年・月・日をクリックして開閉できます。
+        </p>
+        <DateAccordion
+          items={sales}
+          getDate={(s) => s.date}
+          renderDay={(daySales) => (
+            <div className="overflow-x-auto">
+              <table className="min-w-full whitespace-nowrap text-xs">
+                <thead>
+                  <tr className="text-left text-stone-500 border-b">
+                    <th className="py-1 pr-2">商品名</th>
+                    <th className="py-1 pr-2">数量</th>
+                    <th className="py-1 pr-2">金額</th>
+                    <th className="py-1 pr-2">原価(単価)</th>
+                    <th className="py-1 pr-2">原価(小計)</th>
+                    <th className="py-1 pr-2">粗利</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {daySales.map((s) => (
+                    <tr key={s.id} className="border-b border-stone-100">
+                      <td className="py-1 pr-2">{productMap[s.productId]?.name || s.productId}</td>
+                      <td className="py-1 pr-2 tabular-nums">{s.qty}</td>
+                      <td className="py-1 pr-2 tabular-nums">{yen(s.amount)}</td>
+                      <td className="py-1 pr-2 tabular-nums text-stone-500">{s.unitCostAtSale !== undefined ? yen(s.unitCostAtSale) : "-"}</td>
+                      <td className="py-1 pr-2 tabular-nums text-stone-500">{s.costSubtotal !== undefined ? yen(s.costSubtotal) : "-"}</td>
+                      <td className="py-1 pr-2 tabular-nums font-medium">
+                        {s.costSubtotal !== undefined ? yen(s.amount - s.costSubtotal) : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        />
       </section>
     </>
   );

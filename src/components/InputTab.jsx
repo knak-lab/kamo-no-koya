@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2, ChevronDown, ChevronRight, Pencil } from "lucide-react";
 import { yen, RAW_MATERIAL_ITEM } from "../lib/constants";
+import DateAccordion from "./DateAccordion";
 
 export default function InputTab({
   targetForm,
@@ -372,21 +373,25 @@ export default function InputTab({
             <Plus size={14} /> 追加
           </button>
         </div>
-        <div className="text-sm space-y-1">
-          {expenses.map((e) => (
-            <div key={e.id} className="flex justify-between border-b border-stone-100 py-1">
-              <span>
-                {e.date} — <span className={e.item === RAW_MATERIAL_ITEM ? "text-amber-700 font-medium" : ""}>{e.item}</span>
-              </span>
-              <span className="flex items-center gap-2">
-                {yen(e.amount)}
-                <button onClick={() => removeExpense(e.id)}>
-                  <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
-                </button>
-              </span>
+        <DateAccordion
+          items={expenses}
+          getDate={(e) => e.date}
+          renderDay={(dayExpenses) => (
+            <div className="text-sm space-y-1">
+              {dayExpenses.map((e) => (
+                <div key={e.id} className="flex justify-between border-b border-stone-100 py-1">
+                  <span className={e.item === RAW_MATERIAL_ITEM ? "text-amber-700 font-medium" : ""}>{e.item}</span>
+                  <span className="flex items-center gap-2">
+                    {yen(e.amount)}
+                    <button onClick={() => removeExpense(e.id)}>
+                      <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                    </button>
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        />
       </section>
     </>
   );
