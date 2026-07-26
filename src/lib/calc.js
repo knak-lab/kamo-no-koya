@@ -195,19 +195,23 @@ function getTargetAmount(mgmtBudgets, ym, metric) {
 export function computeMonthlyChartData({ monthlyByChannel, monthMetric, monthChannel, mgmtBudgets }) {
   const key = METRIC_LABEL[monthMetric];
   const showTarget = monthChannel === "all";
-  return monthlyByChannel.map((row) => ({
-    name: row.yearMonth,
-    実績: row[key],
-    実績粗利率: row.売上 > 0 ? Math.round((row.粗利 / row.売上) * 1000) / 10 : 0,
-    ...(showTarget
-      ? { 目標: getTargetAmount(mgmtBudgets, row.yearMonth, monthMetric), 目標粗利率: mgmtBudgets[row.yearMonth]?.grossMarginRatio || 0 }
-      : {}),
-  }));
+  return monthlyByChannel
+    .filter((row) => row.売上 > 0)
+    .map((row) => ({
+      name: row.yearMonth,
+      実績: row[key],
+      実績粗利率: row.売上 > 0 ? Math.round((row.粗利 / row.売上) * 1000) / 10 : 0,
+      ...(showTarget
+        ? { 目標: getTargetAmount(mgmtBudgets, row.yearMonth, monthMetric), 目標粗利率: mgmtBudgets[row.yearMonth]?.grossMarginRatio || 0 }
+        : {}),
+    }));
 }
 
-// 日次予実(実績のみ)
+// 日次予実(実績のみ・売上がない日は除外)
 export function computeDailyChartData({ dailyRows, dayChannel, dayMetric }) {
-  const filtered = dayChannel === "all" ? dailyRows : dailyRows.filter((d) => d.channelId === dayChannel);
+  const filtered = (dayChannel === "all" ? dailyRows : dailyRows.filter((d) => d.channelId === dayChannel)).filter(
+    (d) => d.売上_日次 > 0
+  );
   const field = METRIC_DAILY_FIELD[dayMetric];
   return filtered.map((d) => ({
     name: d.date,
