@@ -220,9 +220,11 @@ export function computeDailyChartData({ dailyRows, dayChannel, dayMetric }) {
   }));
 }
 
-// 客数と客単価(2軸)
+// 客数と客単価(2軸・売上がない日は除外)
 export function computeCustomerChartData(dailyRows) {
-  return dailyRows.map((d) => ({ name: d.date, 客数: d.客数, 客単価: Math.round(d.客単価) }));
+  return dailyRows
+    .filter((d) => d.売上_日次 > 0)
+    .map((d) => ({ name: d.date, 客数: d.客数, 客単価: Math.round(d.客単価) }));
 }
 
 // 商品別売上(上位10)

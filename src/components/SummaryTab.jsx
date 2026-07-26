@@ -87,7 +87,7 @@ export default function SummaryTab({
                   ))}
                 </Bar>
                 {monthMetric === "sales" && (
-                  <Line yAxisId="right" type="monotone" dataKey="実績粗利率" stroke="#059669" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="実績粗利率" stroke="#86efac" strokeWidth={2} dot={{ r: 3 }} />
                 )}
                 {monthMetric === "sales" && monthChannel === "all" && (
                   <Line
@@ -157,7 +157,7 @@ export default function SummaryTab({
                   ))}
                 </Bar>
                 {dayMetric === "sales" && (
-                  <Line yAxisId="right" type="monotone" dataKey="実績粗利率" stroke="#059669" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="実績粗利率" stroke="#86efac" strokeWidth={2} dot={{ r: 3 }} />
                 )}
               </ComposedChart>
             </ResponsiveContainer>
