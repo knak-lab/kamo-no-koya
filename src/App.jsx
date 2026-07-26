@@ -84,7 +84,6 @@ export default function App() {
   const [monthChannel, setMonthChannel] = useState("all");
   const [dayMetric, setDayMetric] = useState("sales");
   const [dayChannel, setDayChannel] = useState("all");
-  const [summaryDetailOpen, setSummaryDetailOpen] = useState(false);
   const [targetForm, setTargetForm] = useState({ month: "", salesBudget: "", grossMarginRatio: "", profitBudget: "" });
   const [targetListOpen, setTargetListOpen] = useState(false);
   const [editingTargetMonth, setEditingTargetMonth] = useState(null);
@@ -725,8 +724,6 @@ export default function App() {
             dailyChartData={dailyChartData}
             customerChartData={customerChartData}
             productSalesRanking={productSalesRanking}
-            summaryDetailOpen={summaryDetailOpen}
-            setSummaryDetailOpen={setSummaryDetailOpen}
             dailyRows={dailyRows}
             channelMap={channelMap}
             rebateMap={rebateMap}
