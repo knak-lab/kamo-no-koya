@@ -225,7 +225,7 @@ export default function SummaryTab({
           className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 font-medium"
         >
           {summaryDetailOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          詳細データ(日次集計・月次予算の入力)
+          日次売上明細
         </button>
 
         {summaryDetailOpen && (
