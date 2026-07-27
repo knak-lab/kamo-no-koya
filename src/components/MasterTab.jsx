@@ -148,7 +148,7 @@ export default function MasterTab({
 
           {productDraft && (
           <>
-          <div className="flex flex-col gap-3 mb-1 mt-3 pt-3 border-t border-stone-100">
+          <div id="product-edit-form" className="flex flex-col gap-3 mb-1 mt-3 pt-3 border-t border-stone-100">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-stone-500">編集中の商品{productDraft.isNew ? "(新規)" : ""}</div>

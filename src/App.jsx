@@ -420,6 +420,22 @@ export default function App() {
   };
   const cancelPendingProductSwitch = () => setPendingProductSwitch(null);
 
+  // ヌケモレチェックから商品編集へ直接ジャンプ(既存商品は開く、未登録なら新規登録フォームを開く)
+  const jumpToProductInMaster = (name) => {
+    setTab("master");
+    const existing = products.find((p) => p.id === name || p.name === name);
+    if (existing) {
+      requestOpenProduct(existing);
+    } else {
+      requestCreateProduct(name);
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById("product-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  };
+
   const saveProductDraft = () => {
     if (!productDraft) return;
     const { id, name, price, kind, servings, ingredients, packaging, breakdown, isNew } = productDraft;
@@ -721,6 +737,7 @@ export default function App() {
             expenses={expenses}
             removeExpense={removeExpense}
             dataGaps={dataGaps}
+            onEditProduct={jumpToProductInMaster}
           />
         )}
 

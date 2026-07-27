@@ -29,6 +29,7 @@ export default function InputTab({
   expenses,
   removeExpense,
   dataGaps,
+  onEditProduct,
 }) {
   const [openYears, setOpenYears] = useState({});
   const [openMonths, setOpenMonths] = useState({});
@@ -36,6 +37,23 @@ export default function InputTab({
   const toggleYear = (y) => setOpenYears((prev) => ({ ...prev, [y]: !prev[y] }));
   const toggleMonth = (key) => setOpenMonths((prev) => ({ ...prev, [key]: !prev[key] }));
   const toggleDate = (d) => setOpenDates((prev) => ({ ...prev, [d]: !prev[d] }));
+
+  // ヌケモレチェックの項目から、該当箇所を開いてスクロールする
+  const focusSettingDate = (date) => {
+    const [y, m] = date.split("-");
+    setOpenYears((prev) => ({ ...prev, [y]: true }));
+    setOpenMonths((prev) => ({ ...prev, [`${y}-${m}`]: true }));
+    setOpenDates((prev) => ({ ...prev, [date]: true }));
+    requestAnimationFrame(() => {
+      document.getElementById(`setting-date-${date}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  };
+  const focusExpenseDate = (date) => {
+    setExpenseForm((f) => ({ ...f, date }));
+    requestAnimationFrame(() => {
+      document.getElementById("expense-input-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   // 日次設定の対象日を 年 > 月 > 日 のツリーにまとめる(settingDatesは既にソート済み)
   const settingDateTree = {};
@@ -244,7 +262,7 @@ export default function InputTab({
                                       ? rebateClients.find((c) => c.id === meta.clientId || c.name === meta.clientId)?.name
                                       : "";
                                     return (
-                                      <div key={date} className="border-b border-stone-100">
+                                      <div key={date} id={`setting-date-${date}`} className="border-b border-stone-100">
                                         <button
                                           onClick={() => toggleDate(date)}
                                           className="w-full flex items-center gap-1 px-2 py-1 text-left hover:bg-stone-50"
@@ -309,7 +327,7 @@ export default function InputTab({
       </section>
 
       {/* 経費入力 */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
+      <section id="expense-input-section" className="bg-white rounded-lg border border-stone-200 p-4">
         <h2 className="font-semibold mb-1">経費入力</h2>
         <p className="text-xs text-stone-500 mb-3">
           入力先は1つ。「{RAW_MATERIAL_ITEM}」を選んだ分だけ、裏側で標準原価と突き合わせて原価差異を計算します。
@@ -400,15 +418,22 @@ export default function InputTab({
       {/* ヌケモレチェック */}
       <section className="bg-white rounded-lg border border-stone-200 p-4">
         <h2 className="font-semibold mb-1">ヌケモレチェック</h2>
-        <p className="text-xs text-stone-500 mb-3">よくある入力漏れ・データ不整合を自動でチェックします。</p>
+        <p className="text-xs text-stone-500 mb-3">
+          よくある入力漏れ・データ不整合を自動でチェックします。項目をクリックすると該当箇所を開いて編集できます。
+        </p>
         <div className="space-y-2">
           {[
-            { label: "販売形態漏れ(日次設定)", items: dataGaps.missingChannel },
-            { label: "販売形態が委託販売なのに販売先漏れ", items: dataGaps.missingClient },
-            { label: "売上明細の商品が商品マスタに無い(不明)", items: dataGaps.unknownProductNames },
-            { label: "販売形態がhibiなのに利用料の経費が無い", items: dataGaps.hibiDatesWithoutFee },
-            { label: "商品マスタで原材料費が0円", items: dataGaps.zeroRawMaterialProducts },
-            { label: "商品マスタで包材費が0円", items: dataGaps.zeroPackagingProducts },
+            { label: "販売形態漏れ(日次設定)", items: dataGaps.missingChannel, onClick: focusSettingDate },
+            { label: "販売形態が委託販売なのに販売先漏れ", items: dataGaps.missingClient, onClick: focusSettingDate },
+            {
+              label: "売上明細の商品が商品マスタに無い(不明)",
+              items: dataGaps.unknownProductNames,
+              onClick: onEditProduct,
+              disabled: (item) => item === "(空白)",
+            },
+            { label: "販売形態がhibiなのに利用料の経費が無い", items: dataGaps.hibiDatesWithoutFee, onClick: focusExpenseDate },
+            { label: "商品マスタで原材料費が0円", items: dataGaps.zeroRawMaterialProducts, onClick: onEditProduct },
+            { label: "商品マスタで包材費が0円", items: dataGaps.zeroPackagingProducts, onClick: onEditProduct },
           ].map((check) => (
             <div key={check.label} className="border border-stone-200 rounded-md p-2">
               <div className="flex items-center justify-between text-sm">
@@ -419,11 +444,22 @@ export default function InputTab({
               </div>
               {check.items.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap gap-1">
-                  {check.items.slice(0, 30).map((item, i) => (
-                    <span key={i} className="text-xs bg-red-50 text-red-700 rounded px-1.5 py-0.5">
-                      {item}
-                    </span>
-                  ))}
+                  {check.items.slice(0, 30).map((item, i) => {
+                    const clickable = check.onClick && !(check.disabled && check.disabled(item));
+                    return clickable ? (
+                      <button
+                        key={i}
+                        onClick={() => check.onClick(item)}
+                        className="text-xs bg-red-50 text-red-700 rounded px-1.5 py-0.5 hover:bg-red-100 hover:underline"
+                      >
+                        {item}
+                      </button>
+                    ) : (
+                      <span key={i} className="text-xs bg-red-50 text-red-700 rounded px-1.5 py-0.5">
+                        {item}
+                      </span>
+                    );
+                  })}
                   {check.items.length > 30 && (
                     <span className="text-xs text-stone-400 self-center">他{check.items.length - 30}件</span>
                   )}
