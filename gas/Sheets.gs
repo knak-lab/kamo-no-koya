@@ -76,8 +76,13 @@ const SYNC_LOG_HDR = ["timestamp", "type", "status", "message"];
 //  汎用ヘルパー
 // ─────────────────────────────────────────
 
+// SpreadsheetApp.openById()は呼び出しコストが大きく、getAll_は17シート分を
+// 個別のget*_関数で読むため素朴に実装すると実行ごとに10回以上呼ばれてしまう。
+// 1回の実行(doGet/doPost)内で使い回すようキャッシュする。
+var ssCache_ = null;
 function getSs_() {
-  return SpreadsheetApp.openById(KAMO_SPREADSHEET_ID);
+  if (!ssCache_) ssCache_ = SpreadsheetApp.openById(KAMO_SPREADSHEET_ID);
+  return ssCache_;
 }
 
 function getOrCreateSheet_(name, headers, seedRows, textCols) {
