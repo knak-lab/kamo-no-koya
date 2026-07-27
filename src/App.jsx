@@ -209,7 +209,16 @@ export default function App() {
   const packMaterials = materials.filter((m) => m.category === PACK);
   const productMap = useMemo(() => Object.fromEntries(products.map((p) => [p.id, p])), [products]);
   const singleProducts = products.filter((p) => p.kind !== "set");
-  const rebateMap = useMemo(() => Object.fromEntries(rebateClients.map((c) => [c.id, c])), [rebateClients]);
+  // 旧AppSheet由来のデータ等、日次集計シートの委託先列にIDでなく名前がそのまま
+  // 入っているケースがあるため、IDと名前の両方でも引けるようにする
+  const rebateMap = useMemo(() => {
+    const map = {};
+    rebateClients.forEach((c) => {
+      map[c.id] = c;
+      if (c.name) map[c.name] = c;
+    });
+    return map;
+  }, [rebateClients]);
   const channelMap = useMemo(() => Object.fromEntries(salesChannels.map((c) => [c.id, c])), [salesChannels]);
 
   // ========== 原価計算 ==========

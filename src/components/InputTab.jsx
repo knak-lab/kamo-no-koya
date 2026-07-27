@@ -239,7 +239,9 @@ export default function InputTab({
                                 <div className="pl-4 space-y-0.5">
                                   {dates.map((date) => {
                                     const meta = dailyMeta[date] || {};
-                                    const clientName = meta.clientId ? rebateClients.find((c) => c.id === meta.clientId)?.name : "";
+                                    const clientName = meta.clientId
+                                      ? rebateClients.find((c) => c.id === meta.clientId || c.name === meta.clientId)?.name
+                                      : "";
                                     return (
                                       <div key={date} className="border-b border-stone-100">
                                         <button
