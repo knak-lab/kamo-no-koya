@@ -283,7 +283,11 @@ export default function InputTab({
                                               <select
                                                 className="border rounded px-1 py-0.5 text-xs"
                                                 value={meta.channelId || ""}
-                                                onChange={(e) => setDayField(date, "channelId", e.target.value)}
+                                                onChange={(e) => {
+                                                  const nextChannelId = e.target.value;
+                                                  setDayField(date, "channelId", nextChannelId);
+                                                  if (nextChannelId !== "委託販売" && meta.clientId) setDayField(date, "clientId", "");
+                                                }}
                                               >
                                                 <option value="">(未選択)</option>
                                                 {salesChannels.map((c) => (
@@ -293,21 +297,23 @@ export default function InputTab({
                                                 ))}
                                               </select>
                                             </div>
-                                            <div>
-                                              <label className="block text-stone-500 mb-0.5">委託先(販売先)</label>
-                                              <select
-                                                className="border rounded px-1 py-0.5 text-xs"
-                                                value={meta.clientId || ""}
-                                                onChange={(e) => setDayField(date, "clientId", e.target.value)}
-                                              >
-                                                <option value="">(未選択・リベート対象外)</option>
-                                                {rebateClients.map((c) => (
-                                                  <option key={c.id} value={c.id}>
-                                                    {c.name}
-                                                  </option>
-                                                ))}
-                                              </select>
-                                            </div>
+                                            {meta.channelId === "委託販売" && (
+                                              <div>
+                                                <label className="block text-stone-500 mb-0.5">委託先(販売先)</label>
+                                                <select
+                                                  className="border rounded px-1 py-0.5 text-xs"
+                                                  value={meta.clientId || ""}
+                                                  onChange={(e) => setDayField(date, "clientId", e.target.value)}
+                                                >
+                                                  <option value="">(未選択・リベート対象外)</option>
+                                                  {rebateClients.map((c) => (
+                                                    <option key={c.id} value={c.id}>
+                                                      {c.name}
+                                                    </option>
+                                                  ))}
+                                                </select>
+                                              </div>
+                                            )}
                                           </div>
                                         )}
                                       </div>
