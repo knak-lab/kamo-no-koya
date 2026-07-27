@@ -69,6 +69,11 @@ const SHEET_SETTINGS = "設定";
 const SETTINGS_HDR = ["squareSyncFromSquare"];
 const SETTINGS_SEED = [[true]];
 
+// カレンダータブの出店計画・イベント予定(日次設定の販売形態・TODOの期限とは別に、
+// タイトル/メモを日付ごとに複数登録できる)
+const SHEET_CALENDAR_EVENTS = "予定";
+const CALENDAR_EVENTS_HDR = ["id", "date", "title", "memo"];
+
 const SHEET_SYNC_LOG = "Square同期ログ";
 const SYNC_LOG_HDR = ["timestamp", "type", "status", "message"];
 
@@ -298,6 +303,24 @@ function saveProducts_(products) {
   const sheet = getOrCreateSheet_(SHEET_PRODUCTS, PRODUCTS_HDR);
   clearDataRows_(sheet);
   writeRows_(sheet, objectsToRows_(PRODUCTS_HDR, products), PRODUCTS_HDR.length);
+}
+
+// ─────────────────────────────────────────
+//  予定(新規シート。カレンダータブの出店計画・イベント)
+// ─────────────────────────────────────────
+
+function getCalendarEvents_() {
+  const sheet = getOrCreateSheet_(SHEET_CALENDAR_EVENTS, CALENDAR_EVENTS_HDR, null, [2]);
+  return rowsToObjects_(CALENDAR_EVENTS_HDR, getDataRows_(sheet)).map(function (e) {
+    return { id: String(e.id), date: cellToStr_(e.date), title: e.title || "", memo: e.memo || "" };
+  });
+}
+
+function saveCalendarEvents_(events) {
+  const headers = CALENDAR_EVENTS_HDR;
+  const sheet = getOrCreateSheet_(SHEET_CALENDAR_EVENTS, headers, null, [2]);
+  clearDataRows_(sheet);
+  writeRows_(sheet, objectsToRows_(headers, events || []), headers.length, [2]);
 }
 
 // ─────────────────────────────────────────
@@ -904,6 +927,7 @@ function debugGetRawHeaders_() {
 function getAll_() {
   return {
     materials: getMaterials_(),
+    calendarEvents: getCalendarEvents_(),
     products: getProducts_(),
     productAliases: getProductAliases_(),
     packagingExemptions: getPackagingExemptions_(),
@@ -926,6 +950,7 @@ function getAll_() {
 
 function saveAll_(body) {
   saveMaterials_(body.materials || []);
+  saveCalendarEvents_(body.calendarEvents || []);
   saveProducts_(body.products || []);
   saveProductAliases_(body.productAliases || {});
   savePackagingExemptions_(body.packagingExemptions || []);

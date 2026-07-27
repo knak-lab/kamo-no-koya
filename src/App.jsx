@@ -27,6 +27,7 @@ import {
   getBreakdown,
 } from "./lib/calc";
 import InputTab from "./components/InputTab";
+import CalendarTab from "./components/CalendarTab";
 import SummaryTab from "./components/SummaryTab";
 import PLTab from "./components/PLTab";
 import TodoTab from "./components/TodoTab";
@@ -122,6 +123,9 @@ export default function App() {
   const [expandedTaskId, setExpandedTaskId] = useState(null);
   const [showSnoozed, setShowSnoozed] = useState(false); // ちょっとあと表示切り替え(デフォルト非表示)
 
+  // ========== カレンダー(出店計画・イベント予定) ==========
+  const [calendarEvents, setCalendarEvents] = useState([]); // [{id, date, title, memo}]
+
   // ========== 初回ロード ==========
   useEffect(() => {
     let cancelled = false;
@@ -135,6 +139,7 @@ export default function App() {
         const data = await gasApi.getAll();
         if (cancelled) return;
         setMaterials(data.materials || []);
+        setCalendarEvents(data.calendarEvents || []);
         setProducts(data.products || []);
         setProductAliases(data.productAliases || {});
         setPackagingExemptions(data.packagingExemptions || []);
@@ -175,6 +180,7 @@ export default function App() {
       try {
         await gasApi.saveAll({
           materials,
+          calendarEvents,
           products,
           productAliases,
           packagingExemptions,
@@ -200,6 +206,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     materials,
+    calendarEvents,
     products,
     productAliases,
     packagingExemptions,
@@ -659,6 +666,11 @@ export default function App() {
     setTodoForm((f) => ({ ...f, task: "", deadline: "" }));
     setExpandedTaskId(id);
   };
+  // カレンダーの日別詳細から、TODOタブのフォームとは独立にその場でタスクを追加する
+  const addTodoWithDeadline = (date, category, task) => {
+    if (!task.trim()) return;
+    setTodos((prev) => [...prev, { id: uid(), category, task: task.trim(), deadline: date, status: "未着手", snoozed: false }]);
+  };
   const updateTodo = (id, field, value) => setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, [field]: value } : t)));
   const toggleTodoSnooze = (id) => setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, snoozed: !t.snoozed } : t)));
   const removeTodo = (id) => {
@@ -696,6 +708,13 @@ export default function App() {
   };
 
   const setDayField = (date, field, value) => setDailyMeta((prev) => ({ ...prev, [date]: { ...prev[date], [field]: value } }));
+
+  // --- ハンドラ: カレンダー(出店計画・イベント予定) ---
+  const addCalendarEvent = (date, title, memo) => {
+    if (!date || !title.trim()) return;
+    setCalendarEvents((prev) => [...prev, { id: uid(), date, title: title.trim(), memo: memo || "" }]);
+  };
+  const removeCalendarEvent = (id) => setCalendarEvents((prev) => prev.filter((e) => e.id !== id));
   const setMgmtBudgetField = (ym, field, value) =>
     setMgmtBudgets((prev) => ({
       ...prev,
@@ -819,6 +838,21 @@ export default function App() {
             mergeProductAlias={mergeProductAlias}
             packagingExemptions={packagingExemptions}
             togglePackagingExempt={togglePackagingExempt}
+          />
+        )}
+
+        {tab === "calendar" && (
+          <CalendarTab
+            calendarEvents={calendarEvents}
+            addCalendarEvent={addCalendarEvent}
+            removeCalendarEvent={removeCalendarEvent}
+            dailyMeta={dailyMeta}
+            setDayField={setDayField}
+            salesChannels={salesChannels}
+            rebateClients={rebateClients}
+            todos={todos}
+            addTodoWithDeadline={addTodoWithDeadline}
+            updateTodo={updateTodo}
           />
         )}
 

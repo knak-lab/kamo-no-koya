@@ -24,6 +24,7 @@ export const STAFF_OPTIONS = ["さっとん", "ひさし", "あっこ", "かけ�
 
 export const TABS = [
   { key: "input", label: "入力" },
+  { key: "calendar", label: "カレンダー" },
   { key: "management", label: "サマリ" },
   { key: "financial", label: "PL" },
   { key: "todo", label: "TODO" },
