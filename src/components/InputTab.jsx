@@ -28,6 +28,7 @@ export default function InputTab({
   addExpense,
   expenses,
   removeExpense,
+  dataGaps,
 }) {
   const [openYears, setOpenYears] = useState({});
   const [openMonths, setOpenMonths] = useState({});
@@ -394,6 +395,43 @@ export default function InputTab({
             </div>
           )}
         />
+      </section>
+
+      {/* ヌケモレチェック */}
+      <section className="bg-white rounded-lg border border-stone-200 p-4">
+        <h2 className="font-semibold mb-1">ヌケモレチェック</h2>
+        <p className="text-xs text-stone-500 mb-3">よくある入力漏れ・データ不整合を自動でチェックします。</p>
+        <div className="space-y-2">
+          {[
+            { label: "販売形態漏れ(日次設定)", items: dataGaps.missingChannel },
+            { label: "販売形態が委託販売なのに販売先漏れ", items: dataGaps.missingClient },
+            { label: "売上明細の商品が商品マスタに無い(不明)", items: dataGaps.unknownProductNames },
+            { label: "販売形態がhibiなのに利用料の経費が無い", items: dataGaps.hibiDatesWithoutFee },
+            { label: "商品マスタで原材料費が0円", items: dataGaps.zeroRawMaterialProducts },
+            { label: "商品マスタで包材費が0円", items: dataGaps.zeroPackagingProducts },
+          ].map((check) => (
+            <div key={check.label} className="border border-stone-200 rounded-md p-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">{check.label}</span>
+                <span className={`text-xs font-semibold ${check.items.length ? "text-red-600" : "text-emerald-600"}`}>
+                  {check.items.length ? `${check.items.length}件` : "問題なし"}
+                </span>
+              </div>
+              {check.items.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {check.items.slice(0, 30).map((item, i) => (
+                    <span key={i} className="text-xs bg-red-50 text-red-700 rounded px-1.5 py-0.5">
+                      {item}
+                    </span>
+                  ))}
+                  {check.items.length > 30 && (
+                    <span className="text-xs text-stone-400 self-center">他{check.items.length - 30}件</span>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </section>
     </>
   );

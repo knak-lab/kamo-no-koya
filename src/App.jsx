@@ -22,6 +22,7 @@ import {
   computeDailyChartData,
   computeCustomerChartData,
   computeProductSalesRanking,
+  computeDataGaps,
   getRecipe,
   getBreakdown,
 } from "./lib/calc";
@@ -260,6 +261,10 @@ export default function App() {
   const productSalesRanking = useMemo(
     () => computeProductSalesRanking({ sales, productMap }),
     [sales, productMap]
+  );
+  const dataGaps = useMemo(
+    () => computeDataGaps({ settingDates, dailyMeta, sales, productMap, expenses, products, productCosts }),
+    [settingDates, dailyMeta, sales, productMap, expenses, products, productCosts]
   );
 
   // ========== ハンドラ: 材料マスタ ==========
@@ -715,6 +720,7 @@ export default function App() {
             addExpense={addExpense}
             expenses={expenses}
             removeExpense={removeExpense}
+            dataGaps={dataGaps}
           />
         )}
 

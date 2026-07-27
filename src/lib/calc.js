@@ -238,3 +238,25 @@ export function computeProductSalesRanking({ sales, productMap }) {
     .sort((a, b) => b.売上 - a.売上)
     .slice(0, 10);
 }
+
+// ========== ヌケモレチェック ==========
+export function computeDataGaps({ settingDates, dailyMeta, sales, productMap, expenses, products, productCosts }) {
+  const missingChannel = settingDates.filter((date) => !dailyMeta[date]?.channelId);
+
+  const missingClient = settingDates.filter((date) => {
+    const meta = dailyMeta[date] || {};
+    return meta.channelId === "委託販売" && !meta.clientId;
+  });
+
+  const unknownProductNames = [...new Set(sales.filter((s) => !productMap[s.productId]).map((s) => s.productId || "(空白)"))];
+
+  const hibiDatesWithoutFee = settingDates.filter((date) => {
+    if (dailyMeta[date]?.channelId !== "hibi") return false;
+    return !expenses.some((e) => e.date === date && e.item.includes("利用料") && Number(e.amount) > 0);
+  });
+
+  const zeroRawMaterialProducts = products.filter((p) => (productCosts[p.id]?.材料費 || 0) === 0).map((p) => p.name);
+  const zeroPackagingProducts = products.filter((p) => (productCosts[p.id]?.梱包材費 || 0) === 0).map((p) => p.name);
+
+  return { missingChannel, missingClient, unknownProductNames, hibiDatesWithoutFee, zeroRawMaterialProducts, zeroPackagingProducts };
+}
