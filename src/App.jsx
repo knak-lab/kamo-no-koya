@@ -676,7 +676,8 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center text-stone-500 text-sm">
+      <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center gap-3 text-stone-500 text-sm">
+        <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="w-16 h-16 animate-pulse" />
         読み込み中…
       </div>
     );
