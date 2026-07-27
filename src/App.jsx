@@ -76,6 +76,8 @@ export default function App() {
 
   // ========== 売上(Square由来・読み取り専用)・経費 ==========
   const [sales, setSales] = useState([]);
+  // 売上の商品名(rawName)が商品マスタと一致しない場合に、既存商品へ統合するためのマッピング
+  const [productAliases, setProductAliases] = useState({}); // { [rawName]: productId }
   const [expenses, setExpenses] = useState([]);
   const [dailyMeta, setDailyMeta] = useState({}); // { [date]: { channelId, clientId } }
   const [mgmtBudgets, setMgmtBudgets] = useState({});
@@ -130,6 +132,7 @@ export default function App() {
         if (cancelled) return;
         setMaterials(data.materials || []);
         setProducts(data.products || []);
+        setProductAliases(data.productAliases || {});
         setRecipes(data.recipes || {});
         setSetBreakdowns(data.setBreakdowns || {});
         setRebateClients(data.rebateClients || []);
@@ -168,6 +171,7 @@ export default function App() {
         await gasApi.saveAll({
           materials,
           products,
+          productAliases,
           recipes,
           setBreakdowns,
           rebateClients,
@@ -191,6 +195,7 @@ export default function App() {
   }, [
     materials,
     products,
+    productAliases,
     recipes,
     setBreakdowns,
     rebateClients,
@@ -228,12 +233,32 @@ export default function App() {
     [products, recipes, setBreakdowns, materialMap]
   );
 
+  // 売上の商品名が商品マスタに無い場合でも、エイリアス(マージ)設定があれば
+  // 統合先の商品として扱う。原価スナップショットは統合先の現在の原価で
+  // ライブ再計算する(未登録商品として0円でスタンプされている可能性があるため)。
+  const resolvedSales = useMemo(
+    () =>
+      sales.map((s) => {
+        const aliasTarget = productAliases[s.productId];
+        if (!aliasTarget) return s;
+        const cost = productCosts[aliasTarget]?.原価 || 0;
+        return { ...s, productId: aliasTarget, unitCostAtSale: cost, costSubtotal: cost * s.qty };
+      }),
+    [sales, productAliases, productCosts]
+  );
+
   // ========== 日次・月次集計 ==========
-  const allDates = useMemo(() => computeAllDates({ sales, expenses, dailyMeta }), [sales, expenses, dailyMeta]);
-  const settingDates = useMemo(() => computeSettingDates({ sales, dailyMeta }), [sales, dailyMeta]);
+  const allDates = useMemo(
+    () => computeAllDates({ sales: resolvedSales, expenses, dailyMeta }),
+    [resolvedSales, expenses, dailyMeta]
+  );
+  const settingDates = useMemo(
+    () => computeSettingDates({ sales: resolvedSales, dailyMeta }),
+    [resolvedSales, dailyMeta]
+  );
   const dailyRows = useMemo(
-    () => computeDailyRows({ allDates, sales, expenses, dailyMeta, channelMap, rebateMap, productCosts }),
-    [allDates, sales, expenses, dailyMeta, channelMap, rebateMap, productCosts]
+    () => computeDailyRows({ allDates, sales: resolvedSales, expenses, dailyMeta, channelMap, rebateMap, productCosts }),
+    [allDates, resolvedSales, expenses, dailyMeta, channelMap, rebateMap, productCosts]
   );
   const allYearMonths = useMemo(
     () => computeAllYearMonths({ dailyRows, mgmtBudgets, finBudgets }),
@@ -259,12 +284,12 @@ export default function App() {
   );
   const customerChartData = useMemo(() => computeCustomerChartData(dailyRows), [dailyRows]);
   const productSalesRanking = useMemo(
-    () => computeProductSalesRanking({ sales, productMap }),
-    [sales, productMap]
+    () => computeProductSalesRanking({ sales: resolvedSales, productMap }),
+    [resolvedSales, productMap]
   );
   const dataGaps = useMemo(
-    () => computeDataGaps({ settingDates, dailyMeta, sales, productMap, expenses, products, productCosts }),
-    [settingDates, dailyMeta, sales, productMap, expenses, products, productCosts]
+    () => computeDataGaps({ settingDates, dailyMeta, sales: resolvedSales, productMap, expenses, products, productCosts }),
+    [settingDates, dailyMeta, resolvedSales, productMap, expenses, products, productCosts]
   );
 
   // ========== ハンドラ: 材料マスタ ==========
@@ -433,6 +458,19 @@ export default function App() {
       requestAnimationFrame(() => {
         document.getElementById("product-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
+    });
+  };
+
+  // ヌケモレチェックの「商品マスタに無い(不明)」商品名を、既存商品の売上としてマージする
+  const mergeProductAlias = (rawName, productId) => {
+    if (!rawName || !productId) return;
+    setProductAliases((prev) => ({ ...prev, [rawName]: productId }));
+  };
+  const removeProductAlias = (rawName) => {
+    setProductAliases((prev) => {
+      const next = { ...prev };
+      delete next[rawName];
+      return next;
     });
   };
 
@@ -739,6 +777,9 @@ export default function App() {
             removeExpense={removeExpense}
             dataGaps={dataGaps}
             onEditProduct={jumpToProductInMaster}
+            products={products}
+            productAliases={productAliases}
+            mergeProductAlias={mergeProductAlias}
           />
         )}
 
@@ -760,7 +801,7 @@ export default function App() {
             dailyRows={dailyRows}
             channelMap={channelMap}
             rebateMap={rebateMap}
-            sales={sales}
+            sales={resolvedSales}
             productMap={productMap}
           />
         )}
@@ -831,6 +872,8 @@ export default function App() {
             singleProducts={singleProducts}
             productCosts={productCosts}
             products={products}
+            productAliases={productAliases}
+            removeProductAlias={removeProductAlias}
             productListOpen={productListOpen}
             setProductListOpen={setProductListOpen}
             renamingId={renamingId}

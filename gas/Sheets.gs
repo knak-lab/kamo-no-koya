@@ -72,6 +72,11 @@ const SETTINGS_SEED = [[true]];
 const SHEET_SYNC_LOG = "Square同期ログ";
 const SYNC_LOG_HDR = ["timestamp", "type", "status", "message"];
 
+// 売上_Squareの商品名(rawName)が商品マスター_原価管理のどの商品名(productId)の
+// 売上として扱われるべきかのマッピング(ヌケモレチェックの「マージ」機能用)
+const SHEET_PRODUCT_ALIASES = "商品名エイリアス";
+const PRODUCT_ALIASES_HDR = ["rawName", "productId"];
+
 // ─────────────────────────────────────────
 //  汎用ヘルパー
 // ─────────────────────────────────────────
@@ -288,6 +293,29 @@ function saveProducts_(products) {
   const sheet = getOrCreateSheet_(SHEET_PRODUCTS, PRODUCTS_HDR);
   clearDataRows_(sheet);
   writeRows_(sheet, objectsToRows_(PRODUCTS_HDR, products), PRODUCTS_HDR.length);
+}
+
+// ─────────────────────────────────────────
+//  商品名エイリアス(新規シート。rawName = name)
+// ─────────────────────────────────────────
+
+function getProductAliases_() {
+  const sheet = getOrCreateSheet_(SHEET_PRODUCT_ALIASES, PRODUCT_ALIASES_HDR);
+  const map = {};
+  getDataRows_(sheet).forEach(function (r) {
+    if (r[0]) map[String(r[0])] = String(r[1] || "");
+  });
+  return map;
+}
+
+function saveProductAliases_(aliases) {
+  const headers = PRODUCT_ALIASES_HDR;
+  const sheet = getOrCreateSheet_(SHEET_PRODUCT_ALIASES, headers);
+  clearDataRows_(sheet);
+  const rows = Object.keys(aliases || {}).map(function (rawName) {
+    return [rawName, aliases[rawName]];
+  });
+  writeRows_(sheet, rows, headers.length);
 }
 
 // ─────────────────────────────────────────
@@ -849,6 +877,7 @@ function getAll_() {
   return {
     materials: getMaterials_(),
     products: getProducts_(),
+    productAliases: getProductAliases_(),
     recipes: getRecipes_(),
     setBreakdowns: getSetBreakdowns_(),
     rebateClients: getRebateClients_(),
@@ -869,6 +898,7 @@ function getAll_() {
 function saveAll_(body) {
   saveMaterials_(body.materials || []);
   saveProducts_(body.products || []);
+  saveProductAliases_(body.productAliases || {});
   saveRecipes_(body.recipes || {});
   saveSetBreakdowns_(body.setBreakdowns || {});
   saveRebateClients_(body.rebateClients || []);

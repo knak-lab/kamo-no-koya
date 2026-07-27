@@ -30,6 +30,9 @@ export default function InputTab({
   removeExpense,
   dataGaps,
   onEditProduct,
+  products,
+  productAliases,
+  mergeProductAlias,
 }) {
   const [openYears, setOpenYears] = useState({});
   const [openMonths, setOpenMonths] = useState({});
@@ -436,6 +439,7 @@ export default function InputTab({
               items: dataGaps.unknownProductNames,
               onClick: onEditProduct,
               disabled: (item) => item === "(空白)",
+              mergeable: true,
             },
             { label: "販売形態がhibiなのに利用料の経費が無い", items: dataGaps.hibiDatesWithoutFee, onClick: focusExpenseDate },
             { label: "商品マスタで原材料費が0円", items: dataGaps.zeroRawMaterialProducts, onClick: onEditProduct },
@@ -451,7 +455,38 @@ export default function InputTab({
               {check.items.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {check.items.slice(0, 30).map((item, i) => {
-                    const clickable = check.onClick && !(check.disabled && check.disabled(item));
+                    const disabled = check.disabled && check.disabled(item);
+                    if (check.mergeable) {
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center gap-1 text-xs bg-red-50 text-red-700 rounded pl-1.5 pr-1 py-0.5"
+                        >
+                          {disabled ? (
+                            <span>{item}</span>
+                          ) : (
+                            <button onClick={() => check.onClick(item)} className="hover:underline">
+                              {item}
+                            </button>
+                          )}
+                          {!disabled && (
+                            <select
+                              className="border border-red-200 rounded text-[11px] px-1 py-0.5 bg-white text-stone-700"
+                              value=""
+                              onChange={(e) => e.target.value && mergeProductAlias(item, e.target.value)}
+                            >
+                              <option value="">既存商品に統合</option>
+                              {products.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                      );
+                    }
+                    const clickable = check.onClick && !disabled;
                     return clickable ? (
                       <button
                         key={i}

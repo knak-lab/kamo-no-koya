@@ -39,6 +39,8 @@ export default function MasterTab({
   singleProducts,
   productCosts,
   products,
+  productAliases,
+  removeProductAlias,
   productListOpen,
   setProductListOpen,
   renamingId,
@@ -563,6 +565,40 @@ export default function MasterTab({
           </div>
         )}
       </section>
+
+      {/* 商品名の統合(エイリアス。入力タブのヌケモレチェックから設定) */}
+      {Object.keys(productAliases || {}).length > 0 && (
+        <section className="bg-white rounded-lg border border-stone-200 p-4">
+          <h2 className="font-semibold mb-1">商品名の統合(売上明細のマージ)</h2>
+          <p className="text-xs text-stone-500 mb-3">
+            売上明細の商品名(Square由来)が商品マスタと一致しなかったものを、既存商品の売上として統合した一覧です。「入力」タブのヌケモレチェックから設定できます。
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-stone-500 border-b">
+                  <th className="py-1 pr-2">売上明細の商品名(元)</th>
+                  <th className="py-1 pr-2">統合先の商品</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(productAliases).map(([rawName, productId]) => (
+                  <tr key={rawName} className="border-b border-stone-100">
+                    <td className="py-1 pr-2">{rawName}</td>
+                    <td className="py-1 pr-2">{products.find((p) => p.id === productId)?.name || productId}</td>
+                    <td>
+                      <button onClick={() => removeProductAlias(rawName)} title="統合を解除">
+                        <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* 材料・包材マスタ */}
       <section className="bg-white rounded-lg border border-stone-200 p-4">
