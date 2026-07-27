@@ -59,6 +59,10 @@ export default function App() {
   const [editingRatio, setEditingRatio] = useState(false);
   const [costRatioDraft, setCostRatioDraft] = useState("");
   const [kindMode, setKindMode] = useState("single"); // 検索・新規登録の対象("single"|"set")
+  // ヌケモレチェック「商品マスタで包材費が0円」で、個別に「不要」扱いにした商品idの一覧
+  const [packagingExemptions, setPackagingExemptions] = useState([]);
+  const [aliasListOpen, setAliasListOpen] = useState(false);
+  const [packagingExemptListOpen, setPackagingExemptListOpen] = useState(false);
 
   // 商品マスタの編集ドラフト: 検索/新規登録→編集画面表示→「保存」で初めてproducts/recipes/setBreakdownsに反映される
   const [productDraft, setProductDraft] = useState(null);
@@ -133,6 +137,7 @@ export default function App() {
         setMaterials(data.materials || []);
         setProducts(data.products || []);
         setProductAliases(data.productAliases || {});
+        setPackagingExemptions(data.packagingExemptions || []);
         setRecipes(data.recipes || {});
         setSetBreakdowns(data.setBreakdowns || {});
         setRebateClients(data.rebateClients || []);
@@ -172,6 +177,7 @@ export default function App() {
           materials,
           products,
           productAliases,
+          packagingExemptions,
           recipes,
           setBreakdowns,
           rebateClients,
@@ -196,6 +202,7 @@ export default function App() {
     materials,
     products,
     productAliases,
+    packagingExemptions,
     recipes,
     setBreakdowns,
     rebateClients,
@@ -288,8 +295,19 @@ export default function App() {
     [resolvedSales, productMap]
   );
   const dataGaps = useMemo(
-    () => computeDataGaps({ settingDates, dailyMeta, sales: resolvedSales, productMap, expenses, products, productCosts }),
-    [settingDates, dailyMeta, resolvedSales, productMap, expenses, products, productCosts]
+    () =>
+      computeDataGaps({
+        settingDates,
+        dailyMeta,
+        sales: resolvedSales,
+        productMap,
+        expenses,
+        products,
+        productCosts,
+        materials,
+        packagingExemptIds: packagingExemptions,
+      }),
+    [settingDates, dailyMeta, resolvedSales, productMap, expenses, products, productCosts, materials, packagingExemptions]
   );
 
   // ========== ハンドラ: 材料マスタ ==========
@@ -471,6 +489,24 @@ export default function App() {
       const next = { ...prev };
       delete next[rawName];
       return next;
+    });
+  };
+
+  // ヌケモレチェック「商品マスタで包材費が0円」を個別に「不要」扱いにする(トグル)
+  const togglePackagingExempt = (productId) => {
+    setPackagingExemptions((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+  };
+
+  // ヌケモレチェックから材料・包材マスタの該当行へ直接ジャンプ
+  const jumpToMaterialInMaster = (name) => {
+    setTab("master");
+    setMaterialListOpen(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById(`material-row-${name}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
     });
   };
 
@@ -777,9 +813,12 @@ export default function App() {
             removeExpense={removeExpense}
             dataGaps={dataGaps}
             onEditProduct={jumpToProductInMaster}
+            onEditMaterial={jumpToMaterialInMaster}
             products={products}
             productAliases={productAliases}
             mergeProductAlias={mergeProductAlias}
+            packagingExemptions={packagingExemptions}
+            togglePackagingExempt={togglePackagingExempt}
           />
         )}
 
@@ -874,6 +913,12 @@ export default function App() {
             products={products}
             productAliases={productAliases}
             removeProductAlias={removeProductAlias}
+            aliasListOpen={aliasListOpen}
+            setAliasListOpen={setAliasListOpen}
+            packagingExemptions={packagingExemptions}
+            togglePackagingExempt={togglePackagingExempt}
+            packagingExemptListOpen={packagingExemptListOpen}
+            setPackagingExemptListOpen={setPackagingExemptListOpen}
             productListOpen={productListOpen}
             setProductListOpen={setProductListOpen}
             renamingId={renamingId}

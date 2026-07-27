@@ -77,6 +77,11 @@ const SYNC_LOG_HDR = ["timestamp", "type", "status", "message"];
 const SHEET_PRODUCT_ALIASES = "商品名エイリアス";
 const PRODUCT_ALIASES_HDR = ["rawName", "productId"];
 
+// ヌケモレチェック「商品マスタで包材費が0円」で、意図的に包材無しの商品を
+// 個別に除外(不要)扱いにするためのID一覧
+const SHEET_PACKAGING_EXEMPTIONS = "包材費0円チェック除外";
+const PACKAGING_EXEMPTIONS_HDR = ["productId"];
+
 // ─────────────────────────────────────────
 //  汎用ヘルパー
 // ─────────────────────────────────────────
@@ -314,6 +319,29 @@ function saveProductAliases_(aliases) {
   clearDataRows_(sheet);
   const rows = Object.keys(aliases || {}).map(function (rawName) {
     return [rawName, aliases[rawName]];
+  });
+  writeRows_(sheet, rows, headers.length);
+}
+
+// ─────────────────────────────────────────
+//  包材費0円チェック除外(新規シート。productIdの単一列)
+// ─────────────────────────────────────────
+
+function getPackagingExemptions_() {
+  const sheet = getOrCreateSheet_(SHEET_PACKAGING_EXEMPTIONS, PACKAGING_EXEMPTIONS_HDR);
+  return getDataRows_(sheet)
+    .map(function (r) {
+      return String(r[0] || "");
+    })
+    .filter(Boolean);
+}
+
+function savePackagingExemptions_(ids) {
+  const headers = PACKAGING_EXEMPTIONS_HDR;
+  const sheet = getOrCreateSheet_(SHEET_PACKAGING_EXEMPTIONS, headers);
+  clearDataRows_(sheet);
+  const rows = (ids || []).map(function (id) {
+    return [id];
   });
   writeRows_(sheet, rows, headers.length);
 }
@@ -878,6 +906,7 @@ function getAll_() {
     materials: getMaterials_(),
     products: getProducts_(),
     productAliases: getProductAliases_(),
+    packagingExemptions: getPackagingExemptions_(),
     recipes: getRecipes_(),
     setBreakdowns: getSetBreakdowns_(),
     rebateClients: getRebateClients_(),
@@ -899,6 +928,7 @@ function saveAll_(body) {
   saveMaterials_(body.materials || []);
   saveProducts_(body.products || []);
   saveProductAliases_(body.productAliases || {});
+  savePackagingExemptions_(body.packagingExemptions || []);
   saveRecipes_(body.recipes || {});
   saveSetBreakdowns_(body.setBreakdowns || {});
   saveRebateClients_(body.rebateClients || []);

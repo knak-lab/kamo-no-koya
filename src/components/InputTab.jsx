@@ -30,9 +30,12 @@ export default function InputTab({
   removeExpense,
   dataGaps,
   onEditProduct,
+  onEditMaterial,
   products,
   productAliases,
   mergeProductAlias,
+  packagingExemptions,
+  togglePackagingExempt,
 }) {
   const [openYears, setOpenYears] = useState({});
   const [openMonths, setOpenMonths] = useState({});
@@ -443,7 +446,13 @@ export default function InputTab({
             },
             { label: "販売形態がhibiなのに利用料の経費が無い", items: dataGaps.hibiDatesWithoutFee, onClick: focusExpenseDate },
             { label: "商品マスタで原材料費が0円", items: dataGaps.zeroRawMaterialProducts, onClick: onEditProduct },
-            { label: "商品マスタで包材費が0円", items: dataGaps.zeroPackagingProducts, onClick: onEditProduct },
+            {
+              label: "商品マスタで包材費が0円",
+              items: dataGaps.zeroPackagingProducts,
+              onClick: onEditProduct,
+              exemptable: true,
+            },
+            { label: "材料・包材マスタで仕入単価が0円", items: dataGaps.zeroPriceMaterials, onClick: onEditMaterial },
           ].map((check) => (
             <div key={check.label} className="border border-stone-200 rounded-md p-2">
               <div className="flex items-center justify-between text-sm">
@@ -483,6 +492,25 @@ export default function InputTab({
                               ))}
                             </select>
                           )}
+                        </div>
+                      );
+                    }
+                    if (check.exemptable) {
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center gap-1 text-xs bg-red-50 text-red-700 rounded pl-1.5 pr-1 py-0.5"
+                        >
+                          <button onClick={() => check.onClick(item)} className="hover:underline">
+                            {item}
+                          </button>
+                          <button
+                            onClick={() => togglePackagingExempt(item)}
+                            className="text-[11px] text-stone-500 border border-stone-200 rounded px-1 py-0.5 bg-white hover:bg-stone-50"
+                            title="この商品は包材不要として今後チェックから外す"
+                          >
+                            不要
+                          </button>
                         </div>
                       );
                     }

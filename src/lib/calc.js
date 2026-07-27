@@ -240,7 +240,17 @@ export function computeProductSalesRanking({ sales, productMap }) {
 }
 
 // ========== ヌケモレチェック ==========
-export function computeDataGaps({ settingDates, dailyMeta, sales, productMap, expenses, products, productCosts }) {
+export function computeDataGaps({
+  settingDates,
+  dailyMeta,
+  sales,
+  productMap,
+  expenses,
+  products,
+  productCosts,
+  materials,
+  packagingExemptIds,
+}) {
   const missingChannel = settingDates.filter((date) => !dailyMeta[date]?.channelId);
 
   const missingClient = settingDates.filter((date) => {
@@ -256,7 +266,19 @@ export function computeDataGaps({ settingDates, dailyMeta, sales, productMap, ex
   });
 
   const zeroRawMaterialProducts = products.filter((p) => (productCosts[p.id]?.材料費 || 0) === 0).map((p) => p.name);
-  const zeroPackagingProducts = products.filter((p) => (productCosts[p.id]?.梱包材費 || 0) === 0).map((p) => p.name);
+  const packagingExemptSet = new Set(packagingExemptIds || []);
+  const zeroPackagingProducts = products
+    .filter((p) => (productCosts[p.id]?.梱包材費 || 0) === 0 && !packagingExemptSet.has(p.id))
+    .map((p) => p.name);
+  const zeroPriceMaterials = (materials || []).filter((m) => !(Number(m.unitPrice) > 0)).map((m) => m.name);
 
-  return { missingChannel, missingClient, unknownProductNames, hibiDatesWithoutFee, zeroRawMaterialProducts, zeroPackagingProducts };
+  return {
+    missingChannel,
+    missingClient,
+    unknownProductNames,
+    hibiDatesWithoutFee,
+    zeroRawMaterialProducts,
+    zeroPackagingProducts,
+    zeroPriceMaterials,
+  };
 }

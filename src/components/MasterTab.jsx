@@ -41,6 +41,12 @@ export default function MasterTab({
   products,
   productAliases,
   removeProductAlias,
+  aliasListOpen,
+  setAliasListOpen,
+  packagingExemptions,
+  togglePackagingExempt,
+  packagingExemptListOpen,
+  setPackagingExemptListOpen,
   productListOpen,
   setProductListOpen,
   renamingId,
@@ -566,40 +572,6 @@ export default function MasterTab({
         )}
       </section>
 
-      {/* 商品名の統合(エイリアス。入力タブのヌケモレチェックから設定) */}
-      {Object.keys(productAliases || {}).length > 0 && (
-        <section className="bg-white rounded-lg border border-stone-200 p-4">
-          <h2 className="font-semibold mb-1">商品名の統合(売上明細のマージ)</h2>
-          <p className="text-xs text-stone-500 mb-3">
-            売上明細の商品名(Square由来)が商品マスタと一致しなかったものを、既存商品の売上として統合した一覧です。「入力」タブのヌケモレチェックから設定できます。
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-left text-stone-500 border-b">
-                  <th className="py-1 pr-2">売上明細の商品名(元)</th>
-                  <th className="py-1 pr-2">統合先の商品</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(productAliases).map(([rawName, productId]) => (
-                  <tr key={rawName} className="border-b border-stone-100">
-                    <td className="py-1 pr-2">{rawName}</td>
-                    <td className="py-1 pr-2">{products.find((p) => p.id === productId)?.name || productId}</td>
-                    <td>
-                      <button onClick={() => removeProductAlias(rawName)} title="統合を解除">
-                        <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
       {/* 材料・包材マスタ */}
       <section className="bg-white rounded-lg border border-stone-200 p-4">
         <h2 className="font-semibold mb-3">材料・包材マスタ</h2>
@@ -675,7 +647,7 @@ export default function MasterTab({
               </thead>
               <tbody>
                 {materials.map((m) => (
-                  <tr key={m.id} className="border-b border-stone-100">
+                  <tr key={m.id} id={`material-row-${m.id}`} className="border-b border-stone-100">
                     <td className="py-1 pr-2">
                       <input
                         className="border rounded px-1 py-0.5 w-28"
@@ -954,6 +926,94 @@ export default function MasterTab({
                 {l.timestamp} — {l.type} — {l.status} {l.message ? `(${l.message})` : ""}
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      {/* 商品名の統合(エイリアス。入力タブのヌケモレチェックから設定。通常は閉じておく) */}
+      <section className="bg-white rounded-lg border border-stone-200 p-4">
+        <h2 className="font-semibold mb-1">商品名の統合(売上明細のマージ)</h2>
+        <p className="text-xs text-stone-500 mb-3">
+          売上明細の商品名(Square由来)が商品マスタと一致しなかったものを、既存商品の売上として統合した一覧です。「入力」タブのヌケモレチェックから設定できます。
+        </p>
+        <button
+          onClick={() => setAliasListOpen((v) => !v)}
+          className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 font-medium"
+        >
+          {aliasListOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          登録済み一覧({Object.keys(productAliases || {}).length}件)
+        </button>
+        {aliasListOpen && (
+          <div className="overflow-x-auto mt-2">
+            {Object.keys(productAliases || {}).length === 0 ? (
+              <p className="text-xs text-stone-400">まだ統合はありません。</p>
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-stone-500 border-b">
+                    <th className="py-1 pr-2">売上明細の商品名(元)</th>
+                    <th className="py-1 pr-2">統合先の商品</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(productAliases).map(([rawName, productId]) => (
+                    <tr key={rawName} className="border-b border-stone-100">
+                      <td className="py-1 pr-2">{rawName}</td>
+                      <td className="py-1 pr-2">{products.find((p) => p.id === productId)?.name || productId}</td>
+                      <td>
+                        <button onClick={() => removeProductAlias(rawName)} title="統合を解除">
+                          <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* 包材費0円チェック除外(入力タブのヌケモレチェックから設定。通常は閉じておく) */}
+      <section className="bg-white rounded-lg border border-stone-200 p-4">
+        <h2 className="font-semibold mb-1">包材費0円チェック除外</h2>
+        <p className="text-xs text-stone-500 mb-3">
+          「商品マスタで包材費が0円」のヌケモレチェックで、意図的に包材が無い商品を個別に「不要」扱いにした一覧です。
+        </p>
+        <button
+          onClick={() => setPackagingExemptListOpen((v) => !v)}
+          className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 font-medium"
+        >
+          {packagingExemptListOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          登録済み一覧({(packagingExemptions || []).length}件)
+        </button>
+        {packagingExemptListOpen && (
+          <div className="overflow-x-auto mt-2">
+            {(packagingExemptions || []).length === 0 ? (
+              <p className="text-xs text-stone-400">まだ除外はありません。</p>
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-stone-500 border-b">
+                    <th className="py-1 pr-2">商品名</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {packagingExemptions.map((productId) => (
+                    <tr key={productId} className="border-b border-stone-100">
+                      <td className="py-1 pr-2">{products.find((p) => p.id === productId)?.name || productId}</td>
+                      <td>
+                        <button onClick={() => togglePackagingExempt(productId)} title="除外を解除">
+                          <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
       </section>
