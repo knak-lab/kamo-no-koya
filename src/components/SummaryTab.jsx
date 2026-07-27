@@ -77,7 +77,9 @@ export default function SummaryTab({
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-                {monthMetric === "sales" && <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} unit="%" />}
+                {monthMetric === "sales" && (
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} unit="%" domain={[0, 100]} />
+                )}
                 <Tooltip formatter={(v, name) => (name.includes("粗利率") ? `${v}%` : yen(v))} />
                 <Legend />
                 {monthChannel === "all" && <Bar yAxisId="left" dataKey="目標" fill="#d6d3d1" radius={[3, 3, 0, 0]} />}

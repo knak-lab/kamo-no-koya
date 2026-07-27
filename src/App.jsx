@@ -478,7 +478,7 @@ export default function App() {
     setProductDraft((prev) => ({ ...prev, [kind]: prev[kind].filter((row) => row.id !== rowId) }));
   };
   const addDraftBreakdownRow = (kind) => {
-    const defaultRef = kind === "component" ? singleProducts.find((p) => p.id !== productDraft.id)?.id : materials[0]?.id;
+    const defaultRef = kind === "component" ? singleProducts.find((p) => p.id !== productDraft.id)?.id : packMaterials[0]?.id;
     setProductDraft((prev) => ({ ...prev, breakdown: [...prev.breakdown, { id: uid(), kind, refId: defaultRef, qty: 1 }] }));
   };
   const updateDraftBreakdownRow = (rowId, field, value) => {

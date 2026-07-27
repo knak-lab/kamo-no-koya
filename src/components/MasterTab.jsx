@@ -303,18 +303,63 @@ export default function MasterTab({
             </div>
           )}
 
-          {/* セット内訳(セットのみ) */}
+          {/* セット内訳(セットのみ。単品の材料/包材と同じく2セクションに分ける) */}
           {productDraft.kind === "set" && (
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-sm font-medium">セット内訳</h3>
-                <div className="flex gap-2">
+            <>
+              {/* 構成商品 */}
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-sm font-medium">構成商品</h3>
                   <button
                     onClick={() => addDraftBreakdownRow("component")}
                     className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
                   >
                     <Plus size={12} /> 構成商品を追加
                   </button>
+                </div>
+                <p className="text-[10px] text-stone-400 mb-1">数量×原価で計算されます。</p>
+                <div className="space-y-1">
+                  {productDraft.breakdown
+                    .filter((row) => row.kind === "component")
+                    .map((row) => {
+                      const unitCost = productCosts[row.refId]?.原価 || 0;
+                      const lineCost = unitCost * (Number(row.qty) || 0);
+                      return (
+                        <div key={row.id} className="flex items-center gap-2 text-xs">
+                          <select
+                            className="border rounded px-2 py-1 flex-1"
+                            value={row.refId || ""}
+                            onChange={(e) => updateDraftBreakdownRow(row.id, "refId", e.target.value)}
+                          >
+                            {singleProducts
+                              .filter((p) => p.id !== productDraft.id)
+                              .map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name}
+                                </option>
+                              ))}
+                          </select>
+                          <input
+                            type="number"
+                            className="border rounded px-2 py-1 w-16"
+                            value={row.qty}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => updateDraftBreakdownRow(row.id, "qty", e.target.value)}
+                          />
+                          <span className="w-24 text-right tabular-nums text-stone-500">{yen(lineCost)}</span>
+                          <button onClick={() => removeDraftBreakdownRow(row.id)}>
+                            <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* 梱包・資材 */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-sm font-medium">梱包・資材</h3>
                   <button
                     onClick={() => addDraftBreakdownRow("material")}
                     className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
@@ -322,58 +367,42 @@ export default function MasterTab({
                     <Plus size={12} /> 梱包・資材を追加
                   </button>
                 </div>
-              </div>
-              <p className="text-[10px] text-stone-400 mb-2">
-                構成商品は「数量×原価」、梱包・資材は数量に関わらず単価そのままで計算されます(外箱など)。
-              </p>
-              <div className="space-y-1">
-                {productDraft.breakdown.map((row) => {
-                  const unitCost = row.kind === "component" ? productCosts[row.refId]?.原価 || 0 : materialMap[row.refId]?.unitPrice || 0;
-                  const lineCost = row.kind === "component" ? unitCost * (Number(row.qty) || 0) : unitCost;
-                  return (
-                    <div key={row.id} className="flex items-center gap-2 text-xs">
-                      <span
-                        className={`shrink-0 w-16 text-center rounded px-1 py-0.5 ${
-                          row.kind === "component" ? "bg-amber-50 text-amber-700" : "bg-stone-100 text-stone-600"
-                        }`}
-                      >
-                        {row.kind === "component" ? "構成商品" : "梱包・資材"}
-                      </span>
-                      <select
-                        className="border rounded px-2 py-1 flex-1"
-                        value={row.refId || ""}
-                        onChange={(e) => updateDraftBreakdownRow(row.id, "refId", e.target.value)}
-                      >
-                        {row.kind === "component"
-                          ? singleProducts
-                              .filter((p) => p.id !== productDraft.id)
-                              .map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name}
-                                </option>
-                              ))
-                          : materials.map((m) => (
+                <p className="text-[10px] text-stone-400 mb-1">数量に関わらず単価そのままで計算されます(外箱など)。</p>
+                <div className="space-y-1">
+                  {productDraft.breakdown
+                    .filter((row) => row.kind === "material")
+                    .map((row) => {
+                      const unitCost = materialMap[row.refId]?.unitPrice || 0;
+                      return (
+                        <div key={row.id} className="flex items-center gap-2 text-xs">
+                          <select
+                            className="border rounded px-2 py-1 flex-1"
+                            value={row.refId || ""}
+                            onChange={(e) => updateDraftBreakdownRow(row.id, "refId", e.target.value)}
+                          >
+                            {packMaterials.map((m) => (
                               <option key={m.id} value={m.id}>
                                 {m.name}
                               </option>
                             ))}
-                      </select>
-                      <input
-                        type="number"
-                        className="border rounded px-2 py-1 w-16"
-                        value={row.qty}
-                        onFocus={(e) => e.target.select()}
-                        onChange={(e) => updateDraftBreakdownRow(row.id, "qty", e.target.value)}
-                      />
-                      <span className="w-24 text-right tabular-nums text-stone-500">{yen(lineCost)}</span>
-                      <button onClick={() => removeDraftBreakdownRow(row.id)}>
-                        <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
-                      </button>
-                    </div>
-                  );
-                })}
+                          </select>
+                          <input
+                            type="number"
+                            className="border rounded px-2 py-1 w-16"
+                            value={row.qty}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => updateDraftBreakdownRow(row.id, "qty", e.target.value)}
+                          />
+                          <span className="w-24 text-right tabular-nums text-stone-500">{yen(unitCost)}</span>
+                          <button onClick={() => removeDraftBreakdownRow(row.id)}>
+                            <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* 包材リスト(単品のみ。セットの梱包・資材はセット内訳で管理) */}
