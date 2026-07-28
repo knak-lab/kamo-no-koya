@@ -35,6 +35,35 @@ import MasterTab from "./components/MasterTab";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
+// 読み込み中画面で、画面上をランダムに歩き回るカモ(絵文字)
+function WanderingDuck() {
+  const [pos, setPos] = useState({ x: 50, y: 50 });
+  const [facingLeft, setFacingLeft] = useState(false);
+
+  useEffect(() => {
+    const wander = () => {
+      setPos((prev) => {
+        const nextX = 8 + Math.random() * 84;
+        const nextY = 12 + Math.random() * 76;
+        setFacingLeft(nextX < prev.x);
+        return { x: nextX, y: nextY };
+      });
+    };
+    wander();
+    const timer = setInterval(wander, 2200);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div
+      className="fixed text-4xl pointer-events-none transition-[left,top] duration-[2000ms] ease-in-out"
+      style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: `translate(-50%, -50%) scaleX(${facingLeft ? -1 : 1})` }}
+    >
+      🦆
+    </div>
+  );
+}
+
 export default function App() {
   const [tab, setTab] = useState("input");
 
@@ -765,9 +794,10 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center gap-3 text-stone-500 text-sm">
-        <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="w-16 h-16 animate-pulse" />
+      <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center gap-3 text-stone-500 text-sm overflow-hidden">
+        <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="w-48 h-48 animate-pulse" />
         読み込み中…
+        <WanderingDuck />
       </div>
     );
   }
@@ -777,10 +807,13 @@ export default function App() {
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <header className="border-b border-stone-300 pb-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <p className="text-xs tracking-widest text-amber-700 font-semibold uppercase">カモの小屋 収益分析</p>
-              <h1 className="text-2xl font-bold mt-1">収益分析アプリ</h1>
-              <p className="text-sm text-stone-500 mt-1">商品マスタで計算した原価が、売上の日次・月次集計にそのまま連動します。</p>
+            <div className="flex items-center gap-3">
+              <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="w-12 h-12 shrink-0" />
+              <div>
+                <p className="text-xs tracking-widest text-amber-700 font-semibold uppercase">カモの小屋 収益分析</p>
+                <h1 className="text-2xl font-bold mt-1">カモの小屋！</h1>
+                <p className="text-sm text-stone-500 mt-1">商品マスタで計算した原価が、売上の日次・月次集計にそのまま連動します。</p>
+              </div>
             </div>
             <SaveIndicator state={saveState} loadError={loadError} />
           </div>

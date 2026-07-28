@@ -25,10 +25,10 @@ export const STAFF_OPTIONS = ["さっとん", "ひさし", "あっこ", "かけ�
 export const TABS = [
   { key: "management", label: "サマリ" },
   { key: "calendar", label: "カレンダー" },
-  { key: "financial", label: "PL" },
   { key: "input", label: "入力" },
   { key: "todo", label: "TODO" },
   { key: "master", label: "マスタ" },
+  { key: "financial", label: "PL" },
 ];
 
 export const METRIC_LABEL = { sales: "売上", profit: "営業利益" };
