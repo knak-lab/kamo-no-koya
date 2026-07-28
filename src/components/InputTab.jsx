@@ -34,11 +34,26 @@ export default function InputTab({
   onEditProduct,
   onEditMaterial,
   products,
-  productAliases,
-  mergeProductAlias,
+  saleOverrides,
+  setSaleOverride,
   packagingExemptions,
   togglePackagingExempt,
 }) {
+  const [unknownSaleDrafts, setUnknownSaleDrafts] = useState({}); // { [saleId]: { productId, qty } }
+  const getUnknownSaleDraft = (item) =>
+    unknownSaleDrafts[item.id] || { productId: "", qty: item.qty };
+  const setUnknownSaleDraftField = (item, field, value) =>
+    setUnknownSaleDrafts((prev) => ({ ...prev, [item.id]: { ...getUnknownSaleDraft(item), [field]: value } }));
+  const applyUnknownSale = (item) => {
+    const draft = getUnknownSaleDraft(item);
+    if (!draft.productId) return;
+    setSaleOverride(item.id, draft.productId, draft.qty);
+    setUnknownSaleDrafts((prev) => {
+      const next = { ...prev };
+      delete next[item.id];
+      return next;
+    });
+  };
   const [openYears, setOpenYears] = useState({});
   const [openMonths, setOpenMonths] = useState({});
   const [openDates, setOpenDates] = useState({});
@@ -453,16 +468,73 @@ export default function InputTab({
           よくある入力漏れ・データ不整合を自動でチェックします。項目をクリックすると該当箇所を開いて編集できます。
         </p>
         <div className="space-y-2">
+          {/* 売上明細の商品が商品マスタに無い(不明)。同じ商品名でも日によって実商品が違いうるため、
+              名前で一括統合せず1行(日付)ごとに商品・数量を指定して解決する */}
+          <div className="border border-stone-200 rounded-md p-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">売上明細の商品が商品マスタに無い(不明)</span>
+              <span className={`text-xs font-semibold ${dataGaps.unknownSales.length ? "text-red-600" : "text-emerald-600"}`}>
+                {dataGaps.unknownSales.length ? `${dataGaps.unknownSales.length}件` : "問題なし"}
+              </span>
+            </div>
+            {dataGaps.unknownSales.length > 0 && (
+              <div className="mt-1.5 space-y-1">
+                {dataGaps.unknownSales.slice(0, 30).map((item) => {
+                  const draft = getUnknownSaleDraft(item);
+                  const isBlank = item.rawName === "(空白)";
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex flex-wrap items-center gap-1.5 text-xs bg-red-50 text-red-700 rounded px-1.5 py-1"
+                    >
+                      <span className="text-stone-500">{item.date}</span>
+                      {isBlank ? (
+                        <span>{item.rawName}</span>
+                      ) : (
+                        <button onClick={() => onEditProduct(item.rawName)} className="hover:underline">
+                          {item.rawName}
+                        </button>
+                      )}
+                      <span className="text-stone-500">
+                        数量{item.qty}・{yen(item.amount)}
+                      </span>
+                      <select
+                        className="border border-red-200 rounded text-[11px] px-1 py-0.5 bg-white text-stone-700"
+                        value={draft.productId}
+                        onChange={(e) => setUnknownSaleDraftField(item, "productId", e.target.value)}
+                      >
+                        <option value="">商品を選択</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        className="w-14 border border-red-200 rounded text-[11px] px-1 py-0.5 bg-white text-stone-700"
+                        value={draft.qty}
+                        onChange={(e) => setUnknownSaleDraftField(item, "qty", e.target.value)}
+                      />
+                      <button
+                        onClick={() => applyUnknownSale(item)}
+                        disabled={!draft.productId}
+                        className="text-[11px] border border-red-200 rounded px-1.5 py-0.5 bg-white text-stone-700 hover:bg-stone-50 disabled:opacity-40"
+                      >
+                        適用
+                      </button>
+                    </div>
+                  );
+                })}
+                {dataGaps.unknownSales.length > 30 && (
+                  <span className="text-xs text-stone-400">他{dataGaps.unknownSales.length - 30}件</span>
+                )}
+              </div>
+            )}
+          </div>
           {[
             { label: "販売形態漏れ(日次設定)", items: dataGaps.missingChannel, onClick: focusSettingDate },
             { label: "販売形態が委託販売なのに販売先漏れ", items: dataGaps.missingClient, onClick: focusSettingDate },
-            {
-              label: "売上明細の商品が商品マスタに無い(不明)",
-              items: dataGaps.unknownProductNames,
-              onClick: onEditProduct,
-              disabled: (item) => item === "(空白)",
-              mergeable: true,
-            },
             { label: "販売形態がhibiなのに利用料の経費が無い", items: dataGaps.hibiDatesWithoutFee, onClick: focusExpenseDate },
             { label: "商品マスタで原材料費が0円", items: dataGaps.zeroRawMaterialProducts, onClick: onEditProduct },
             {
@@ -484,36 +556,6 @@ export default function InputTab({
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {check.items.slice(0, 30).map((item, i) => {
                     const disabled = check.disabled && check.disabled(item);
-                    if (check.mergeable) {
-                      return (
-                        <div
-                          key={i}
-                          className="flex items-center gap-1 text-xs bg-red-50 text-red-700 rounded pl-1.5 pr-1 py-0.5"
-                        >
-                          {disabled ? (
-                            <span>{item}</span>
-                          ) : (
-                            <button onClick={() => check.onClick(item)} className="hover:underline">
-                              {item}
-                            </button>
-                          )}
-                          {!disabled && (
-                            <select
-                              className="border border-red-200 rounded text-[11px] px-1 py-0.5 bg-white text-stone-700"
-                              value=""
-                              onChange={(e) => e.target.value && mergeProductAlias(item, e.target.value)}
-                            >
-                              <option value="">既存商品に統合</option>
-                              {products.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name}
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
-                      );
-                    }
                     if (check.exemptable) {
                       return (
                         <div

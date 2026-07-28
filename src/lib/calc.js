@@ -258,7 +258,12 @@ export function computeDataGaps({
     return meta.channelId === "委託販売" && !meta.clientId;
   });
 
-  const unknownProductNames = [...new Set(sales.filter((s) => !productMap[s.productId]).map((s) => s.productId || "(空白)"))];
+  // 商品マスタと一致しない売上明細を、名前で束ねず1行(日付)ごとに列挙する
+  // (同じ不明な商品名でも日によって実際の商品が違いうるため、個別に商品・数量を指定できるようにする)
+  const unknownSales = sales
+    .filter((s) => !productMap[s.productId])
+    .map((s) => ({ id: s.id, date: s.date, rawName: s.productId || "(空白)", qty: s.qty, amount: s.amount }))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
   const hibiDatesWithoutFee = settingDates.filter((date) => {
     if (dailyMeta[date]?.channelId !== "hibi") return false;
@@ -275,7 +280,7 @@ export function computeDataGaps({
   return {
     missingChannel,
     missingClient,
-    unknownProductNames,
+    unknownSales,
     hibiDatesWithoutFee,
     zeroRawMaterialProducts,
     zeroPackagingProducts,

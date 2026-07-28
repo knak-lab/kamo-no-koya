@@ -87,6 +87,12 @@ const PRODUCT_ALIASES_HDR = ["rawName", "productId"];
 const SHEET_PACKAGING_EXEMPTIONS = "包材費0円チェック除外";
 const PACKAGING_EXEMPTIONS_HDR = ["productId"];
 
+// 売上_Squareの個別の明細行(saleId単位)を、商品名エイリアス(rawName一括)より
+// 細かく「この1行だけ」商品・数量を上書きするためのマッピング
+// (同じ不明な商品名でも日によって実際の商品が違うケースに対応)
+const SHEET_SALE_OVERRIDES = "売上個別修正";
+const SALE_OVERRIDES_HDR = ["saleId", "productId", "qty"];
+
 // ─────────────────────────────────────────
 //  汎用ヘルパー
 // ─────────────────────────────────────────
@@ -373,6 +379,30 @@ function savePackagingExemptions_(ids) {
   clearDataRows_(sheet);
   const rows = (ids || []).map(function (id) {
     return [id];
+  });
+  writeRows_(sheet, rows, headers.length);
+}
+
+// ─────────────────────────────────────────
+//  売上個別修正(新規シート。saleId単位で商品・数量を上書き)
+// ─────────────────────────────────────────
+
+function getSaleOverrides_() {
+  const sheet = getOrCreateSheet_(SHEET_SALE_OVERRIDES, SALE_OVERRIDES_HDR);
+  const map = {};
+  getDataRows_(sheet).forEach(function (r) {
+    if (r[0]) map[String(r[0])] = { productId: String(r[1] || ""), qty: Number(r[2]) || 0 };
+  });
+  return map;
+}
+
+function saveSaleOverrides_(overrides) {
+  const headers = SALE_OVERRIDES_HDR;
+  const sheet = getOrCreateSheet_(SHEET_SALE_OVERRIDES, headers);
+  clearDataRows_(sheet);
+  const rows = Object.keys(overrides || {}).map(function (saleId) {
+    const o = overrides[saleId] || {};
+    return [saleId, o.productId || "", Number(o.qty) || 0];
   });
   writeRows_(sheet, rows, headers.length);
 }
@@ -939,6 +969,7 @@ function getAll_() {
     products: getProducts_(),
     productAliases: getProductAliases_(),
     packagingExemptions: getPackagingExemptions_(),
+    saleOverrides: getSaleOverrides_(),
     recipes: getRecipes_(),
     setBreakdowns: getSetBreakdowns_(),
     rebateClients: getRebateClients_(),
@@ -962,6 +993,7 @@ function saveAll_(body) {
   saveProducts_(body.products || []);
   saveProductAliases_(body.productAliases || {});
   savePackagingExemptions_(body.packagingExemptions || []);
+  saveSaleOverrides_(body.saleOverrides || {});
   saveRecipes_(body.recipes || {});
   saveSetBreakdowns_(body.setBreakdowns || {});
   saveRebateClients_(body.rebateClients || []);

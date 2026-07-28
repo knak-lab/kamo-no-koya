@@ -92,6 +92,7 @@ export default function App() {
   // ヌケモレチェック「商品マスタで包材費が0円」で、個別に「不要」扱いにした商品idの一覧
   const [packagingExemptions, setPackagingExemptions] = useState([]);
   const [aliasListOpen, setAliasListOpen] = useState(false);
+  const [saleOverrideListOpen, setSaleOverrideListOpen] = useState(false);
   const [packagingExemptListOpen, setPackagingExemptListOpen] = useState(false);
 
   // 商品マスタの編集ドラフト: 検索/新規登録→編集画面表示→「保存」で初めてproducts/recipes/setBreakdownsに反映される
@@ -112,6 +113,8 @@ export default function App() {
   const [sales, setSales] = useState([]);
   // 売上の商品名(rawName)が商品マスタと一致しない場合に、既存商品へ統合するためのマッピング
   const [productAliases, setProductAliases] = useState({}); // { [rawName]: productId }
+  // 売上明細1行(saleId)単位で商品・数量を個別に上書きするマッピング(同名でも日によって実商品が違う場合用)
+  const [saleOverrides, setSaleOverrides] = useState({}); // { [saleId]: { productId, qty } }
   const [expenses, setExpenses] = useState([]);
   const [dailyMeta, setDailyMeta] = useState({}); // { [date]: { channelId, clientId } }
   const [mgmtBudgets, setMgmtBudgets] = useState({});
@@ -174,6 +177,7 @@ export default function App() {
         setCalendarEvents(data.calendarEvents || []);
         setProducts(data.products || []);
         setProductAliases(data.productAliases || {});
+        setSaleOverrides(data.saleOverrides || {});
         setPackagingExemptions(data.packagingExemptions || []);
         setRecipes(data.recipes || {});
         setSetBreakdowns(data.setBreakdowns || {});
@@ -215,6 +219,7 @@ export default function App() {
           calendarEvents,
           products,
           productAliases,
+          saleOverrides,
           packagingExemptions,
           recipes,
           setBreakdowns,
@@ -241,6 +246,7 @@ export default function App() {
     calendarEvents,
     products,
     productAliases,
+    saleOverrides,
     packagingExemptions,
     recipes,
     setBreakdowns,
@@ -279,18 +285,25 @@ export default function App() {
     [products, recipes, setBreakdowns, materialMap]
   );
 
-  // 売上の商品名が商品マスタに無い場合でも、エイリアス(マージ)設定があれば
-  // 統合先の商品として扱う。原価スナップショットは統合先の現在の原価で
-  // ライブ再計算する(未登録商品として0円でスタンプされている可能性があるため)。
+  // 売上の商品名が商品マスタに無い場合でも、個別修正(saleId単位)またはエイリアス(rawName一括)
+  // 設定があれば解決先の商品として扱う。個別修正が優先(同じ不明な商品名でも日によって実商品が
+  // 違う場合に対応するため)。原価スナップショットは解決先の現在の原価でライブ再計算する
+  // (未登録商品として0円でスタンプされている可能性があるため)。
   const resolvedSales = useMemo(
     () =>
       sales.map((s) => {
+        const override = saleOverrides[s.id];
+        if (override && override.productId) {
+          const qty = Number(override.qty) || 0;
+          const cost = productCosts[override.productId]?.原価 || 0;
+          return { ...s, productId: override.productId, qty, unitCostAtSale: cost, costSubtotal: cost * qty };
+        }
         const aliasTarget = productAliases[s.productId];
         if (!aliasTarget) return s;
         const cost = productCosts[aliasTarget]?.原価 || 0;
         return { ...s, productId: aliasTarget, unitCostAtSale: cost, costSubtotal: cost * s.qty };
       }),
-    [sales, productAliases, productCosts]
+    [sales, saleOverrides, productAliases, productCosts]
   );
 
   // ========== 日次・月次集計 ==========
@@ -529,6 +542,19 @@ export default function App() {
     setProductAliases((prev) => {
       const next = { ...prev };
       delete next[rawName];
+      return next;
+    });
+  };
+
+  // ヌケモレチェックの「商品マスタに無い(不明)」明細1行を、個別に商品・数量を指定して解決する
+  const setSaleOverride = (saleId, productId, qty) => {
+    if (!saleId || !productId) return;
+    setSaleOverrides((prev) => ({ ...prev, [saleId]: { productId, qty: Number(qty) || 0 } }));
+  };
+  const removeSaleOverride = (saleId) => {
+    setSaleOverrides((prev) => {
+      const next = { ...prev };
+      delete next[saleId];
       return next;
     });
   };
@@ -900,8 +926,8 @@ export default function App() {
             onEditProduct={jumpToProductInMaster}
             onEditMaterial={jumpToMaterialInMaster}
             products={products}
-            productAliases={productAliases}
-            mergeProductAlias={mergeProductAlias}
+            saleOverrides={saleOverrides}
+            setSaleOverride={setSaleOverride}
             packagingExemptions={packagingExemptions}
             togglePackagingExempt={togglePackagingExempt}
           />
@@ -1015,6 +1041,11 @@ export default function App() {
             removeProductAlias={removeProductAlias}
             aliasListOpen={aliasListOpen}
             setAliasListOpen={setAliasListOpen}
+            sales={sales}
+            saleOverrides={saleOverrides}
+            removeSaleOverride={removeSaleOverride}
+            saleOverrideListOpen={saleOverrideListOpen}
+            setSaleOverrideListOpen={setSaleOverrideListOpen}
             packagingExemptions={packagingExemptions}
             togglePackagingExempt={togglePackagingExempt}
             packagingExemptListOpen={packagingExemptListOpen}

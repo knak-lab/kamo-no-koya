@@ -30,6 +30,14 @@ const formatDateLabel = (date) => {
   return `${y}年${m}月${d}日(${weekday})`;
 };
 
+// 委託販売の日は「委託販売」だけでは誰宛か分からないため「{委託先名}:委託販売」の形式にする
+const formatChannelLabel = (dMeta, rebateClients) => {
+  if (!dMeta.channelId) return "";
+  if (dMeta.channelId !== "委託販売") return dMeta.channelId;
+  const clientName = rebateClients.find((c) => c.id === dMeta.clientId)?.name || "(未選択)";
+  return `${clientName}:委託販売`;
+};
+
 export default function CalendarTab({
   calendarEvents,
   addCalendarEvent,
@@ -122,7 +130,9 @@ export default function CalendarTab({
                     }`}
                   >
                     <div className={`text-xs ${isToday ? "font-bold text-amber-700" : "text-stone-600"}`}>{day}</div>
-                    {dMeta.channelId && <div className="text-stone-400 truncate">{dMeta.channelId}</div>}
+                    {dMeta.channelId && (
+                      <div className="text-stone-400 truncate">{formatChannelLabel(dMeta, rebateClients)}</div>
+                    )}
                     {events.slice(0, 2).map((e) => (
                       <div key={e.id} className="truncate text-amber-700">
                         ・{e.title}

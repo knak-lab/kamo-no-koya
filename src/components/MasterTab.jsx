@@ -44,6 +44,11 @@ export default function MasterTab({
   removeProductAlias,
   aliasListOpen,
   setAliasListOpen,
+  sales,
+  saleOverrides,
+  removeSaleOverride,
+  saleOverrideListOpen,
+  setSaleOverrideListOpen,
   packagingExemptions,
   togglePackagingExempt,
   packagingExemptListOpen,
@@ -1015,6 +1020,58 @@ export default function MasterTab({
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* 売上明細の個別修正(saleId単位。入力タブのヌケモレチェックから設定。通常は閉じておく) */}
+      <section className="bg-white rounded-lg border border-stone-200 p-4">
+        <h2 className="font-semibold mb-1">売上明細の個別修正</h2>
+        <p className="text-xs text-stone-500 mb-3">
+          商品マスタと一致しない売上明細1行を、名前で一括統合せず個別に商品・数量を指定して解決した一覧です。「入力」タブのヌケモレチェックから設定できます。
+        </p>
+        <button
+          onClick={() => setSaleOverrideListOpen((v) => !v)}
+          className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 font-medium"
+        >
+          {saleOverrideListOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          登録済み一覧({Object.keys(saleOverrides || {}).length}件)
+        </button>
+        {saleOverrideListOpen && (
+          <div className="overflow-x-auto mt-2">
+            {Object.keys(saleOverrides || {}).length === 0 ? (
+              <p className="text-xs text-stone-400">まだ個別修正はありません。</p>
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-stone-500 border-b">
+                    <th className="py-1 pr-2">日付</th>
+                    <th className="py-1 pr-2">売上明細の商品名(元)</th>
+                    <th className="py-1 pr-2">修正後の商品</th>
+                    <th className="py-1 pr-2">数量</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(saleOverrides).map(([saleId, override]) => {
+                    const original = sales.find((s) => s.id === saleId);
+                    return (
+                      <tr key={saleId} className="border-b border-stone-100">
+                        <td className="py-1 pr-2">{original?.date || "-"}</td>
+                        <td className="py-1 pr-2">{original?.productId || "-"}</td>
+                        <td className="py-1 pr-2">{products.find((p) => p.id === override.productId)?.name || override.productId}</td>
+                        <td className="py-1 pr-2">{override.qty}</td>
+                        <td>
+                          <button onClick={() => removeSaleOverride(saleId)} title="修正を解除">
+                            <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
