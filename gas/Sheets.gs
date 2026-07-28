@@ -45,7 +45,7 @@ const SUBTASKS_FIELD_BY_HEADER = { "サブタスクID": "id", "親タスクID": 
 
 // ---- このアプリ専用の新規シート(実データとの衝突なし) ----
 const SHEET_PRODUCTS = "商品マスター_原価管理";
-const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion"];
+const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion", "procedure"];
 
 const SHEET_RECIPES = "レシピ"; // 実データ採用(20材料+5梱包材の横持ち形式)
 const RECIPE_MAX_INGREDIENTS = 20;
@@ -295,7 +295,15 @@ function writeByHeaderOrder_(sheet, objects, fieldByHeader, keyHeader) {
 function getProducts_() {
   const sheet = getOrCreateSheet_(SHEET_PRODUCTS, PRODUCTS_HDR);
   return rowsToObjects_(PRODUCTS_HDR, getDataRows_(sheet)).map(function (p) {
-    return { id: String(p.id), name: p.name || "", price: Number(p.price) || 0, kind: p.kind || "single", squareCatalogId: p.squareCatalogId || "", squareCatalogVersion: p.squareCatalogVersion || "" };
+    return {
+      id: String(p.id),
+      name: p.name || "",
+      price: Number(p.price) || 0,
+      kind: p.kind || "single",
+      squareCatalogId: p.squareCatalogId || "",
+      squareCatalogVersion: p.squareCatalogVersion || "",
+      procedure: p.procedure || "",
+    };
   });
 }
 

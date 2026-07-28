@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, PlusCircle } from "lucide-react";
 import { yen, pct, RAW, PACK, UNITS } from "../lib/constants";
 
@@ -84,6 +85,7 @@ export default function MasterTab({
   squareSyncing,
   runSyncCatalogFromSquare,
 }) {
+  const [procedureOpen, setProcedureOpen] = useState(false);
   return (
     <>
       <section className="bg-white rounded-lg border border-stone-200 p-4">
@@ -459,6 +461,25 @@ export default function MasterTab({
               </div>
             </div>
           )}
+
+          {/* 手順(制作手順のメモ。単品・セットどちらでも表示、開閉式でデフォルト閉) */}
+          <div className="mt-4">
+            <button
+              onClick={() => setProcedureOpen((v) => !v)}
+              className="flex items-center gap-1 text-sm font-medium hover:text-amber-800"
+            >
+              {procedureOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              手順
+            </button>
+            {procedureOpen && (
+              <textarea
+                className="mt-1 border rounded px-2 py-1.5 text-xs w-full h-32"
+                value={productDraft.procedure || ""}
+                onChange={(e) => updateDraftField("procedure", e.target.value)}
+                placeholder="この商品の制作手順を入力"
+              />
+            )}
+          </div>
           </>
           )}
         </section>

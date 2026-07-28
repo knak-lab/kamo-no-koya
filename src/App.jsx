@@ -414,6 +414,7 @@ export default function App() {
       ingredients: recipe.ingredients,
       packaging: recipe.packaging,
       breakdown: getBreakdown(setBreakdowns, product.id),
+      procedure: product.procedure || "",
     };
   };
   const buildNewDraft = (name, kind) => ({
@@ -426,6 +427,7 @@ export default function App() {
     ingredients: [],
     packaging: [],
     breakdown: [],
+    procedure: "",
   });
   const openProductDraft = (product) => {
     const draft = buildDraftFromProduct(product);
@@ -519,11 +521,11 @@ export default function App() {
 
   const saveProductDraft = () => {
     if (!productDraft) return;
-    const { id, name, price, kind, servings, ingredients, packaging, breakdown, isNew } = productDraft;
+    const { id, name, price, kind, servings, ingredients, packaging, breakdown, procedure, isNew } = productDraft;
     if (isNew) {
-      setProducts((prev) => [...prev, { id, name, price, kind }]);
+      setProducts((prev) => [...prev, { id, name, price, kind, procedure }]);
     } else {
-      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, price, kind } : p)));
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, price, kind, procedure } : p)));
     }
     setRecipes((prev) => ({ ...prev, [id]: { servings, ingredients, packaging } }));
     setSetBreakdowns((prev) => ({ ...prev, [id]: breakdown }));
