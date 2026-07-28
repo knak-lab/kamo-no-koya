@@ -116,6 +116,61 @@ function stampCostSnapshot() {
   }
 }
 
+// 売上_Squareの原価スナップショット(unitCostAtSale)が0円の行だけを対象に、
+// 現在のレシピ・内訳マスタで原価が算出できるようになっていれば再スタンプする。
+// stampCostSnapshotは「未確定(空欄)」の行しか埋めないため、レシピ登録前に
+// 0円で確定してしまった行はそのままでは永久に直らない。この関数はその
+// 取りこぼしだけをピンポイントで再計算する(0円以外の確定済み行には触れない)。
+function recalcZeroCostSales() {
+  try {
+    const sheet = getSalesSheetReadOnly_();
+    if (!sheet) {
+      Logger.log("売上_Squareシートが見つかりません");
+      return { updated: 0 };
+    }
+
+    const products = getProducts_();
+    const materials = getMaterials_();
+    const recipes = getRecipes_();
+    const setBreakdowns = getSetBreakdowns_();
+    const materialMap = {};
+    materials.forEach(function (m) {
+      materialMap[m.id] = m;
+    });
+    const costs = computeProductCosts_(products, recipes, setBreakdowns, materialMap);
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { updated: 0 };
+    const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+
+    let updated = 0;
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const id = row[0];
+      if (!id) continue;
+
+      const stampedCost = Number(row[7]) || 0;
+      if (stampedCost !== 0) continue; // 0円以外(未確定含む)は対象外。未確定行はstampCostSnapshotに任せる
+      if (row[7] === "" || row[7] === null) continue; // 未確定(空欄)はここでは対象外
+
+      const name = String(row[2] || "");
+      const qty = Number(row[3]) || 0;
+      const newCost = costs[name] ? costs[name].原価 : 0;
+      if (newCost === 0) continue; // 現在も原価0円ならスキップ(実質変化なし)
+
+      const newCostSubtotal = newCost * qty;
+      sheet.getRange(2 + i, 8, 1, 2).setValues([[newCost, newCostSubtotal]]);
+      updated++;
+    }
+
+    appendSyncLog_("recalcZeroCost", "success", updated + "件更新");
+    return { updated: updated, squareSyncLog: getSquareSyncLog_(20) };
+  } catch (ex) {
+    appendSyncLog_("recalcZeroCost", "error", String(ex));
+    throw ex;
+  }
+}
+
 // フェーズ1: 既存「商品マスター」(Square由来)の商品名・価格を
 // 「商品マスター_原価管理」へ一方向で反映する。名前が一致すれば価格のみ更新、
 // 一致しなければ新規追加(kind='single' で作成し、レシピは空のまま)。

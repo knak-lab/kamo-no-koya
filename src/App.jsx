@@ -143,6 +143,8 @@ export default function App() {
   const [squareSyncConfirmOpen, setSquareSyncConfirmOpen] = useState(false);
   const [squareSyncLog, setSquareSyncLog] = useState([]);
   const [squareSyncing, setSquareSyncing] = useState(false);
+  const [recalcZeroCostRunning, setRecalcZeroCostRunning] = useState(false);
+  const [recalcZeroCostResult, setRecalcZeroCostResult] = useState(null);
 
   // ========== TODO・サブタスク ==========
   const [todos, setTodos] = useState([]);
@@ -791,6 +793,24 @@ export default function App() {
       setSquareSyncing(false);
     }
   };
+  const runRecalcZeroCostSales = async () => {
+    setRecalcZeroCostRunning(true);
+    setRecalcZeroCostResult(null);
+    try {
+      const res = await gasApi.recalcZeroCostSales();
+      if (res.squareSyncLog) setSquareSyncLog(res.squareSyncLog);
+      setRecalcZeroCostResult(res.updated || 0);
+      if (res.updated > 0) {
+        const fresh = await gasApi.getAll();
+        setSales(fresh.sales || []);
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    } finally {
+      setRecalcZeroCostRunning(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -1018,6 +1038,9 @@ export default function App() {
             squareSyncLog={squareSyncLog}
             squareSyncing={squareSyncing}
             runSyncCatalogFromSquare={runSyncCatalogFromSquare}
+            recalcZeroCostRunning={recalcZeroCostRunning}
+            recalcZeroCostResult={recalcZeroCostResult}
+            runRecalcZeroCostSales={runRecalcZeroCostSales}
           />
         )}
       </div>

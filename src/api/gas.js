@@ -34,4 +34,7 @@ export const gasApi = {
 
   // Square連携フェーズ1: 商品マスター(Square由来)→ 商品マスター_原価管理 への名前・価格の一方向反映
   syncCatalogFromSquare: () => post({ action: "syncCatalogFromSquare" }),
+
+  // レシピ登録前に原価0円で確定してしまった売上行を、現在のレシピで再計算する
+  recalcZeroCostSales: () => post({ action: "recalcZeroCostSales" }),
 };

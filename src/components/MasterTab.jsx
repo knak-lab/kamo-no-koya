@@ -84,6 +84,9 @@ export default function MasterTab({
   squareSyncLog,
   squareSyncing,
   runSyncCatalogFromSquare,
+  recalcZeroCostRunning,
+  recalcZeroCostResult,
+  runRecalcZeroCostSales,
 }) {
   const [procedureOpen, setProcedureOpen] = useState(false);
   return (
@@ -949,6 +952,29 @@ export default function MasterTab({
             ))}
           </div>
         )}
+      </section>
+
+      {/* 原価スナップショット再計算(レシピ登録前に0円確定してしまった売上行の救済) */}
+      <section className="bg-white rounded-lg border border-stone-200 p-4">
+        <h2 className="font-semibold mb-1">原価スナップショット再計算</h2>
+        <p className="text-xs text-stone-500 mb-3">
+          レシピ・内訳を登録する前に売れてしまい原価0円のまま確定した売上行だけを、現在のレシピで再計算します。すでに0円以外で確定している行(正常な過去の粗利)には触れません。
+        </p>
+        <div className="flex items-center justify-between border border-stone-200 rounded-md p-3">
+          <div>
+            <div className="text-sm font-medium">原価0円の売上行を再計算</div>
+            {recalcZeroCostResult !== null && (
+              <div className="text-xs text-stone-500 mt-0.5">{recalcZeroCostResult}件の売上行を更新しました</div>
+            )}
+          </div>
+          <button
+            onClick={runRecalcZeroCostSales}
+            disabled={recalcZeroCostRunning}
+            className="shrink-0 ml-4 bg-amber-700 text-white rounded px-3 py-1.5 text-sm hover:bg-amber-800 disabled:opacity-50"
+          >
+            {recalcZeroCostRunning ? "再計算中…" : "再計算する"}
+          </button>
+        </div>
       </section>
 
       {/* 商品名の統合(エイリアス。入力タブのヌケモレチェックから設定。通常は閉じておく) */}
