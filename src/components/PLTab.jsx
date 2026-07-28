@@ -2,7 +2,7 @@ import { TrendingUp, TrendingDown, Info } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
 import { yen } from "../lib/constants";
 
-export default function PLTab({ monthlyRows, setFinBudgetField }) {
+export default function PLTab({ monthlyRows }) {
   return (
     <section className="bg-white rounded-lg border border-stone-200 p-4 space-y-4">
       <div>
@@ -61,35 +61,6 @@ export default function PLTab({ monthlyRows, setFinBudgetField }) {
               </span>
             </div>
 
-            <div className="mt-3 flex flex-wrap gap-3 items-end text-xs">
-              <div>
-                <label className="block text-stone-500 mb-1">原材料仕入_予算</label>
-                <input
-                  type="number"
-                  className="border rounded px-2 py-1 w-28"
-                  value={m.fBudget.rawMaterialBudget || 0}
-                  onChange={(e) => setFinBudgetField(m.yearMonth, "rawMaterialBudget", e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-stone-500 mb-1">その他経費_予算</label>
-                <input
-                  type="number"
-                  className="border rounded px-2 py-1 w-28"
-                  value={m.fBudget.otherExpenseBudget || 0}
-                  onChange={(e) => setFinBudgetField(m.yearMonth, "otherExpenseBudget", e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-stone-500 mb-1">営業利益_予算</label>
-                <input
-                  type="number"
-                  className="border rounded px-2 py-1 w-28"
-                  value={m.fBudget.profitBudget || 0}
-                  onChange={(e) => setFinBudgetField(m.yearMonth, "profitBudget", e.target.value)}
-                />
-              </div>
-            </div>
           </div>
         );
       })}

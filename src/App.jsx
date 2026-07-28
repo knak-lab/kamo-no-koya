@@ -744,12 +744,6 @@ export default function App() {
     });
     if (editingTargetMonth === ym) setEditingTargetMonth(null);
   };
-  const setFinBudgetField = (ym, field, value) =>
-    setFinBudgets((prev) => ({
-      ...prev,
-      [ym]: { ...(prev[ym] || { rawMaterialBudget: 0, otherExpenseBudget: 0, profitBudget: 0 }), [field]: Number(value) || 0 },
-    }));
-
   // --- ハンドラ: Square連携 ---
   const confirmSquareSyncToggle = () => {
     setSquareSyncFromSquare((v) => !v);
@@ -881,7 +875,7 @@ export default function App() {
           />
         )}
 
-        {tab === "financial" && <PLTab monthlyRows={monthlyRows} setFinBudgetField={setFinBudgetField} />}
+        {tab === "financial" && <PLTab monthlyRows={monthlyRows} />}
 
         {tab === "todo" && (
           <TodoTab

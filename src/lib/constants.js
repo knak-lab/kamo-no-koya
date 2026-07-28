@@ -23,10 +23,10 @@ export const TODO_STATUSES = ["未着手", "進行中", "完了"];
 export const STAFF_OPTIONS = ["さっとん", "ひさし", "あっこ", "かける", "りょーすけ", "もえ"];
 
 export const TABS = [
-  { key: "input", label: "入力" },
-  { key: "calendar", label: "カレンダー" },
   { key: "management", label: "サマリ" },
+  { key: "calendar", label: "カレンダー" },
   { key: "financial", label: "PL" },
+  { key: "input", label: "入力" },
   { key: "todo", label: "TODO" },
   { key: "master", label: "マスタ" },
 ];
