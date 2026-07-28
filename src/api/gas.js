@@ -37,4 +37,7 @@ export const gasApi = {
 
   // レシピ登録前に原価0円で確定してしまった売上行を、現在のレシピで再計算する
   recalcZeroCostSales: () => post({ action: "recalcZeroCostSales" }),
+
+  // Square注文の即時取り込み(売上データ取込ボタン)。取り込み後の原価スタンプまで行う
+  syncSalesFromSquare: () => post({ action: "syncSalesFromSquare" }),
 };

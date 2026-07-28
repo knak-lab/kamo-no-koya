@@ -171,6 +171,21 @@ function recalcZeroCostSales() {
   }
 }
 
+// 「売上データ取込」ボタンから呼ばれる。既存のSquare注文取り込み(syncFromSquare)を
+// その場で実行し、続けて新しく入った売上行に原価もすぐスタンプする(stampCostSnapshot)。
+// 夜間トリガーを待たずに、取り込んだ売上をすぐ原価付きで見られるようにするため。
+function syncSalesFromSquare() {
+  try {
+    syncFromSquare();
+    stampCostSnapshot();
+    appendSyncLog_("syncSalesFromSquare", "success", "手動取込を実行しました");
+    return { squareSyncLog: getSquareSyncLog_(20) };
+  } catch (ex) {
+    appendSyncLog_("syncSalesFromSquare", "error", String(ex));
+    throw ex;
+  }
+}
+
 // フェーズ1: 既存「商品マスター」(Square由来)の商品名・価格を
 // 「商品マスター_原価管理」へ一方向で反映する。名前が一致すれば価格のみ更新、
 // 一致しなければ新規追加(kind='single' で作成し、レシピは空のまま)。
@@ -225,12 +240,17 @@ function setup() {
   Logger.log("セットアップ完了: シート作成とトリガー登録が完了しました");
 }
 
-// stampCostSnapshotを毎日18:10ごろに実行するインストーラブル・タイムトリガーを登録する。
-// 既存の syncFromSquare (18:00実行) には一切触れない、独立したトリガー。
+// syncFromSquare(Square取り込み)を毎日22:00ごろ、続けてstampCostSnapshot(原価スタンプ)を
+// 22:10ごろに実行するインストーラブル・タイムトリガーを登録する。取り込み直後に原価が
+// 付くよう、常にsyncFromSquareの少し後にstampCostSnapshotが動く関係を保つ。
+// 実行後は既存の同名トリガーを一度削除してから登録し直すため、複数回実行しても重複しない。
 function installTriggers() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
-    if (t.getHandlerFunction() === "stampCostSnapshot") ScriptApp.deleteTrigger(t);
+    if (t.getHandlerFunction() === "stampCostSnapshot" || t.getHandlerFunction() === "syncFromSquare") {
+      ScriptApp.deleteTrigger(t);
+    }
   });
-  ScriptApp.newTrigger("stampCostSnapshot").timeBased().atHour(18).nearMinute(10).everyDays(1).create();
-  Logger.log("stampCostSnapshotの毎日18:10頃トリガーを設定しました");
+  ScriptApp.newTrigger("syncFromSquare").timeBased().atHour(22).nearMinute(0).everyDays(1).create();
+  ScriptApp.newTrigger("stampCostSnapshot").timeBased().atHour(22).nearMinute(10).everyDays(1).create();
+  Logger.log("syncFromSquareの毎日22:00頃・stampCostSnapshotの毎日22:10頃トリガーを設定しました");
 }

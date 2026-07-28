@@ -5,7 +5,7 @@
 //    GET ?action=debugHeaders → 実データ9シートの生ヘッダー行を返す(読み取り専用。
 //        シートの作成・変更は一切行わない)
 //    GET (それ以外)            → getAll_() の内容を返す
-//    POST → body.action で分岐 ("saveAll" / "syncCatalogFromSquare" / "recalcZeroCostSales")
+//    POST → body.action で分岐 ("saveAll" / "syncCatalogFromSquare" / "recalcZeroCostSales" / "syncSalesFromSquare")
 //
 //  CORSはブラウザのプリフライト(OPTIONS)を回避するため、フロント側の
 //  fetchはContent-Type: text/plain;charset=utf-8 でJSON文字列を送る。
@@ -44,6 +44,8 @@ function doPost(e) {
         return ok_(syncCatalogFromSquare());
       case "recalcZeroCostSales":
         return ok_(recalcZeroCostSales());
+      case "syncSalesFromSquare":
+        return ok_(syncSalesFromSquare());
       default:
         return err_("Unknown action: " + body.action);
     }

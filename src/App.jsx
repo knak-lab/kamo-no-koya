@@ -145,6 +145,7 @@ export default function App() {
   const [squareSyncing, setSquareSyncing] = useState(false);
   const [recalcZeroCostRunning, setRecalcZeroCostRunning] = useState(false);
   const [recalcZeroCostResult, setRecalcZeroCostResult] = useState(null);
+  const [salesSyncing, setSalesSyncing] = useState(false);
 
   // ========== TODO・サブタスク ==========
   const [todos, setTodos] = useState([]);
@@ -811,6 +812,20 @@ export default function App() {
       setRecalcZeroCostRunning(false);
     }
   };
+  const runSyncSalesFromSquare = async () => {
+    setSalesSyncing(true);
+    try {
+      const res = await gasApi.syncSalesFromSquare();
+      if (res.squareSyncLog) setSquareSyncLog(res.squareSyncLog);
+      const fresh = await gasApi.getAll();
+      setSales(fresh.sales || []);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    } finally {
+      setSalesSyncing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -855,6 +870,8 @@ export default function App() {
 
         {tab === "input" && (
           <InputTab
+            salesSyncing={salesSyncing}
+            runSyncSalesFromSquare={runSyncSalesFromSquare}
             targetForm={targetForm}
             setTargetForm={setTargetForm}
             addTarget={addTarget}

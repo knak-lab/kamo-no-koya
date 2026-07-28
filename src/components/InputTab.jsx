@@ -4,6 +4,8 @@ import { yen, RAW_MATERIAL_ITEM } from "../lib/constants";
 import DateAccordion from "./DateAccordion";
 
 export default function InputTab({
+  salesSyncing,
+  runSyncSalesFromSquare,
   targetForm,
   setTargetForm,
   addTarget,
@@ -72,6 +74,23 @@ export default function InputTab({
 
   return (
     <>
+      {/* 売上データ取込(Square注文の即時取り込み) */}
+      <section className="bg-white rounded-lg border border-stone-200 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold mb-1">売上データ取込</h2>
+            <p className="text-xs text-stone-500">Squareの注文を今すぐ取り込み、原価も合わせて計算します(通常は毎日22:00頃に自動実行されます)。</p>
+          </div>
+          <button
+            onClick={runSyncSalesFromSquare}
+            disabled={salesSyncing}
+            className="shrink-0 ml-4 bg-amber-700 text-white rounded px-3 py-1.5 text-sm hover:bg-amber-800 disabled:opacity-50"
+          >
+            {salesSyncing ? "取込中…" : "売上データ取込"}
+          </button>
+        </div>
+      </section>
+
       {/* 目標(月単位・売上/粗利率/利益) */}
       <section className="bg-white rounded-lg border border-stone-200 p-4">
         <h2 className="font-semibold mb-1">目標</h2>
