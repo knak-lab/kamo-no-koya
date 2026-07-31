@@ -403,7 +403,10 @@ export default function App() {
       return next;
     });
   };
-  const removeMaterial = (id) => setMaterials((prev) => prev.filter((m) => m.id !== id));
+  const removeMaterial = (id) => {
+    if (!window.confirm("削除しますか？")) return;
+    setMaterials((prev) => prev.filter((m) => m.id !== id));
+  };
 
   // --- ハンドラ: 販売先(委託先)マスタ ---
   const addRebateClient = () => {
@@ -416,7 +419,10 @@ export default function App() {
       prev.map((c) => (c.id === id ? { ...c, [field]: field === "rate" ? Number(value) / 100 : value } : c))
     );
   };
-  const removeRebateClient = (id) => setRebateClients((prev) => prev.filter((c) => c.id !== id));
+  const removeRebateClient = (id) => {
+    if (!window.confirm("削除しますか？")) return;
+    setRebateClients((prev) => prev.filter((c) => c.id !== id));
+  };
 
   // ========== ハンドラ: 商品・レシピ ==========
   const updateProduct = (id, field, value) => {
@@ -703,7 +709,10 @@ export default function App() {
     setExpenses((prev) => [...prev, entry]);
     setExpenseForm((f) => ({ ...f, amount: "", hours: "" }));
   };
-  const removeExpense = (id) => setExpenses((prev) => prev.filter((x) => x.id !== id));
+  const removeExpense = (id) => {
+    if (!window.confirm("削除しますか？")) return;
+    setExpenses((prev) => prev.filter((x) => x.id !== id));
+  };
   const updateExpenseRate = (item, value) => setExpenseRates((prev) => ({ ...prev, [item]: Number(value) || 0 }));
   const addExpenseRate = () => {
     const trimmed = expenseRateForm.name.trim();
@@ -711,12 +720,14 @@ export default function App() {
     setExpenseRates((prev) => ({ ...prev, [trimmed]: Number(expenseRateForm.rate) || 0 }));
     setExpenseRateForm({ name: "", rate: "" });
   };
-  const removeExpenseRate = (item) =>
+  const removeExpenseRate = (item) => {
+    if (!window.confirm("削除しますか？")) return;
     setExpenseRates((prev) => {
       const next = { ...prev };
       delete next[item];
       return next;
     });
+  };
 
   // --- ハンドラ: TODO・サブタスク ---
   const addTodo = () => {
@@ -734,6 +745,7 @@ export default function App() {
   const updateTodo = (id, field, value) => setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, [field]: value } : t)));
   const toggleTodoSnooze = (id) => setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, snoozed: !t.snoozed } : t)));
   const removeTodo = (id) => {
+    if (!window.confirm("削除しますか？")) return;
     setTodos((prev) => prev.filter((t) => t.id !== id));
     setSubtasks((prev) => prev.filter((s) => s.parentTaskId !== id));
   };
@@ -749,7 +761,10 @@ export default function App() {
   };
   const updateSubtask = (id, field, value) => setSubtasks((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
   const toggleSubtaskSnooze = (id) => setSubtasks((prev) => prev.map((s) => (s.id === id ? { ...s, snoozed: !s.snoozed } : s)));
-  const removeSubtask = (id) => setSubtasks((prev) => prev.filter((s) => s.id !== id));
+  const removeSubtask = (id) => {
+    if (!window.confirm("削除しますか？")) return;
+    setSubtasks((prev) => prev.filter((s) => s.id !== id));
+  };
   // サブタスクの並び替え(同じタスク内で1つ上/下と入れ替える)
   const moveSubtask = (taskId, subtaskId, direction) => {
     setSubtasks((prev) => {
@@ -774,7 +789,10 @@ export default function App() {
     if (!date || !title.trim()) return;
     setCalendarEvents((prev) => [...prev, { id: uid(), date, title: title.trim(), memo: memo || "" }]);
   };
-  const removeCalendarEvent = (id) => setCalendarEvents((prev) => prev.filter((e) => e.id !== id));
+  const removeCalendarEvent = (id) => {
+    if (!window.confirm("削除しますか？")) return;
+    setCalendarEvents((prev) => prev.filter((e) => e.id !== id));
+  };
   const setMgmtBudgetField = (ym, field, value) =>
     setMgmtBudgets((prev) => ({
       ...prev,
@@ -795,6 +813,7 @@ export default function App() {
     setTargetForm({ month: "", salesBudget: "", grossMarginRatio: "", profitBudget: "" });
   };
   const removeTargetMonth = (ym) => {
+    if (!window.confirm("削除しますか？")) return;
     setMgmtBudgets((prev) => {
       const next = { ...prev };
       delete next[ym];
