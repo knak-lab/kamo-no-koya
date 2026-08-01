@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { gasApi, isGasReady } from "./api/gas";
+import { gasApi, isGasReady, loadTaskmaniaProjects } from "./api/gas";
 import {
   uid,
   RAW,
@@ -36,6 +36,33 @@ import MasterTab from "./components/MasterTab";
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 // 読み込み中画面で、画面上をランダムに歩き回るカモ(絵文字)
+// タスクマニア(家族タブの「カモの小屋」PJ)側で完了操作されたサブタスクの状態を、
+// このアプリのTODOサブタスクへ反映する。タイムスタンプが新しい方が勝つ双方向同期の
+// カモ側担当分。「進行中」への巻き戻しはできず、完了↔未着手の2値でのみ反映される。
+function mergeTaskmaniaCompletion(subtasks, taskmaniaProjects) {
+  const doneBySourceId = {};
+  (taskmaniaProjects || []).forEach((p) => {
+    (p.tasks || []).forEach((t) => {
+      (t.subtasks || []).forEach((s) => {
+        if (s.sourceSubtaskId) doneBySourceId[s.sourceSubtaskId] = { done: !!s.done, doneUpdatedAt: s.doneUpdatedAt || 0 };
+      });
+    });
+  });
+  if (Object.keys(doneBySourceId).length === 0) return subtasks;
+
+  let changed = false;
+  const next = subtasks.map((s) => {
+    const match = doneBySourceId[s.id];
+    if (!match) return s;
+    if (match.doneUpdatedAt <= (s.statusUpdatedAt || 0)) return s;
+    const wantStatus = match.done ? "完了" : "未着手";
+    if (s.status === wantStatus) return s;
+    changed = true;
+    return { ...s, status: wantStatus, statusUpdatedAt: match.doneUpdatedAt };
+  });
+  return changed ? next : subtasks;
+}
+
 function WanderingDuck() {
   const [pos, setPos] = useState({ x: 50, y: 50 });
   const [facingLeft, setFacingLeft] = useState(false);
@@ -195,6 +222,12 @@ export default function App() {
         setSquareSyncLog(data.squareSyncLog || []);
         hasLoadedRef.current = true;
         setSaveState("idle");
+        try {
+          const { projects: taskmaniaProjects } = await loadTaskmaniaProjects();
+          if (!cancelled) setSubtasks((prev) => mergeTaskmaniaCompletion(prev, taskmaniaProjects));
+        } catch {
+          // タスクマニア側が読み込めなくても、カモの小屋自体の読み込みは成功扱いのまま続行する
+        }
       } catch (e) {
         setLoadError(String(e.message || e));
       } finally {
@@ -765,7 +798,7 @@ export default function App() {
     setSubtasks((prev) => [...prev, { id: uid(), parentTaskId: taskId, ...f, snoozed: false }]);
     setSubtaskForms((prev) => ({ ...prev, [taskId]: { name: "", assignee: STAFF_OPTIONS[0], deadline: "", status: "未着手" } }));
   };
-  const updateSubtask = (id, field, value) => setSubtasks((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
+  const updateSubtask = (id, field, value) => setSubtasks((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value, ...(field === "status" ? { statusUpdatedAt: Date.now() } : {}) } : s)));
   const toggleSubtaskSnooze = (id) => setSubtasks((prev) => prev.map((s) => (s.id === id ? { ...s, snoozed: !s.snoozed } : s)));
   const removeSubtask = (id) => {
     if (!window.confirm("削除しますか？")) return;

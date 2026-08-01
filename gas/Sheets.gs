@@ -41,7 +41,7 @@ const SHEET_TODOS = "TODO";
 const TODOS_FIELD_BY_HEADER = { "タスクID": "id", "カテゴリ": "category", "タスク": "task", "期限": "deadline", "ステータス": "status", "snoozed": "snoozed" };
 
 const SHEET_SUBTASKS = "サブタスク";
-const SUBTASKS_FIELD_BY_HEADER = { "サブタスクID": "id", "親タスクID": "parentTaskId", "分類": "legacyCategory", "サブタスク名": "name", "担当": "assignee", "期限": "deadline", "ステータス": "status", "snoozed": "snoozed" };
+const SUBTASKS_FIELD_BY_HEADER = { "サブタスクID": "id", "親タスクID": "parentTaskId", "分類": "legacyCategory", "サブタスク名": "name", "担当": "assignee", "期限": "deadline", "ステータス": "status", "snoozed": "snoozed", "statusUpdatedAt": "statusUpdatedAt" };
 
 // ---- このアプリ専用の新規シート(実データとの衝突なし) ----
 const SHEET_PRODUCTS = "商品マスター_原価管理";
@@ -797,6 +797,7 @@ function getSubtasks_() {
   const sheet = getExistingSheet_(SHEET_SUBTASKS);
   if (!sheet) return [];
   ensureColumn_(sheet, "snoozed");
+  ensureColumn_(sheet, "statusUpdatedAt");
   const objs = readByHeaderName_(sheet);
   return objs
     .filter(function (o) {
@@ -812,6 +813,7 @@ function getSubtasks_() {
         status: o["ステータス"] || "未着手",
         snoozed: o["snoozed"] === true || o["snoozed"] === "TRUE",
         legacyCategory: o["分類"] || "", // 使途不明の既存列。UIには出さずそのまま保持する
+        statusUpdatedAt: Number(o["statusUpdatedAt"]) || 0,
       };
     });
 }
@@ -820,6 +822,7 @@ function saveSubtasks_(subtasks) {
   const sheet = getExistingSheet_(SHEET_SUBTASKS);
   if (!sheet) return;
   ensureColumn_(sheet, "snoozed");
+  ensureColumn_(sheet, "statusUpdatedAt");
   writeByHeaderOrder_(sheet, subtasks || [], SUBTASKS_FIELD_BY_HEADER, "サブタスクID");
   const deadlineCol = ensureColumn_(sheet, "期限");
   const rows = Math.max(sheet.getMaxRows() - 1, 1);

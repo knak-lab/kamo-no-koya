@@ -1,7 +1,18 @@
 const GAS_URL = import.meta.env.VITE_GAS_URL;
 const API_TOKEN = import.meta.env.VITE_API_TOKEN || "";
+const TASKMANIA_GAS_URL = import.meta.env.VITE_TASKMANIA_GAS_URL;
 
 export const isGasReady = () => Boolean(GAS_URL);
+
+// タスクマニアの完了状態(done)を読み取るための読み取り専用フェッチ。
+// タスクマニアのGAS Web Appはこのアプリと違い { projects: [...] } を直接返す(okラッパーなし)。
+export async function loadTaskmaniaProjects() {
+  if (!TASKMANIA_GAS_URL) return { projects: [] };
+  const res = await fetch(TASKMANIA_GAS_URL);
+  if (!res.ok) throw new Error(`Taskmania GAS load failed: ${res.status}`);
+  const data = await res.json();
+  return { projects: data.projects || [] };
+}
 
 async function post(body) {
   if (!GAS_URL) throw new Error("VITE_GAS_URLが設定されていません");
