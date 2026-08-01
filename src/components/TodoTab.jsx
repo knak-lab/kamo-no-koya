@@ -189,60 +189,62 @@ export default function TodoTab({
                             </button>
                           </div>
 
-                          <div className="space-y-1">
-                            {taskSubtasks.length === 0 && <p className="text-xs text-stone-400">サブタスクなし</p>}
-                            {taskSubtasks.map((s, i) => (
-                              <div
-                                key={s.id}
-                                className={`flex items-center gap-2 text-xs border-b border-stone-100 py-1 ${s.snoozed ? "opacity-50" : ""}`}
-                              >
-                                <div className="flex flex-col shrink-0">
-                                  <button
-                                    onClick={() => moveSubtask(t.id, s.id, -1)}
-                                    disabled={i === 0}
-                                    className="disabled:opacity-20 text-stone-400 hover:text-stone-700"
+                          <div className="overflow-x-auto">
+                            <div className="space-y-1 min-w-max">
+                              {taskSubtasks.length === 0 && <p className="text-xs text-stone-400">サブタスクなし</p>}
+                              {taskSubtasks.map((s, i) => (
+                                <div
+                                  key={s.id}
+                                  className={`flex items-center gap-2 text-xs whitespace-nowrap border-b border-stone-100 py-1 ${s.snoozed ? "opacity-50" : ""}`}
+                                >
+                                  <div className="flex flex-col shrink-0">
+                                    <button
+                                      onClick={() => moveSubtask(t.id, s.id, -1)}
+                                      disabled={i === 0}
+                                      className="disabled:opacity-20 text-stone-400 hover:text-stone-700"
+                                    >
+                                      <ChevronUp size={12} />
+                                    </button>
+                                    <button
+                                      onClick={() => moveSubtask(t.id, s.id, 1)}
+                                      disabled={i === taskSubtasks.length - 1}
+                                      className="disabled:opacity-20 text-stone-400 hover:text-stone-700"
+                                    >
+                                      <ChevronDown size={12} />
+                                    </button>
+                                  </div>
+                                  <span className="shrink-0">
+                                    {s.name}
+                                    {s.snoozed && <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-stone-100 text-stone-500">ちょっとあと</span>}
+                                  </span>
+                                  <span className="text-stone-500 shrink-0">{s.assignee}</span>
+                                  <span className="text-stone-400 shrink-0">{s.deadline || "期限未設定"}</span>
+                                  <select
+                                    className="border rounded px-1 py-0.5 shrink-0"
+                                    value={s.status}
+                                    onChange={(e) => updateSubtask(s.id, "status", e.target.value)}
                                   >
-                                    <ChevronUp size={12} />
+                                    {TODO_STATUSES.map((st) => (
+                                      <option key={st} value={st}>
+                                        {st}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    onClick={() => toggleSubtaskSnooze(s.id)}
+                                    title="ちょっとあと"
+                                    className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border shrink-0 ${
+                                      s.snoozed ? "border-amber-300 text-amber-700 bg-amber-50" : "border-stone-200 text-stone-500 hover:bg-stone-50"
+                                    }`}
+                                  >
+                                    <Clock size={11} /> ちょっとあと
                                   </button>
-                                  <button
-                                    onClick={() => moveSubtask(t.id, s.id, 1)}
-                                    disabled={i === taskSubtasks.length - 1}
-                                    className="disabled:opacity-20 text-stone-400 hover:text-stone-700"
-                                  >
-                                    <ChevronDown size={12} />
+                                  <button onClick={() => removeSubtask(s.id)} className="shrink-0">
+                                    <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
                                   </button>
                                 </div>
-                                <span className="flex-1">
-                                  {s.name}
-                                  {s.snoozed && <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-stone-100 text-stone-500">ちょっとあと</span>}
-                                </span>
-                                <span className="text-stone-500 w-16">{s.assignee}</span>
-                                <span className="text-stone-400 w-24">{s.deadline || "期限未設定"}</span>
-                                <select
-                                  className="border rounded px-1 py-0.5"
-                                  value={s.status}
-                                  onChange={(e) => updateSubtask(s.id, "status", e.target.value)}
-                                >
-                                  {TODO_STATUSES.map((st) => (
-                                    <option key={st} value={st}>
-                                      {st}
-                                    </option>
-                                  ))}
-                                </select>
-                                <button
-                                  onClick={() => toggleSubtaskSnooze(s.id)}
-                                  title="ちょっとあと"
-                                  className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border shrink-0 ${
-                                    s.snoozed ? "border-amber-300 text-amber-700 bg-amber-50" : "border-stone-200 text-stone-500 hover:bg-stone-50"
-                                  }`}
-                                >
-                                  <Clock size={11} /> ちょっとあと
-                                </button>
-                                <button onClick={() => removeSubtask(s.id)}>
-                                  <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
-                                </button>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
