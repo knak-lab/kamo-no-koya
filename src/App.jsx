@@ -713,6 +713,12 @@ export default function App() {
     if (!window.confirm("削除しますか？")) return;
     setExpenses((prev) => prev.filter((x) => x.id !== id));
   };
+  // カレンダーのhibi日から直接、利用料(店舗利用料等)だけを登録するための専用ハンドラ(expenseFormは触らない)
+  const addHibiFee = (date, item, hours) => {
+    if (!item || !hours) return;
+    const amount = Number(hours) * (expenseRates[item] || 0);
+    setExpenses((prev) => [...prev, { id: uid(), date, item, amount, hours: Number(hours) }]);
+  };
   const updateExpenseRate = (item, value) => setExpenseRates((prev) => ({ ...prev, [item]: Number(value) || 0 }));
   const addExpenseRate = () => {
     const trimmed = expenseRateForm.name.trim();
@@ -964,6 +970,10 @@ export default function App() {
             todos={todos}
             addTodoWithDeadline={addTodoWithDeadline}
             updateTodo={updateTodo}
+            expenses={expenses}
+            expenseRates={expenseRates}
+            addHibiFee={addHibiFee}
+            removeExpense={removeExpense}
           />
         )}
 

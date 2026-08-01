@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
-import { TODO_CATEGORIES, TODO_STATUSES } from "../lib/constants";
+import { TODO_CATEGORIES, TODO_STATUSES, yen } from "../lib/constants";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -49,17 +49,31 @@ export default function CalendarTab({
   todos,
   addTodoWithDeadline,
   updateTodo,
+  expenses,
+  expenseRates,
+  addHibiFee,
+  removeExpense,
 }) {
   const today = todayStr();
   const [viewMonth, setViewMonth] = useState(today.slice(0, 7));
   const [selectedDate, setSelectedDate] = useState(today);
   const [eventForm, setEventForm] = useState({ title: "", memo: "" });
   const [todoQuickForm, setTodoQuickForm] = useState({ category: TODO_CATEGORIES[0], task: "" });
+  const [feeForm, setFeeForm] = useState({ item: "", hours: "" });
 
   const weeks = buildMonthWeeks(viewMonth);
   const meta = dailyMeta[selectedDate] || {};
   const dayEvents = calendarEvents.filter((e) => e.date === selectedDate);
   const dayTodos = todos.filter((t) => t.deadline === selectedDate);
+  const feeItemOptions = Object.keys(expenseRates).filter((it) => it.includes("利用料"));
+  const dayFees = expenses.filter((e) => e.date === selectedDate && e.item.includes("利用料"));
+  const selectedFeeItem = feeForm.item || feeItemOptions[0] || "";
+
+  const submitFee = () => {
+    if (!selectedFeeItem || !feeForm.hours) return;
+    addHibiFee(selectedDate, selectedFeeItem, feeForm.hours);
+    setFeeForm((f) => ({ ...f, hours: "" }));
+  };
 
   const submitEvent = () => {
     if (!eventForm.title.trim()) return;
@@ -196,6 +210,71 @@ export default function CalendarTab({
                 )}
               </div>
             </div>
+
+            {meta.channelId === "hibi" && (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium mb-1">利用料</h3>
+                <div className="space-y-1 mb-2">
+                  {dayFees.length === 0 && <p className="text-xs text-stone-400">この日の利用料はまだ登録されていません。</p>}
+                  {dayFees.map((e) => (
+                    <div key={e.id} className="flex items-center justify-between gap-2 text-xs border-b border-stone-100 py-1">
+                      <div>
+                        {e.item}
+                        {e.hours != null && <span className="text-stone-400">（{e.hours}h）</span>} ・ {yen(e.amount)}
+                      </div>
+                      <button onClick={() => removeExpense(e.id)}>
+                        <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {feeItemOptions.length === 0 ? (
+                  <p className="text-xs text-stone-400">
+                    「利用料」を含む経費項目が経費マスタにありません。マスタタブで項目を追加してください。
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2 items-end text-xs">
+                    <div>
+                      <label className="block text-stone-500 mb-1">項目</label>
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={selectedFeeItem}
+                        onChange={(e) => setFeeForm((f) => ({ ...f, item: e.target.value }))}
+                      >
+                        {feeItemOptions.map((it) => (
+                          <option key={it} value={it}>
+                            {it}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-stone-500 mb-1">時間(h)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        className="border rounded px-2 py-1 w-20"
+                        value={feeForm.hours}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => setFeeForm((f) => ({ ...f, hours: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <div className="text-stone-500 mb-1">金額(自動計算・時間単価¥{expenseRates[selectedFeeItem] || 0})</div>
+                      <div className="tabular-nums font-medium py-1.5">
+                        {yen((Number(feeForm.hours) || 0) * (expenseRates[selectedFeeItem] || 0))}
+                      </div>
+                    </div>
+                    <button
+                      onClick={submitFee}
+                      className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800"
+                    >
+                      <Plus size={14} /> 追加
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mb-4">
               <h3 className="text-sm font-medium mb-1">予定(出店・イベント)</h3>
