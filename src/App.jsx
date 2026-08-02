@@ -99,6 +99,7 @@ function useAutosave(hasLoadedRef, snapshotRef, saveFn, setSaveState, deps) {
   const savingRef = useRef(false);
   const pendingRef = useRef(false);
   const timerRef = useRef(null);
+  const initializedRef = useRef(false);
 
   async function runSave() {
     if (savingRef.current) {
@@ -123,6 +124,12 @@ function useAutosave(hasLoadedRef, snapshotRef, saveFn, setSaveState, deps) {
 
   useEffect(() => {
     if (!hasLoadedRef.current) return;
+    // 読み込み完了の瞬間(未ロード→ロード済みへの遷移)は、読み込んだデータを
+    // そのまま送り返すだけの無駄な保存になるためスキップする。
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      return;
+    }
     setSaveState("saving");
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(runSave, 800);
