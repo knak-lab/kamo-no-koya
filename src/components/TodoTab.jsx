@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, Clock } from "lucide-react";
 import { TODO_CATEGORIES, TODO_STATUSES, STAFF_OPTIONS } from "../lib/constants";
 
@@ -25,6 +26,10 @@ export default function TodoTab({
   showCompletedTodos,
   setShowCompletedTodos,
 }) {
+  const [subtaskModalTaskId, setSubtaskModalTaskId] = useState(null);
+  const modalTask = todos.find((t) => t.id === subtaskModalTaskId);
+  const msf = subtaskModalTaskId ? getSubtaskForm(subtaskModalTaskId) : null;
+
   return (
     <>
       <section className="bg-white rounded-lg border border-stone-200 p-4">
@@ -106,7 +111,6 @@ export default function TodoTab({
                     (s) => s.parentTaskId === t.id && (showSnoozed || !s.snoozed) && (showCompletedTodos || s.status !== "完了")
                   );
                   const expanded = expandedTaskId === t.id;
-                  const sf = getSubtaskForm(t.id);
                   const statusColor =
                     t.status === "完了"
                       ? "bg-emerald-100 text-emerald-700"
@@ -165,42 +169,12 @@ export default function TodoTab({
 
                       {expanded && (
                         <div className="mt-3 pl-6 border-l-2 border-stone-100 space-y-3">
-                          <div className="flex flex-wrap gap-2 items-end text-xs">
-                            <div>
-                              <label className="block text-stone-500 mb-1">サブタスク名</label>
-                              <input
-                                className="border rounded px-2 py-1 w-36"
-                                value={sf.name}
-                                onChange={(e) => setSubtaskFormField(t.id, "name", e.target.value)}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-stone-500 mb-1">担当</label>
-                              <select
-                                className="border rounded px-2 py-1"
-                                value={sf.assignee}
-                                onChange={(e) => setSubtaskFormField(t.id, "assignee", e.target.value)}
-                              >
-                                {STAFF_OPTIONS.map((s) => (
-                                  <option key={s} value={s}>
-                                    {s}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-stone-500 mb-1">期限</label>
-                              <input
-                                type="date"
-                                className="border rounded px-2 py-1"
-                                value={sf.deadline}
-                                onChange={(e) => setSubtaskFormField(t.id, "deadline", e.target.value)}
-                              />
-                            </div>
-                            <button onClick={() => addSubtask(t.id)} className="flex items-center gap-1 text-amber-700 hover:text-amber-900">
-                              <Plus size={12} /> 追加
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => setSubtaskModalTaskId(t.id)}
+                            className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
+                          >
+                            <Plus size={12} /> サブタスク
+                          </button>
 
                           <div className="overflow-x-auto">
                             <div className="space-y-1 min-w-max">
@@ -269,6 +243,68 @@ export default function TodoTab({
           );
         })}
       </div>
+
+      {subtaskModalTaskId && msf && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
+            <h3 className="font-semibold text-sm mb-3">サブタスクを追加{modalTask ? `（${modalTask.task}）` : ""}</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-stone-500 mb-1">サブタスク名</label>
+                <input
+                  autoFocus
+                  className="border rounded px-2 py-1 w-full"
+                  value={msf.name}
+                  onChange={(e) => setSubtaskFormField(subtaskModalTaskId, "name", e.target.value)}
+                />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-stone-500 mb-1">担当</label>
+                  <select
+                    className="border rounded px-2 py-1 w-full"
+                    value={msf.assignee}
+                    onChange={(e) => setSubtaskFormField(subtaskModalTaskId, "assignee", e.target.value)}
+                  >
+                    {STAFF_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-stone-500 mb-1">期限</label>
+                  <input
+                    type="date"
+                    className="border rounded px-2 py-1 w-full"
+                    value={msf.deadline}
+                    onChange={(e) => setSubtaskFormField(subtaskModalTaskId, "deadline", e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setSubtaskModalTaskId(null)}
+                className="px-3 py-1.5 text-sm rounded border border-stone-300 text-stone-600 hover:bg-stone-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => {
+                  if (!msf.name.trim()) return;
+                  addSubtask(subtaskModalTaskId);
+                  setSubtaskModalTaskId(null);
+                }}
+                className="px-3 py-1.5 text-sm rounded bg-amber-700 text-white hover:bg-amber-800"
+              >
+                追加
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
