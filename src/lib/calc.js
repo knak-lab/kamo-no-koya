@@ -43,7 +43,7 @@ export function computeProductCosts({ products, recipes, setBreakdowns, material
       let 梱包材費 = 0;
       rows.forEach((row) => {
         if (row.kind === "component") {
-          const compCost = costs[row.refId]?.原価 || 0;
+          const compCost = costs[row.refId]?.製造原価単価 || 0;
           材料費 += compCost * (Number(row.qty) || 0);
         } else {
           const mat = materialMap[row.refId];

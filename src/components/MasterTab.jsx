@@ -335,12 +335,12 @@ export default function MasterTab({
                     <Plus size={12} /> 構成商品を追加
                   </button>
                 </div>
-                <p className="text-[10px] text-stone-400 mb-1">数量×原価で計算されます。</p>
+                <p className="text-[10px] text-stone-400 mb-1">数量×製造原価単価(÷分割数)で計算されます。</p>
                 <div className="space-y-1">
                   {productDraft.breakdown
                     .filter((row) => row.kind === "component")
                     .map((row) => {
-                      const unitCost = productCosts[row.refId]?.原価 || 0;
+                      const unitCost = productCosts[row.refId]?.製造原価単価 || 0;
                       const lineCost = unitCost * (Number(row.qty) || 0);
                       return (
                         <div key={row.id} className="flex items-center gap-2 text-xs">
