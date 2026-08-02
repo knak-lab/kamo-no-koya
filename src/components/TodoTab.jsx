@@ -152,6 +152,17 @@ export default function TodoTab({
                           </button>
                           <select
                             className="border rounded px-1 py-0.5 text-xs"
+                            value={t.category}
+                            onChange={(e) => updateTodo(t.id, "category", e.target.value)}
+                          >
+                            {TODO_CATEGORIES.map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            className="border rounded px-1 py-0.5 text-xs"
                             value={t.status}
                             onChange={(e) => updateTodo(t.id, "status", e.target.value)}
                           >
