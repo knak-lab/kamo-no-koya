@@ -22,6 +22,8 @@ export default function TodoTab({
   moveSubtask,
   showSnoozed,
   setShowSnoozed,
+  showCompletedTodos,
+  setShowCompletedTodos,
 }) {
   return (
     <>
@@ -66,7 +68,14 @@ export default function TodoTab({
         </div>
       </section>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={() => setShowCompletedTodos((v) => !v)}
+          className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 bg-white border border-stone-200 rounded-full px-3 py-1"
+        >
+          <span className="text-sm">{showCompletedTodos ? "👁" : "🙈"}</span>
+          完了済み{showCompletedTodos ? "を表示中" : "は非表示"}
+        </button>
         <button
           onClick={() => setShowSnoozed((v) => !v)}
           className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 bg-white border border-stone-200 rounded-full px-3 py-1"
@@ -81,7 +90,9 @@ export default function TodoTab({
           <p className="text-xs text-stone-400 bg-white rounded-lg border border-stone-200 p-4">タスクがありません。</p>
         )}
         {TODO_CATEGORIES.map((category) => {
-          const categoryTasks = todos.filter((t) => t.category === category && (showSnoozed || !t.snoozed));
+          const categoryTasks = todos.filter(
+            (t) => t.category === category && (showSnoozed || !t.snoozed) && (showCompletedTodos || t.status !== "完了")
+          );
           if (categoryTasks.length === 0) return null;
           return (
             <div key={category}>
@@ -91,7 +102,9 @@ export default function TodoTab({
               </h3>
               <div className="space-y-3">
                 {categoryTasks.map((t) => {
-                  const taskSubtasks = subtasks.filter((s) => s.parentTaskId === t.id && (showSnoozed || !s.snoozed));
+                  const taskSubtasks = subtasks.filter(
+                    (s) => s.parentTaskId === t.id && (showSnoozed || !s.snoozed) && (showCompletedTodos || s.status !== "完了")
+                  );
                   const expanded = expandedTaskId === t.id;
                   const sf = getSubtaskForm(t.id);
                   const statusColor =

@@ -184,6 +184,7 @@ export default function App() {
   const [subtaskForms, setSubtaskForms] = useState({});
   const [expandedTaskId, setExpandedTaskId] = useState(null);
   const [showSnoozed, setShowSnoozed] = useState(false); // ちょっとあと表示切り替え(デフォルト非表示)
+  const [showCompletedTodos, setShowCompletedTodos] = useState(false); // 完了済み表示切り替え(デフォルト非表示)
 
   // ========== カレンダー(出店計画・イベント予定) ==========
   const [calendarEvents, setCalendarEvents] = useState([]); // [{id, date, title, memo}]
@@ -1057,6 +1058,8 @@ export default function App() {
             moveSubtask={moveSubtask}
             showSnoozed={showSnoozed}
             setShowSnoozed={setShowSnoozed}
+            showCompletedTodos={showCompletedTodos}
+            setShowCompletedTodos={setShowCompletedTodos}
           />
         )}
 
