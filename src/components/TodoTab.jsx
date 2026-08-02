@@ -119,39 +119,33 @@ export default function TodoTab({
                       : "bg-stone-100 text-stone-600";
                   return (
                     <section key={t.id} className={`bg-white rounded-lg border border-stone-200 p-4 ${t.snoozed ? "opacity-50" : ""}`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <button
-                          onClick={() => setExpandedTaskId(expanded ? null : t.id)}
-                          className="flex items-start gap-2 text-left flex-1"
-                        >
-                          {expanded ? (
-                            <ChevronDown size={16} className="mt-0.5 text-stone-400 shrink-0" />
-                          ) : (
-                            <ChevronRight size={16} className="mt-0.5 text-stone-400 shrink-0" />
+                      <div className="overflow-x-auto">
+                        <div className="flex items-center gap-2 text-xs whitespace-nowrap min-w-max">
+                          <button onClick={() => setExpandedTaskId(expanded ? null : t.id)} className="shrink-0">
+                            {expanded ? (
+                              <ChevronDown size={16} className="text-stone-400" />
+                            ) : (
+                              <ChevronRight size={16} className="text-stone-400" />
+                            )}
+                          </button>
+                          <span className="font-medium text-sm shrink-0">{t.task}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${statusColor}`}>{t.status}</span>
+                          {t.snoozed && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">ちょっとあと</span>
                           )}
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-medium text-sm">{t.task}</span>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusColor}`}>{t.status}</span>
-                              {t.snoozed && <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500">ちょっとあと</span>}
-                            </div>
-                            <div className="text-xs text-stone-400 mt-1">
-                              {t.deadline ? `期限: ${t.deadline}` : "期限未設定"} ・ サブタスク{taskSubtasks.length}件
-                            </div>
-                          </div>
-                        </button>
-                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-stone-400 shrink-0">{t.deadline ? `期限: ${t.deadline}` : "期限未設定"}</span>
+                          <span className="text-stone-400 shrink-0">サブタスク{taskSubtasks.length}件</span>
                           <button
                             onClick={() => toggleTodoSnooze(t.id)}
                             title="ちょっとあと"
-                            className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border ${
+                            className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border shrink-0 ${
                               t.snoozed ? "border-amber-300 text-amber-700 bg-amber-50" : "border-stone-200 text-stone-500 hover:bg-stone-50"
                             }`}
                           >
                             <Clock size={11} /> ちょっとあと
                           </button>
                           <select
-                            className="border rounded px-1 py-0.5 text-xs"
+                            className="border rounded px-1 py-0.5 shrink-0"
                             value={t.category}
                             onChange={(e) => updateTodo(t.id, "category", e.target.value)}
                           >
@@ -162,7 +156,7 @@ export default function TodoTab({
                             ))}
                           </select>
                           <select
-                            className="border rounded px-1 py-0.5 text-xs"
+                            className="border rounded px-1 py-0.5 shrink-0"
                             value={t.status}
                             onChange={(e) => updateTodo(t.id, "status", e.target.value)}
                           >
@@ -172,7 +166,7 @@ export default function TodoTab({
                               </option>
                             ))}
                           </select>
-                          <button onClick={() => removeTodo(t.id)}>
+                          <button onClick={() => removeTodo(t.id)} className="shrink-0">
                             <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
                           </button>
                         </div>
