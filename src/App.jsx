@@ -91,6 +91,46 @@ function WanderingDuck() {
   );
 }
 
+// 自動保存の共通ロジック(デバウンス + 保存中の多重発火防止)。
+// snapshotRefは常に最新のデータを保持するref(保存関数は毎回この時点の最新値を送る)。
+// 保存中に次の変更が来た場合は待ち行列を作らず「保存完了後にもう一度だけ」保存する
+// (連投すると同じスプレッドシートへの書き込みが重なりGAS側が詰まるため)。
+function useAutosave(hasLoadedRef, snapshotRef, saveFn, setSaveState, deps) {
+  const savingRef = useRef(false);
+  const pendingRef = useRef(false);
+  const timerRef = useRef(null);
+
+  async function runSave() {
+    if (savingRef.current) {
+      pendingRef.current = true;
+      return;
+    }
+    savingRef.current = true;
+    try {
+      await saveFn(snapshotRef.current);
+      setSaveState("saved");
+      setTimeout(() => setSaveState((s) => (s === "saved" ? "idle" : s)), 2000);
+    } catch {
+      setSaveState("error");
+    } finally {
+      savingRef.current = false;
+      if (pendingRef.current) {
+        pendingRef.current = false;
+        runSave();
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (!hasLoadedRef.current) return;
+    setSaveState("saving");
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(runSave, 800);
+    return () => clearTimeout(timerRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
+
 export default function App() {
   const [tab, setTab] = useState("input");
 
@@ -99,7 +139,6 @@ export default function App() {
   const [loadError, setLoadError] = useState("");
   const [saveState, setSaveState] = useState("idle"); // idle|saving|saved|error
   const hasLoadedRef = useRef(false);
-  const saveTimerRef = useRef(null);
 
   // ========== 材料・包材マスタ ==========
   const [materials, setMaterials] = useState([]);
@@ -242,40 +281,30 @@ export default function App() {
   }, []);
 
   // ========== 自動保存(800msデバウンス。初回ロード完了前は保存しない) ==========
+  // TODO/サブタスクは他の15シートと切り離した軽量経路(saveTodos)で保存する。
+  // 理由: 編集頻度が高く、全シート分の保存(saveAll)を毎回発生させるとGAS側の
+  // 書き込みが重なって詰まりやすいため。
+  const mainSaveDataRef = useRef(null);
   useEffect(() => {
-    if (!hasLoadedRef.current) return;
-    setSaveState("saving");
-    clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      try {
-        await gasApi.saveAll({
-          materials,
-          calendarEvents,
-          products,
-          productAliases,
-          saleOverrides,
-          packagingExemptions,
-          recipes,
-          setBreakdowns,
-          rebateClients,
-          expenseRates,
-          expenses,
-          dailyMeta,
-          mgmtBudgets,
-          finBudgets,
-          todos,
-          subtasks,
-          settings: { squareSyncFromSquare },
-        });
-        setSaveState("saved");
-        setTimeout(() => setSaveState((s) => (s === "saved" ? "idle" : s)), 2000);
-      } catch (e) {
-        setSaveState("error");
-      }
-    }, 800);
-    return () => clearTimeout(saveTimerRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
+    mainSaveDataRef.current = {
+      materials,
+      calendarEvents,
+      products,
+      productAliases,
+      saleOverrides,
+      packagingExemptions,
+      recipes,
+      setBreakdowns,
+      rebateClients,
+      expenseRates,
+      expenses,
+      dailyMeta,
+      mgmtBudgets,
+      finBudgets,
+      settings: { squareSyncFromSquare },
+    };
+  });
+  useAutosave(hasLoadedRef, mainSaveDataRef, gasApi.saveAll, setSaveState, [
     materials,
     calendarEvents,
     products,
@@ -290,10 +319,14 @@ export default function App() {
     dailyMeta,
     mgmtBudgets,
     finBudgets,
-    todos,
-    subtasks,
     squareSyncFromSquare,
   ]);
+
+  const todosSaveDataRef = useRef(null);
+  useEffect(() => {
+    todosSaveDataRef.current = { todos, subtasks };
+  });
+  useAutosave(hasLoadedRef, todosSaveDataRef, gasApi.saveTodos, setSaveState, [todos, subtasks]);
 
   // ========== 参照マップ ==========
   const materialMap = useMemo(() => Object.fromEntries(materials.map((m) => [m.id, m])), [materials]);

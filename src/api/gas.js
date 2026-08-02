@@ -43,6 +43,9 @@ export const gasApi = {
   // 編集可能な全シートを一括で全洗い替え保存
   saveAll: (snapshot) => post({ action: "saveAll", ...snapshot }),
 
+  // TODO/サブタスクだけを保存する軽量経路(頻繁に単独で保存されるためsaveAllから分離)
+  saveTodos: (snapshot) => post({ action: "saveTodos", ...snapshot }),
+
   // Square連携フェーズ1: 商品マスター(Square由来)→ 商品マスター_原価管理 への名前・価格の一方向反映
   syncCatalogFromSquare: () => post({ action: "syncCatalogFromSquare" }),
 

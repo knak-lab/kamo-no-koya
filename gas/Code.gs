@@ -5,7 +5,7 @@
 //    GET ?action=debugHeaders → 実データ9シートの生ヘッダー行を返す(読み取り専用。
 //        シートの作成・変更は一切行わない)
 //    GET (それ以外)            → getAll_() の内容を返す
-//    POST → body.action で分岐 ("saveAll" / "syncCatalogFromSquare" / "recalcZeroCostSales" / "syncSalesFromSquare")
+//    POST → body.action で分岐 ("saveAll" / "saveTodos" / "syncCatalogFromSquare" / "recalcZeroCostSales" / "syncSalesFromSquare")
 //
 //  CORSはブラウザのプリフライト(OPTIONS)を回避するため、フロント側の
 //  fetchはContent-Type: text/plain;charset=utf-8 でJSON文字列を送る。
@@ -33,13 +33,26 @@ function doGet(e) {
   }
 }
 
+// 書き込み系アクションはスプレッドシート全体で1件ずつ直列化する(同時書き込みによる
+// 競合・GAS側の詰まりを防ぐため)。ロックが取れない場合は待たずにエラーを返す
+// (待たせ続けて同時実行数を圧迫し続けるより、クライアント側の再試行に委ねる)。
 function doPost(e) {
+  const lock = LockService.getScriptLock();
+  try {
+    if (!lock.tryLock(20000)) {
+      return err_("サーバーが混み合っています。しばらくしてからもう一度お試しください。");
+    }
+  } catch (ex) {
+    return err_(String(ex));
+  }
   try {
     const body = JSON.parse(e.postData.contents);
     if (!isAuthorized_(body.token)) return err_("Unauthorized");
     switch (body.action) {
       case "saveAll":
         return ok_(saveAll_(body));
+      case "saveTodos":
+        return ok_(saveTodosAndSubtasks_(body));
       case "syncCatalogFromSquare":
         return ok_(syncCatalogFromSquare());
       case "recalcZeroCostSales":
@@ -51,6 +64,8 @@ function doPost(e) {
     }
   } catch (ex) {
     return err_(String(ex));
+  } finally {
+    lock.releaseLock();
   }
 }
 

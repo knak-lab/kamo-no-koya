@@ -1005,8 +1005,14 @@ function saveAll_(body) {
   saveDailyMeta_(body.dailyMeta || {});
   saveMgmtBudgets_(body.mgmtBudgets || {});
   saveFinBudgets_(body.finBudgets || {});
+  saveSettings_(body.settings || {});
+  return { saved: true };
+}
+
+// TODO/サブタスクはsaveAll_から分離した専用の軽量保存(頻繁に単独で保存されるため)。
+// 参照: doPost の action "saveTodos"
+function saveTodosAndSubtasks_(body) {
   saveTodos_(body.todos || []);
   saveSubtasks_(body.subtasks || []);
-  saveSettings_(body.settings || {});
   return { saved: true };
 }
