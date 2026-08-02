@@ -128,12 +128,21 @@ export default function TodoTab({
                               <ChevronRight size={16} className="text-stone-400" />
                             )}
                           </button>
-                          <span className="font-medium text-sm shrink-0">{t.task}</span>
+                          <input
+                            className="font-medium text-sm shrink-0 border rounded px-1.5 py-0.5 w-40"
+                            value={t.task}
+                            onChange={(e) => updateTodo(t.id, "task", e.target.value)}
+                          />
                           <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${statusColor}`}>{t.status}</span>
                           {t.snoozed && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">ちょっとあと</span>
                           )}
-                          <span className="text-stone-400 shrink-0">{t.deadline ? `期限: ${t.deadline}` : "期限未設定"}</span>
+                          <input
+                            type="date"
+                            className="border rounded px-1 py-0.5 shrink-0 text-stone-600"
+                            value={t.deadline}
+                            onChange={(e) => updateTodo(t.id, "deadline", e.target.value)}
+                          />
                           <span className="text-stone-400 shrink-0">サブタスク{taskSubtasks.length}件</span>
                           <button
                             onClick={() => toggleTodoSnooze(t.id)}
@@ -205,12 +214,29 @@ export default function TodoTab({
                                       <ChevronDown size={12} />
                                     </button>
                                   </div>
-                                  <span className="shrink-0">
-                                    {s.name}
-                                    {s.snoozed && <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-stone-100 text-stone-500">ちょっとあと</span>}
-                                  </span>
-                                  <span className="text-stone-500 shrink-0">{s.assignee}</span>
-                                  <span className="text-stone-400 shrink-0">{s.deadline || "期限未設定"}</span>
+                                  <input
+                                    className="shrink-0 border rounded px-1 py-0.5 w-32"
+                                    value={s.name}
+                                    onChange={(e) => updateSubtask(s.id, "name", e.target.value)}
+                                  />
+                                  {s.snoozed && <span className="text-[10px] px-1 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">ちょっとあと</span>}
+                                  <select
+                                    className="border rounded px-1 py-0.5 shrink-0 text-stone-500"
+                                    value={s.assignee}
+                                    onChange={(e) => updateSubtask(s.id, "assignee", e.target.value)}
+                                  >
+                                    {STAFF_OPTIONS.map((a) => (
+                                      <option key={a} value={a}>
+                                        {a}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <input
+                                    type="date"
+                                    className="border rounded px-1 py-0.5 shrink-0 text-stone-400"
+                                    value={s.deadline}
+                                    onChange={(e) => updateSubtask(s.id, "deadline", e.target.value)}
+                                  />
                                   <select
                                     className="border rounded px-1 py-0.5 shrink-0"
                                     value={s.status}
