@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, Clock } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, Clock, Pencil } from "lucide-react";
 import { TODO_CATEGORIES, TODO_STATUSES, STAFF_OPTIONS } from "../lib/constants";
 
 export default function TodoTab({
@@ -29,6 +29,11 @@ export default function TodoTab({
   const [subtaskModalTaskId, setSubtaskModalTaskId] = useState(null);
   const modalTask = todos.find((t) => t.id === subtaskModalTaskId);
   const msf = subtaskModalTaskId ? getSubtaskForm(subtaskModalTaskId) : null;
+
+  const [editTaskId, setEditTaskId] = useState(null);
+  const editTask = todos.find((t) => t.id === editTaskId);
+  const [editSubtaskId, setEditSubtaskId] = useState(null);
+  const editSubtask = subtasks.find((s) => s.id === editSubtaskId);
 
   return (
     <>
@@ -128,21 +133,18 @@ export default function TodoTab({
                               <ChevronRight size={16} className="text-stone-400" />
                             )}
                           </button>
-                          <input
-                            className="font-medium text-sm shrink-0 border rounded px-1.5 py-0.5 w-40"
-                            value={t.task}
-                            onChange={(e) => updateTodo(t.id, "task", e.target.value)}
-                          />
+                          <button
+                            onClick={() => setEditTaskId(t.id)}
+                            className="font-medium text-sm shrink-0 hover:underline text-left flex items-center gap-1"
+                          >
+                            {t.task}
+                            <Pencil size={10} className="text-stone-300" />
+                          </button>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${statusColor}`}>{t.status}</span>
                           {t.snoozed && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">ちょっとあと</span>
                           )}
-                          <input
-                            type="date"
-                            className="border rounded px-1 py-0.5 shrink-0 text-stone-600"
-                            value={t.deadline}
-                            onChange={(e) => updateTodo(t.id, "deadline", e.target.value)}
-                          />
+                          <span className="text-stone-400 shrink-0">{t.deadline ? `期限: ${t.deadline}` : "期限未設定"}</span>
                           <span className="text-stone-400 shrink-0">サブタスク{taskSubtasks.length}件</span>
                           <button
                             onClick={() => toggleTodoSnooze(t.id)}
@@ -153,28 +155,6 @@ export default function TodoTab({
                           >
                             <Clock size={11} /> ちょっとあと
                           </button>
-                          <select
-                            className="border rounded px-1 py-0.5 shrink-0"
-                            value={t.category}
-                            onChange={(e) => updateTodo(t.id, "category", e.target.value)}
-                          >
-                            {TODO_CATEGORIES.map((c) => (
-                              <option key={c} value={c}>
-                                {c}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            className="border rounded px-1 py-0.5 shrink-0"
-                            value={t.status}
-                            onChange={(e) => updateTodo(t.id, "status", e.target.value)}
-                          >
-                            {TODO_STATUSES.map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
                           <button onClick={() => removeTodo(t.id)} className="shrink-0">
                             <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
                           </button>
@@ -214,40 +194,17 @@ export default function TodoTab({
                                       <ChevronDown size={12} />
                                     </button>
                                   </div>
-                                  <input
-                                    className="shrink-0 border rounded px-1 py-0.5 w-32"
-                                    value={s.name}
-                                    onChange={(e) => updateSubtask(s.id, "name", e.target.value)}
-                                  />
+                                  <button
+                                    onClick={() => setEditSubtaskId(s.id)}
+                                    className="shrink-0 hover:underline text-left flex items-center gap-1"
+                                  >
+                                    {s.name}
+                                    <Pencil size={10} className="text-stone-300" />
+                                  </button>
                                   {s.snoozed && <span className="text-[10px] px-1 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">ちょっとあと</span>}
-                                  <select
-                                    className="border rounded px-1 py-0.5 shrink-0 text-stone-500"
-                                    value={s.assignee}
-                                    onChange={(e) => updateSubtask(s.id, "assignee", e.target.value)}
-                                  >
-                                    {STAFF_OPTIONS.map((a) => (
-                                      <option key={a} value={a}>
-                                        {a}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <input
-                                    type="date"
-                                    className="border rounded px-1 py-0.5 shrink-0 text-stone-400"
-                                    value={s.deadline}
-                                    onChange={(e) => updateSubtask(s.id, "deadline", e.target.value)}
-                                  />
-                                  <select
-                                    className="border rounded px-1 py-0.5 shrink-0"
-                                    value={s.status}
-                                    onChange={(e) => updateSubtask(s.id, "status", e.target.value)}
-                                  >
-                                    {TODO_STATUSES.map((st) => (
-                                      <option key={st} value={st}>
-                                        {st}
-                                      </option>
-                                    ))}
-                                  </select>
+                                  <span className="text-stone-500 shrink-0">{s.assignee}</span>
+                                  <span className="text-stone-400 shrink-0">{s.deadline || "期限未設定"}</span>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-600 shrink-0">{s.status}</span>
                                   <button
                                     onClick={() => toggleSubtaskSnooze(s.id)}
                                     title="ちょっとあと"
@@ -331,6 +288,138 @@ export default function TodoTab({
                 className="px-3 py-1.5 text-sm rounded bg-amber-700 text-white hover:bg-amber-800"
               >
                 追加
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editTask && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
+            <h3 className="font-semibold text-sm mb-3">タスクを編集</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-stone-500 mb-1">タスク名</label>
+                <input
+                  autoFocus
+                  className="border rounded px-2 py-1 w-full"
+                  value={editTask.task}
+                  onChange={(e) => updateTodo(editTask.id, "task", e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-stone-500 mb-1">カテゴリ</label>
+                  <select
+                    className="border rounded px-2 py-1 w-full"
+                    value={editTask.category}
+                    onChange={(e) => updateTodo(editTask.id, "category", e.target.value)}
+                  >
+                    {TODO_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-stone-500 mb-1">ステータス</label>
+                  <select
+                    className="border rounded px-2 py-1 w-full"
+                    value={editTask.status}
+                    onChange={(e) => updateTodo(editTask.id, "status", e.target.value)}
+                  >
+                    {TODO_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-stone-500 mb-1">期限</label>
+                <input
+                  type="date"
+                  className="border rounded px-2 py-1 w-full"
+                  value={editTask.deadline}
+                  onChange={(e) => updateTodo(editTask.id, "deadline", e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setEditTaskId(null)}
+                className="px-3 py-1.5 text-sm rounded bg-amber-700 text-white hover:bg-amber-800"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editSubtask && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
+            <h3 className="font-semibold text-sm mb-3">サブタスクを編集</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-stone-500 mb-1">サブタスク名</label>
+                <input
+                  autoFocus
+                  className="border rounded px-2 py-1 w-full"
+                  value={editSubtask.name}
+                  onChange={(e) => updateSubtask(editSubtask.id, "name", e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-stone-500 mb-1">担当</label>
+                  <select
+                    className="border rounded px-2 py-1 w-full"
+                    value={editSubtask.assignee}
+                    onChange={(e) => updateSubtask(editSubtask.id, "assignee", e.target.value)}
+                  >
+                    {STAFF_OPTIONS.map((a) => (
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-stone-500 mb-1">ステータス</label>
+                  <select
+                    className="border rounded px-2 py-1 w-full"
+                    value={editSubtask.status}
+                    onChange={(e) => updateSubtask(editSubtask.id, "status", e.target.value)}
+                  >
+                    {TODO_STATUSES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-stone-500 mb-1">期限</label>
+                <input
+                  type="date"
+                  className="border rounded px-2 py-1 w-full"
+                  value={editSubtask.deadline}
+                  onChange={(e) => updateSubtask(editSubtask.id, "deadline", e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setEditSubtaskId(null)}
+                className="px-3 py-1.5 text-sm rounded bg-amber-700 text-white hover:bg-amber-800"
+              >
+                閉じる
               </button>
             </div>
           </div>
