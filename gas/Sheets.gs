@@ -257,24 +257,35 @@ function writeByHeaderOrder_(sheet, objects, fieldByHeader, keyHeader) {
   const keyField = fieldByHeader[keyHeader];
   const keyCol = keyIdx + 1;
 
-  const existingKeys = lastRow >= 2 ? sheet.getRange(2, keyCol, lastRow - 1, 1).getValues().map(function (r) { return String(r[0]); }) : [];
-
   const objByKey = {};
   (objects || []).forEach(function (o) {
     const k = o[keyField] === undefined || o[keyField] === null ? "" : String(o[keyField]);
     if (k) objByKey[k] = o;
   });
 
-  // 既存行: 対応列だけを列単位でまとめて上書き(キーが今回に無ければ対応列のみ空欄化)
-  if (existingKeys.length > 0) {
-    managedCols.forEach(function (c) {
-      const colValues = existingKeys.map(function (key) {
-        const obj = objByKey[key];
+  // 既存行: 値・数式をそれぞれ1回のAPI呼び出しでまとめて読み込み、管理対象列だけメモリ上で
+  // 書き換えてから1回で書き戻す(以前は管理列ごとに個別setValuesしており、列数が多いシート
+  // ほど呼び出し回数が増えて保存が遅くなっていたため)。数式セルは数式文字列のまま書き戻すので
+  // 未管理列(旧AppSheetの数式列等)はこれまで通り無傷。
+  let existingKeys = [];
+  if (lastRow >= 2) {
+    const range = sheet.getRange(2, 1, lastRow - 1, lastCol);
+    const values = range.getValues();
+    const formulas = range.getFormulas();
+    existingKeys = values.map(function (row) { return String(row[keyCol - 1]); });
+
+    for (let r = 0; r < values.length; r++) {
+      const obj = objByKey[existingKeys[r]];
+      managedCols.forEach(function (c) {
         const v = obj ? obj[c.field] : "";
-        return [v === undefined || v === null ? "" : v];
+        values[r][c.col - 1] = v === undefined || v === null ? "" : v;
+        formulas[r][c.col - 1] = "";
       });
-      sheet.getRange(2, c.col, colValues.length, 1).setValues(colValues);
+    }
+    const merged = values.map(function (row, r) {
+      return row.map(function (v, c) { return formulas[r][c] || v; });
     });
+    range.setValues(merged);
   }
 
   // 新規行: 末尾に追記(対応列だけを埋める。それ以外の列は空欄のまま)
