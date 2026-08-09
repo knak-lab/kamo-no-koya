@@ -25,6 +25,10 @@ export default function SummaryTab({
   salesChannels,
   monthlyChartData,
   dailyChartData,
+  customerPeriod,
+  setCustomerPeriod,
+  customerChannel,
+  setCustomerChannel,
   customerChartData,
   productSalesRanking,
   dailyRows,
@@ -126,12 +130,42 @@ export default function SummaryTab({
       {/* 客数と客単価 */}
       <section className="bg-white rounded-lg border border-stone-200 p-4">
         <h2 className="font-semibold mb-3">客数と客単価</h2>
+        <div className="flex flex-wrap gap-4 mb-3">
+          <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs">
+            {["month", "day"].map((p) => (
+              <button
+                key={p}
+                onClick={() => setCustomerPeriod(p)}
+                className={`px-3 py-1 rounded ${customerPeriod === p ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+              >
+                {p === "month" ? "月次" : "日次"}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs flex-wrap">
+            <button
+              onClick={() => setCustomerChannel("all")}
+              className={`px-3 py-1 rounded ${customerChannel === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+            >
+              全形態
+            </button>
+            {salesChannels.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setCustomerChannel(c.id)}
+                className={`px-3 py-1 rounded ${customerChannel === c.id ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
         {customerChartData.length > 0 ? (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={customerChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <XAxis dataKey="name" tick={{ fontSize: customerPeriod === "month" ? 11 : 10 }} />
                 <YAxis yAxisId="left" tick={{ fontSize: 11 }} label={{ value: "客数", angle: -90, position: "insideLeft", fontSize: 11 }} />
                 <YAxis
                   yAxisId="right"

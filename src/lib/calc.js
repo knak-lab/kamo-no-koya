@@ -220,11 +220,24 @@ export function computeDailyChartData({ dailyRows, dayChannel, dayMetric }) {
   }));
 }
 
-// 客数と客単価(2軸・売上がない日は除外)
-export function computeCustomerChartData(dailyRows) {
-  return dailyRows
-    .filter((d) => d.売上_日次 > 0)
-    .map((d) => ({ name: d.date, 客数: d.客数, 客単価: Math.round(d.客単価) }));
+// 客数と客単価(2軸・売上がない日/月は除外・月次は客単価を売上÷客数で再計算)
+export function computeCustomerChartData({ dailyRows, customerChannel, customerPeriod, allYearMonths }) {
+  const filtered = (customerChannel === "all" ? dailyRows : dailyRows.filter((d) => d.channelId === customerChannel)).filter(
+    (d) => d.売上_日次 > 0
+  );
+  if (customerPeriod === "day") {
+    return filtered.map((d) => ({ name: d.date, 客数: d.客数, 客単価: Math.round(d.客単価) }));
+  }
+  const map = {};
+  filtered.forEach((d) => {
+    if (!map[d.yearMonth]) map[d.yearMonth] = { yearMonth: d.yearMonth, 客数: 0, 売上: 0 };
+    map[d.yearMonth].客数 += d.客数;
+    map[d.yearMonth].売上 += d.売上_日次;
+  });
+  return allYearMonths
+    .map((ym) => map[ym])
+    .filter(Boolean)
+    .map((row) => ({ name: row.yearMonth, 客数: row.客数, 客単価: row.客数 > 0 ? Math.round(row.売上 / row.客数) : 0 }));
 }
 
 // 商品別売上(上位10)

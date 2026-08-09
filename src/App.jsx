@@ -196,6 +196,9 @@ export default function App() {
   const [summaryPeriod, setSummaryPeriod] = useState("month"); // 'month'|'day'
   const [summaryMetric, setSummaryMetric] = useState("sales"); // 'sales'|'profit'
   const [summaryChannel, setSummaryChannel] = useState("all");
+  // サマリタブのフィルタ(客数と客単価)
+  const [customerPeriod, setCustomerPeriod] = useState("month"); // 'month'|'day'
+  const [customerChannel, setCustomerChannel] = useState("all");
   const [targetForm, setTargetForm] = useState({ month: "", salesBudget: "", grossMarginRatio: "", profitBudget: "" });
   const [targetListOpen, setTargetListOpen] = useState(false);
   const [editingTargetMonth, setEditingTargetMonth] = useState(null);
@@ -414,7 +417,10 @@ export default function App() {
     () => computeDailyChartData({ dailyRows, dayChannel: summaryChannel, dayMetric: summaryMetric }),
     [dailyRows, summaryChannel, summaryMetric]
   );
-  const customerChartData = useMemo(() => computeCustomerChartData(dailyRows), [dailyRows]);
+  const customerChartData = useMemo(
+    () => computeCustomerChartData({ dailyRows, customerChannel, customerPeriod, allYearMonths }),
+    [dailyRows, customerChannel, customerPeriod, allYearMonths]
+  );
   const productSalesRanking = useMemo(
     () => computeProductSalesRanking({ sales: resolvedSales, productMap }),
     [resolvedSales, productMap]
@@ -1061,6 +1067,10 @@ export default function App() {
             salesChannels={salesChannels}
             monthlyChartData={monthlyChartData}
             dailyChartData={dailyChartData}
+            customerPeriod={customerPeriod}
+            setCustomerPeriod={setCustomerPeriod}
+            customerChannel={customerChannel}
+            setCustomerChannel={setCustomerChannel}
             customerChartData={customerChartData}
             productSalesRanking={productSalesRanking}
             dailyRows={dailyRows}
