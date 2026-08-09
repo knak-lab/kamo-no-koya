@@ -192,11 +192,10 @@ export default function App() {
   const [dailyMeta, setDailyMeta] = useState({}); // { [date]: { channelId, clientId } }
   const [mgmtBudgets, setMgmtBudgets] = useState({});
 
-  // サマリタブのフィルタ
-  const [monthMetric, setMonthMetric] = useState("sales"); // 'sales'|'gross'|'profit'
-  const [monthChannel, setMonthChannel] = useState("all");
-  const [dayMetric, setDayMetric] = useState("sales");
-  const [dayChannel, setDayChannel] = useState("all");
+  // サマリタブのフィルタ(予実: 月次/日次共通)
+  const [summaryPeriod, setSummaryPeriod] = useState("month"); // 'month'|'day'
+  const [summaryMetric, setSummaryMetric] = useState("sales"); // 'sales'|'profit'
+  const [summaryChannel, setSummaryChannel] = useState("all");
   const [targetForm, setTargetForm] = useState({ month: "", salesBudget: "", grossMarginRatio: "", profitBudget: "" });
   const [targetListOpen, setTargetListOpen] = useState(false);
   const [editingTargetMonth, setEditingTargetMonth] = useState(null);
@@ -404,16 +403,16 @@ export default function App() {
 
   // ========== サマリタブ用データ ==========
   const monthlyByChannel = useMemo(
-    () => computeMonthlyByChannel({ dailyRows, monthChannel, allYearMonths }),
-    [dailyRows, monthChannel, allYearMonths]
+    () => computeMonthlyByChannel({ dailyRows, monthChannel: summaryChannel, allYearMonths }),
+    [dailyRows, summaryChannel, allYearMonths]
   );
   const monthlyChartData = useMemo(
-    () => computeMonthlyChartData({ monthlyByChannel, monthMetric, monthChannel, mgmtBudgets }),
-    [monthlyByChannel, monthMetric, monthChannel, mgmtBudgets]
+    () => computeMonthlyChartData({ monthlyByChannel, monthMetric: summaryMetric, monthChannel: summaryChannel, mgmtBudgets }),
+    [monthlyByChannel, summaryMetric, summaryChannel, mgmtBudgets]
   );
   const dailyChartData = useMemo(
-    () => computeDailyChartData({ dailyRows, dayChannel, dayMetric }),
-    [dailyRows, dayChannel, dayMetric]
+    () => computeDailyChartData({ dailyRows, dayChannel: summaryChannel, dayMetric: summaryMetric }),
+    [dailyRows, summaryChannel, summaryMetric]
   );
   const customerChartData = useMemo(() => computeCustomerChartData(dailyRows), [dailyRows]);
   const productSalesRanking = useMemo(
@@ -1053,16 +1052,14 @@ export default function App() {
 
         {tab === "management" && (
           <SummaryTab
-            monthMetric={monthMetric}
-            setMonthMetric={setMonthMetric}
-            monthChannel={monthChannel}
-            setMonthChannel={setMonthChannel}
+            summaryPeriod={summaryPeriod}
+            setSummaryPeriod={setSummaryPeriod}
+            summaryMetric={summaryMetric}
+            setSummaryMetric={setSummaryMetric}
+            summaryChannel={summaryChannel}
+            setSummaryChannel={setSummaryChannel}
             salesChannels={salesChannels}
             monthlyChartData={monthlyChartData}
-            dayMetric={dayMetric}
-            setDayMetric={setDayMetric}
-            dayChannel={dayChannel}
-            setDayChannel={setDayChannel}
             dailyChartData={dailyChartData}
             customerChartData={customerChartData}
             productSalesRanking={productSalesRanking}

@@ -16,16 +16,14 @@ import {
 import { yen, METRIC_LABEL, COLOR_POSITIVE, COLOR_NEGATIVE } from "../lib/constants";
 
 export default function SummaryTab({
-  monthMetric,
-  setMonthMetric,
-  monthChannel,
-  setMonthChannel,
+  summaryPeriod,
+  setSummaryPeriod,
+  summaryMetric,
+  setSummaryMetric,
+  summaryChannel,
+  setSummaryChannel,
   salesChannels,
   monthlyChartData,
-  dayMetric,
-  setDayMetric,
-  dayChannel,
-  setDayChannel,
   dailyChartData,
   customerChartData,
   productSalesRanking,
@@ -35,18 +33,33 @@ export default function SummaryTab({
   sales,
   productMap,
 }) {
+  const isMonth = summaryPeriod === "month";
+  const chartData = isMonth ? monthlyChartData : dailyChartData;
+  const showTarget = isMonth && summaryChannel === "all";
+
   return (
     <>
-      {/* 月次予実 */}
+      {/* 予実 */}
       <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-3">月次予実</h2>
+        <h2 className="font-semibold mb-3">予実</h2>
         <div className="flex flex-wrap gap-4 mb-3">
+          <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs">
+            {["month", "day"].map((p) => (
+              <button
+                key={p}
+                onClick={() => setSummaryPeriod(p)}
+                className={`px-3 py-1 rounded ${summaryPeriod === p ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+              >
+                {p === "month" ? "月次" : "日次"}
+              </button>
+            ))}
+          </div>
           <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs">
             {["sales", "profit"].map((k) => (
               <button
                 key={k}
-                onClick={() => setMonthMetric(k)}
-                className={`px-3 py-1 rounded ${monthMetric === k ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+                onClick={() => setSummaryMetric(k)}
+                className={`px-3 py-1 rounded ${summaryMetric === k ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
               >
                 {METRIC_LABEL[k]}
               </button>
@@ -54,44 +67,44 @@ export default function SummaryTab({
           </div>
           <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs flex-wrap">
             <button
-              onClick={() => setMonthChannel("all")}
-              className={`px-3 py-1 rounded ${monthChannel === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+              onClick={() => setSummaryChannel("all")}
+              className={`px-3 py-1 rounded ${summaryChannel === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
             >
               全形態
             </button>
             {salesChannels.map((c) => (
               <button
                 key={c.id}
-                onClick={() => setMonthChannel(c.id)}
-                className={`px-3 py-1 rounded ${monthChannel === c.id ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+                onClick={() => setSummaryChannel(c.id)}
+                className={`px-3 py-1 rounded ${summaryChannel === c.id ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
               >
                 {c.name}
               </button>
             ))}
           </div>
         </div>
-        {monthlyChartData.length > 0 ? (
+        {chartData.length > 0 ? (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={monthlyChartData}>
+              <ComposedChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="name" tick={{ fontSize: isMonth ? 11 : 10 }} />
                 <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-                {monthMetric === "sales" && (
+                {summaryMetric === "sales" && (
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} unit="%" domain={[0, 100]} />
                 )}
                 <Tooltip formatter={(v, name) => (name.includes("粗利率") ? `${v}%` : yen(v))} />
                 <Legend />
-                {monthChannel === "all" && <Bar yAxisId="left" dataKey="目標" fill="#d6d3d1" radius={[3, 3, 0, 0]} />}
+                {showTarget && <Bar yAxisId="left" dataKey="目標" fill="#d6d3d1" radius={[3, 3, 0, 0]} />}
                 <Bar yAxisId="left" dataKey="実績" radius={[3, 3, 0, 0]}>
-                  {monthlyChartData.map((row, i) => (
+                  {chartData.map((row, i) => (
                     <Cell key={i} fill={row.実績 >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE} />
                   ))}
                 </Bar>
-                {monthMetric === "sales" && (
+                {summaryMetric === "sales" && (
                   <Line yAxisId="right" type="monotone" dataKey="実績粗利率" stroke="#86efac" strokeWidth={2} dot={{ r: 3 }} />
                 )}
-                {monthMetric === "sales" && monthChannel === "all" && (
+                {summaryMetric === "sales" && showTarget && (
                   <Line
                     yAxisId="right"
                     type="monotone"
@@ -101,65 +114,6 @@ export default function SummaryTab({
                     strokeDasharray="4 4"
                     dot={{ r: 3 }}
                   />
-                )}
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className="text-xs text-stone-400">データがありません</p>
-        )}
-      </section>
-
-      {/* 日次予実 */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-3">日次予実</h2>
-        <div className="flex flex-wrap gap-4 mb-3">
-          <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs">
-            {["sales", "profit"].map((k) => (
-              <button
-                key={k}
-                onClick={() => setDayMetric(k)}
-                className={`px-3 py-1 rounded ${dayMetric === k ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
-              >
-                {METRIC_LABEL[k]}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs flex-wrap">
-            <button
-              onClick={() => setDayChannel("all")}
-              className={`px-3 py-1 rounded ${dayChannel === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
-            >
-              全形態
-            </button>
-            {salesChannels.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setDayChannel(c.id)}
-                className={`px-3 py-1 rounded ${dayChannel === c.id ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-        </div>
-        {dailyChartData.length > 0 ? (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={dailyChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-                {dayMetric === "sales" && <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} unit="%" domain={[0, 100]} />}
-                <Tooltip formatter={(v, name) => (name.includes("粗利率") ? `${v}%` : yen(v))} />
-                <Legend />
-                <Bar yAxisId="left" dataKey="実績" radius={[3, 3, 0, 0]}>
-                  {dailyChartData.map((row, i) => (
-                    <Cell key={i} fill={row.実績 >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE} />
-                  ))}
-                </Bar>
-                {dayMetric === "sales" && (
-                  <Line yAxisId="right" type="monotone" dataKey="実績粗利率" stroke="#86efac" strokeWidth={2} dot={{ r: 3 }} />
                 )}
               </ComposedChart>
             </ResponsiveContainer>
