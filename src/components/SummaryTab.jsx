@@ -22,6 +22,8 @@ export default function SummaryTab({
   setSummaryMetric,
   summaryChannel,
   setSummaryChannel,
+  summaryYearMonth,
+  setSummaryYearMonth,
   salesChannels,
   monthlyChartData,
   dailyChartData,
@@ -29,6 +31,8 @@ export default function SummaryTab({
   setCustomerPeriod,
   customerChannel,
   setCustomerChannel,
+  customerYearMonth,
+  setCustomerYearMonth,
   customerChartData,
   productSalesRanking,
   dailyRows,
@@ -36,6 +40,7 @@ export default function SummaryTab({
   rebateMap,
   sales,
   productMap,
+  allYearMonths,
 }) {
   const isMonth = summaryPeriod === "month";
   const chartData = isMonth ? monthlyChartData : dailyChartData;
@@ -86,6 +91,25 @@ export default function SummaryTab({
               </button>
             ))}
           </div>
+          {!isMonth && allYearMonths.length > 0 && (
+            <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs flex-wrap">
+              <button
+                onClick={() => setSummaryYearMonth("all")}
+                className={`px-3 py-1 rounded ${summaryYearMonth === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+              >
+                全期間
+              </button>
+              {allYearMonths.map((ym) => (
+                <button
+                  key={ym}
+                  onClick={() => setSummaryYearMonth(ym)}
+                  className={`px-3 py-1 rounded ${summaryYearMonth === ym ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+                >
+                  {ym}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {chartData.length > 0 ? (
           <div className="h-64">
@@ -159,6 +183,25 @@ export default function SummaryTab({
               </button>
             ))}
           </div>
+          {customerPeriod === "day" && allYearMonths.length > 0 && (
+            <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs flex-wrap">
+              <button
+                onClick={() => setCustomerYearMonth("all")}
+                className={`px-3 py-1 rounded ${customerYearMonth === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+              >
+                全期間
+              </button>
+              {allYearMonths.map((ym) => (
+                <button
+                  key={ym}
+                  onClick={() => setCustomerYearMonth(ym)}
+                  className={`px-3 py-1 rounded ${customerYearMonth === ym ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+                >
+                  {ym}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {customerChartData.length > 0 ? (
           <div className="h-64">

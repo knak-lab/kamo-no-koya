@@ -196,9 +196,11 @@ export default function App() {
   const [summaryPeriod, setSummaryPeriod] = useState("month"); // 'month'|'day'
   const [summaryMetric, setSummaryMetric] = useState("sales"); // 'sales'|'profit'
   const [summaryChannel, setSummaryChannel] = useState("all");
+  const [summaryYearMonth, setSummaryYearMonth] = useState("all"); // 日次選択時のみ使用。'all'|'YYYY-MM'
   // サマリタブのフィルタ(客数と客単価)
   const [customerPeriod, setCustomerPeriod] = useState("month"); // 'month'|'day'
   const [customerChannel, setCustomerChannel] = useState("all");
+  const [customerYearMonth, setCustomerYearMonth] = useState("all"); // 日次選択時のみ使用。'all'|'YYYY-MM'
   const [targetForm, setTargetForm] = useState({ month: "", salesBudget: "", grossMarginRatio: "", profitBudget: "" });
   const [targetListOpen, setTargetListOpen] = useState(false);
   const [editingTargetMonth, setEditingTargetMonth] = useState(null);
@@ -414,12 +416,12 @@ export default function App() {
     [monthlyByChannel, summaryMetric, summaryChannel, mgmtBudgets]
   );
   const dailyChartData = useMemo(
-    () => computeDailyChartData({ dailyRows, dayChannel: summaryChannel, dayMetric: summaryMetric }),
-    [dailyRows, summaryChannel, summaryMetric]
+    () => computeDailyChartData({ dailyRows, dayChannel: summaryChannel, dayMetric: summaryMetric, dayYearMonth: summaryYearMonth }),
+    [dailyRows, summaryChannel, summaryMetric, summaryYearMonth]
   );
   const customerChartData = useMemo(
-    () => computeCustomerChartData({ dailyRows, customerChannel, customerPeriod, allYearMonths }),
-    [dailyRows, customerChannel, customerPeriod, allYearMonths]
+    () => computeCustomerChartData({ dailyRows, customerChannel, customerPeriod, customerYearMonth, allYearMonths }),
+    [dailyRows, customerChannel, customerPeriod, customerYearMonth, allYearMonths]
   );
   const productSalesRanking = useMemo(
     () => computeProductSalesRanking({ sales: resolvedSales, productMap }),
@@ -1064,6 +1066,8 @@ export default function App() {
             setSummaryMetric={setSummaryMetric}
             summaryChannel={summaryChannel}
             setSummaryChannel={setSummaryChannel}
+            summaryYearMonth={summaryYearMonth}
+            setSummaryYearMonth={setSummaryYearMonth}
             salesChannels={salesChannels}
             monthlyChartData={monthlyChartData}
             dailyChartData={dailyChartData}
@@ -1071,7 +1075,10 @@ export default function App() {
             setCustomerPeriod={setCustomerPeriod}
             customerChannel={customerChannel}
             setCustomerChannel={setCustomerChannel}
+            customerYearMonth={customerYearMonth}
+            setCustomerYearMonth={setCustomerYearMonth}
             customerChartData={customerChartData}
+            allYearMonths={allYearMonths}
             productSalesRanking={productSalesRanking}
             dailyRows={dailyRows}
             channelMap={channelMap}

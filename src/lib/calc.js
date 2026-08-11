@@ -207,11 +207,11 @@ export function computeMonthlyChartData({ monthlyByChannel, monthMetric, monthCh
     }));
 }
 
-// 日次予実(実績のみ・売上がない日は除外)
-export function computeDailyChartData({ dailyRows, dayChannel, dayMetric }) {
-  const filtered = (dayChannel === "all" ? dailyRows : dailyRows.filter((d) => d.channelId === dayChannel)).filter(
-    (d) => d.売上_日次 > 0
-  );
+// 日次予実(実績のみ・売上がない日は除外・年月指定時はその月だけに絞る)
+export function computeDailyChartData({ dailyRows, dayChannel, dayMetric, dayYearMonth }) {
+  const filtered = (dayChannel === "all" ? dailyRows : dailyRows.filter((d) => d.channelId === dayChannel))
+    .filter((d) => d.売上_日次 > 0)
+    .filter((d) => !dayYearMonth || dayYearMonth === "all" || d.yearMonth === dayYearMonth);
   const field = METRIC_DAILY_FIELD[dayMetric];
   return filtered.map((d) => ({
     name: d.date,
@@ -220,13 +220,15 @@ export function computeDailyChartData({ dailyRows, dayChannel, dayMetric }) {
   }));
 }
 
-// 客数と客単価(2軸・売上がない日/月は除外・月次は客単価を売上÷客数で再計算)
-export function computeCustomerChartData({ dailyRows, customerChannel, customerPeriod, allYearMonths }) {
+// 客数と客単価(2軸・売上がない日/月は除外・月次は客単価を売上÷客数で再計算・日次は年月指定時はその月だけに絞る)
+export function computeCustomerChartData({ dailyRows, customerChannel, customerPeriod, customerYearMonth, allYearMonths }) {
   const filtered = (customerChannel === "all" ? dailyRows : dailyRows.filter((d) => d.channelId === customerChannel)).filter(
     (d) => d.売上_日次 > 0
   );
   if (customerPeriod === "day") {
-    return filtered.map((d) => ({ name: d.date, 客数: d.客数, 客単価: Math.round(d.客単価) }));
+    return filtered
+      .filter((d) => !customerYearMonth || customerYearMonth === "all" || d.yearMonth === customerYearMonth)
+      .map((d) => ({ name: d.date, 客数: d.客数, 客単価: Math.round(d.客単価) }));
   }
   const map = {};
   filtered.forEach((d) => {
