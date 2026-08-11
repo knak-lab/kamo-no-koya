@@ -124,38 +124,45 @@ export default function TodoTab({
                       : "bg-stone-100 text-stone-600";
                   return (
                     <section key={t.id} className={`bg-white rounded-lg border border-stone-200 p-4 ${t.snoozed ? "opacity-50" : ""}`}>
-                      <div className="overflow-x-auto">
-                        <div className="flex items-center gap-2 text-xs whitespace-nowrap min-w-max">
-                          <button onClick={() => setExpandedTaskId(expanded ? null : t.id)} className="shrink-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <button onClick={() => setExpandedTaskId(expanded ? null : t.id)} className="shrink-0 mt-0.5">
                             {expanded ? (
                               <ChevronDown size={16} className="text-stone-400" />
                             ) : (
                               <ChevronRight size={16} className="text-stone-400" />
                             )}
                           </button>
-                          <button
-                            onClick={() => setEditTaskId(t.id)}
-                            className="font-medium text-sm shrink-0 hover:underline text-left flex items-center gap-1"
-                          >
-                            {t.task}
-                            <Pencil size={10} className="text-stone-300" />
-                          </button>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${statusColor}`}>{t.status}</span>
-                          {t.snoozed && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">ちょっとあと</span>
-                          )}
-                          <span className="text-stone-400 shrink-0">{t.deadline ? `期限: ${t.deadline}` : "期限未設定"}</span>
-                          <span className="text-stone-400 shrink-0">サブタスク{taskSubtasks.length}件</span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <button
+                                onClick={() => setEditTaskId(t.id)}
+                                className="font-medium text-sm hover:underline text-left flex items-center gap-1"
+                              >
+                                {t.task}
+                                <Pencil size={10} className="text-stone-300" />
+                              </button>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${statusColor}`}>{t.status}</span>
+                              {t.snoozed && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">ちょっとあと</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-stone-400 mt-1">
+                              {t.deadline ? `期限: ${t.deadline}` : "期限未設定"} ・ サブタスク{taskSubtasks.length}件
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => toggleTodoSnooze(t.id)}
                             title="ちょっとあと"
-                            className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border shrink-0 ${
+                            className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border ${
                               t.snoozed ? "border-amber-300 text-amber-700 bg-amber-50" : "border-stone-200 text-stone-500 hover:bg-stone-50"
                             }`}
                           >
                             <Clock size={11} /> ちょっとあと
                           </button>
-                          <button onClick={() => removeTodo(t.id)} className="shrink-0">
+                          <button onClick={() => removeTodo(t.id)}>
                             <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
                           </button>
                         </div>
