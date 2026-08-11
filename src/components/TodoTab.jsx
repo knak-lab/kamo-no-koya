@@ -2,6 +2,15 @@ import { useState } from "react";
 import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, Clock, Pencil, CheckCircle2, Circle } from "lucide-react";
 import { TODO_CATEGORIES, STAFF_OPTIONS } from "../lib/constants";
 
+// 完了チェック時に表示する「済」ハンコ風スタンプ
+function DoneStamp() {
+  return (
+    <span className="inline-flex items-center justify-center w-6 h-6 shrink-0 rounded-full border-2 border-red-600 text-red-600 text-[9px] font-bold leading-none -rotate-12">
+      済
+    </span>
+  );
+}
+
 export default function TodoTab({
   todoForm,
   setTodoForm,
@@ -129,26 +138,29 @@ export default function TodoTab({
                         </button>
                         <div className="min-w-0 flex-1">
                           {/* 1行目: タイトル */}
-                          <button
-                            onClick={() => setEditTaskId(t.id)}
-                            className={`font-medium text-sm hover:underline text-left flex items-center gap-1 ${
-                              done ? "line-through text-stone-400" : ""
-                            }`}
-                          >
-                            {t.task}
-                            <Pencil size={10} className="text-stone-300" />
-                          </button>
-                          {/* 2行目: 完了・ちょっとあと・期限/サブタスク件数 */}
-                          <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <button
-                              onClick={() => updateTodo(t.id, "status", done ? "未着手" : "完了")}
-                              title="完了"
-                              className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border shrink-0 ${
-                                done ? "border-emerald-300 text-emerald-700 bg-emerald-50" : "border-stone-200 text-stone-500 hover:bg-stone-50"
+                              onClick={() => setEditTaskId(t.id)}
+                              className={`font-medium text-sm hover:underline text-left flex items-center gap-1 ${
+                                done ? "line-through text-stone-400" : ""
                               }`}
                             >
-                              {done ? <CheckCircle2 size={11} /> : <Circle size={11} />} 完了
+                              {t.task}
+                              <Pencil size={10} className="text-stone-300" />
                             </button>
+                            {done && <DoneStamp />}
+                          </div>
+                          {/* 2行目: 完了・ちょっとあと・期限/サブタスク件数 */}
+                          <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                            <label className="flex items-center gap-1 text-[10px] text-stone-500 shrink-0 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={done}
+                                onChange={() => updateTodo(t.id, "status", done ? "未着手" : "完了")}
+                                className="w-4 h-4 accent-emerald-700 cursor-pointer"
+                              />
+                              完了
+                            </label>
                             <button
                               onClick={() => toggleTodoSnooze(t.id)}
                               title="ちょっとあと"
@@ -177,13 +189,14 @@ export default function TodoTab({
                             <Plus size={12} /> サブタスク
                           </button>
 
-                          <div className="overflow-x-auto">
-                            <div className="space-y-1 min-w-max">
-                              {taskSubtasks.length === 0 && <p className="text-xs text-stone-400">サブタスクなし</p>}
-                              {taskSubtasks.map((s, i) => (
+                          <div className="space-y-2">
+                            {taskSubtasks.length === 0 && <p className="text-xs text-stone-400">サブタスクなし</p>}
+                            {taskSubtasks.map((s, i) => {
+                              const sDone = s.status === "完了";
+                              return (
                                 <div
                                   key={s.id}
-                                  className={`flex items-center gap-2 text-xs whitespace-nowrap border-b border-stone-100 py-1 ${s.snoozed ? "opacity-50" : ""}`}
+                                  className={`flex items-start gap-2 text-xs border-b border-stone-100 pb-2 ${s.snoozed ? "opacity-50" : ""}`}
                                 >
                                   <div className="flex flex-col shrink-0">
                                     <button
@@ -201,44 +214,47 @@ export default function TodoTab({
                                       <ChevronDown size={12} />
                                     </button>
                                   </div>
-                                  <button
-                                    onClick={() => setEditSubtaskId(s.id)}
-                                    className={`shrink-0 hover:underline text-left flex items-center gap-1 ${
-                                      s.status === "完了" ? "line-through text-stone-400" : ""
-                                    }`}
-                                  >
-                                    {s.name}
-                                    <Pencil size={10} className="text-stone-300" />
-                                  </button>
-                                  {s.snoozed && <span className="text-[10px] px-1 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">ちょっとあと</span>}
-                                  <span className="text-stone-500 shrink-0">{s.assignee}</span>
-                                  <span className="text-stone-400 shrink-0">{s.deadline || "期限未設定"}</span>
-                                  <button
-                                    onClick={() => updateSubtask(s.id, "status", s.status === "完了" ? "未着手" : "完了")}
-                                    title="完了"
-                                    className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border shrink-0 ${
-                                      s.status === "完了"
-                                        ? "border-emerald-300 text-emerald-700 bg-emerald-50"
-                                        : "border-stone-200 text-stone-500 hover:bg-stone-50"
-                                    }`}
-                                  >
-                                    {s.status === "完了" ? <CheckCircle2 size={11} /> : <Circle size={11} />} 完了
-                                  </button>
-                                  <button
-                                    onClick={() => toggleSubtaskSnooze(s.id)}
-                                    title="ちょっとあと"
-                                    className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border shrink-0 ${
-                                      s.snoozed ? "border-amber-300 text-amber-700 bg-amber-50" : "border-stone-200 text-stone-500 hover:bg-stone-50"
-                                    }`}
-                                  >
-                                    <Clock size={11} /> ちょっとあと
-                                  </button>
-                                  <button onClick={() => removeSubtask(s.id)} className="shrink-0">
-                                    <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
-                                  </button>
+                                  <div className="min-w-0 flex-1">
+                                    {/* 1行目: チェックボックス・タイトル */}
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <input
+                                        type="checkbox"
+                                        checked={sDone}
+                                        onChange={() => updateSubtask(s.id, "status", sDone ? "未着手" : "完了")}
+                                        className="w-4 h-4 accent-emerald-700 cursor-pointer shrink-0"
+                                      />
+                                      <button
+                                        onClick={() => setEditSubtaskId(s.id)}
+                                        className={`hover:underline text-left flex items-center gap-1 ${
+                                          sDone ? "line-through text-stone-400" : ""
+                                        }`}
+                                      >
+                                        {s.name}
+                                        <Pencil size={10} className="text-stone-300" />
+                                      </button>
+                                      {sDone && <DoneStamp />}
+                                    </div>
+                                    {/* 2行目: 担当・期限・ちょっとあと */}
+                                    <div className="flex items-center gap-2 flex-wrap mt-1">
+                                      <span className="text-stone-500 shrink-0">{s.assignee}</span>
+                                      <span className="text-stone-400 shrink-0">{s.deadline || "期限未設定"}</span>
+                                      <button
+                                        onClick={() => toggleSubtaskSnooze(s.id)}
+                                        title="ちょっとあと"
+                                        className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border shrink-0 ${
+                                          s.snoozed ? "border-amber-300 text-amber-700 bg-amber-50" : "border-stone-200 text-stone-500 hover:bg-stone-50"
+                                        }`}
+                                      >
+                                        <Clock size={11} /> ちょっとあと
+                                      </button>
+                                      <button onClick={() => removeSubtask(s.id)} className="ml-auto shrink-0">
+                                        <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
-                              ))}
-                            </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
