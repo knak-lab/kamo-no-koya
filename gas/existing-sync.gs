@@ -4,11 +4,20 @@
 // ============================================================
 
 // ▼▼▼ ここだけ設定してください ▼▼▼
-const SQUARE_ACCESS_TOKEN = "<REDACTED_SQUARE_ACCESS_TOKEN>"; // 実際の値はApps Scriptエディタ側のみに保持(git管理外)
-const SPREADSHEET_ID      = "1qMzUrUaCCI4lTMwQMKVyOeW2F5yDyQEJgqU-B1jAOEY";
+// SQUARE_ACCESS_TOKENはコード直書きではなく、GASエディタ→プロジェクトの設定→
+// スクリプトプロパティ に「SQUARE_ACCESS_TOKEN」というキーで設定すること。
+// (API_TOKENと同じ扱い。コードに書くとclasp pushのたびに上書きされ、
+//  過去に実際これが原因でSquare同期が長期間止まっていたことがある)
+const SPREADSHEET_ID = "1qMzUrUaCCI4lTMwQMKVyOeW2F5yDyQEJgqU-B1jAOEY";
 // ▲▲▲ 設定ここまで ▲▲▲
 
 const SQUARE_BASE_URL = "https://connect.squareup.com/v2";
+
+function getSquareAccessToken_() {
+  const token = PropertiesService.getScriptProperties().getProperty("SQUARE_ACCESS_TOKEN");
+  if (!token) throw new Error("スクリプトプロパティ SQUARE_ACCESS_TOKEN が未設定です");
+  return token;
+}
 
 // ============================================================
 // メイン実行関数(毎日自動実行される)
@@ -20,6 +29,8 @@ function syncFromSquare() {
     Logger.log("✅ Square同期完了");
   } catch (e) {
     Logger.log("❌ エラー: " + e.message);
+    appendSyncLog_("syncFromSquare", "error", String(e)); // 夜間トリガー実行時もアプリの同期ログから見えるようにする
+    throw e; // syncSalesFromSquare等の呼び出し元がエラーを検知・記録できるよう再スロー
   }
 }
 
@@ -157,32 +168,36 @@ function getLocationIds() {
 
 // ============================================================
 // Square API ヘルパー
+// (トークン不正・期限切れ等のエラーレスポンスを「新規データなし」として
+//  静かに握りつぶさないよう、2xx以外・エラーボディを検知したら例外を投げる)
 // ============================================================
-function squareGet(path) {
-  const res = UrlFetchApp.fetch(SQUARE_BASE_URL + path, {
-    method: "GET",
+function squareRequest_(method, path, body) {
+  const options = {
+    method: method,
     headers: {
-      "Authorization": "Bearer " + SQUARE_ACCESS_TOKEN,
+      "Authorization": "Bearer " + getSquareAccessToken_(),
       "Square-Version": "2024-01-18",
       "Content-Type": "application/json"
     },
     muteHttpExceptions: true
-  });
-  return JSON.parse(res.getContentText());
+  };
+  if (body) options.payload = JSON.stringify(body);
+
+  const res  = UrlFetchApp.fetch(SQUARE_BASE_URL + path, options);
+  const code = res.getResponseCode();
+  const json = JSON.parse(res.getContentText());
+  if (code < 200 || code >= 300 || json.errors) {
+    throw new Error("Square APIエラー(" + code + " " + path + "): " + JSON.stringify(json.errors || json));
+  }
+  return json;
+}
+
+function squareGet(path) {
+  return squareRequest_("GET", path);
 }
 
 function squarePost(path, body) {
-  const res = UrlFetchApp.fetch(SQUARE_BASE_URL + path, {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer " + SQUARE_ACCESS_TOKEN,
-      "Square-Version": "2024-01-18",
-      "Content-Type": "application/json"
-    },
-    payload: JSON.stringify(body),
-    muteHttpExceptions: true
-  });
-  return JSON.parse(res.getContentText());
+  return squareRequest_("POST", path, body);
 }
 
 // ============================================================
