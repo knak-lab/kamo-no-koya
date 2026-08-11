@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, Clock, Pencil } from "lucide-react";
-import { TODO_CATEGORIES, TODO_STATUSES, STAFF_OPTIONS } from "../lib/constants";
+import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, Clock, Pencil, CheckCircle2, Circle } from "lucide-react";
+import { TODO_CATEGORIES, STAFF_OPTIONS } from "../lib/constants";
 
 export default function TodoTab({
   todoForm,
@@ -116,12 +116,7 @@ export default function TodoTab({
                     (s) => s.parentTaskId === t.id && (showSnoozed || !s.snoozed) && (showCompletedTodos || s.status !== "完了")
                   );
                   const expanded = expandedTaskId === t.id;
-                  const statusColor =
-                    t.status === "完了"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : t.status === "進行中"
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-stone-100 text-stone-600";
+                  const done = t.status === "完了";
                   return (
                     <section key={t.id} className={`bg-white rounded-lg border border-stone-200 p-4 ${t.snoozed ? "opacity-50" : ""}`}>
                       <div className="flex items-start justify-between gap-3">
@@ -137,12 +132,13 @@ export default function TodoTab({
                             <div className="flex items-center gap-2 flex-wrap">
                               <button
                                 onClick={() => setEditTaskId(t.id)}
-                                className="font-medium text-sm hover:underline text-left flex items-center gap-1"
+                                className={`font-medium text-sm hover:underline text-left flex items-center gap-1 ${
+                                  done ? "line-through text-stone-400" : ""
+                                }`}
                               >
                                 {t.task}
                                 <Pencil size={10} className="text-stone-300" />
                               </button>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${statusColor}`}>{t.status}</span>
                               {t.snoozed && (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">ちょっとあと</span>
                               )}
@@ -153,6 +149,15 @@ export default function TodoTab({
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => updateTodo(t.id, "status", done ? "未着手" : "完了")}
+                            title="完了"
+                            className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border ${
+                              done ? "border-emerald-300 text-emerald-700 bg-emerald-50" : "border-stone-200 text-stone-500 hover:bg-stone-50"
+                            }`}
+                          >
+                            {done ? <CheckCircle2 size={11} /> : <Circle size={11} />} 完了
+                          </button>
                           <button
                             onClick={() => toggleTodoSnooze(t.id)}
                             title="ちょっとあと"
@@ -203,7 +208,9 @@ export default function TodoTab({
                                   </div>
                                   <button
                                     onClick={() => setEditSubtaskId(s.id)}
-                                    className="shrink-0 hover:underline text-left flex items-center gap-1"
+                                    className={`shrink-0 hover:underline text-left flex items-center gap-1 ${
+                                      s.status === "完了" ? "line-through text-stone-400" : ""
+                                    }`}
                                   >
                                     {s.name}
                                     <Pencil size={10} className="text-stone-300" />
@@ -211,7 +218,17 @@ export default function TodoTab({
                                   {s.snoozed && <span className="text-[10px] px-1 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">ちょっとあと</span>}
                                   <span className="text-stone-500 shrink-0">{s.assignee}</span>
                                   <span className="text-stone-400 shrink-0">{s.deadline || "期限未設定"}</span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-600 shrink-0">{s.status}</span>
+                                  <button
+                                    onClick={() => updateSubtask(s.id, "status", s.status === "完了" ? "未着手" : "完了")}
+                                    title="完了"
+                                    className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border shrink-0 ${
+                                      s.status === "完了"
+                                        ? "border-emerald-300 text-emerald-700 bg-emerald-50"
+                                        : "border-stone-200 text-stone-500 hover:bg-stone-50"
+                                    }`}
+                                  >
+                                    {s.status === "完了" ? <CheckCircle2 size={11} /> : <Circle size={11} />} 完了
+                                  </button>
                                   <button
                                     onClick={() => toggleSubtaskSnooze(s.id)}
                                     title="ちょっとあと"
@@ -331,18 +348,18 @@ export default function TodoTab({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-stone-500 mb-1">ステータス</label>
-                  <select
-                    className="border rounded px-2 py-1 w-full"
-                    value={editTask.status}
-                    onChange={(e) => updateTodo(editTask.id, "status", e.target.value)}
+                  <label className="block text-stone-500 mb-1">完了</label>
+                  <button
+                    onClick={() => updateTodo(editTask.id, "status", editTask.status === "完了" ? "未着手" : "完了")}
+                    className={`w-full flex items-center justify-center gap-1 border rounded px-2 py-1 ${
+                      editTask.status === "完了"
+                        ? "border-emerald-300 text-emerald-700 bg-emerald-50"
+                        : "border-stone-300 text-stone-600 hover:bg-stone-50"
+                    }`}
                   >
-                    {TODO_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    {editTask.status === "完了" ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+                    {editTask.status === "完了" ? "完了済み" : "完了にする"}
+                  </button>
                 </div>
               </div>
               <div>
@@ -397,18 +414,18 @@ export default function TodoTab({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-stone-500 mb-1">ステータス</label>
-                  <select
-                    className="border rounded px-2 py-1 w-full"
-                    value={editSubtask.status}
-                    onChange={(e) => updateSubtask(editSubtask.id, "status", e.target.value)}
+                  <label className="block text-stone-500 mb-1">完了</label>
+                  <button
+                    onClick={() => updateSubtask(editSubtask.id, "status", editSubtask.status === "完了" ? "未着手" : "完了")}
+                    className={`w-full flex items-center justify-center gap-1 border rounded px-2 py-1 ${
+                      editSubtask.status === "完了"
+                        ? "border-emerald-300 text-emerald-700 bg-emerald-50"
+                        : "border-stone-300 text-stone-600 hover:bg-stone-50"
+                    }`}
                   >
-                    {TODO_STATUSES.map((st) => (
-                      <option key={st} value={st}>
-                        {st}
-                      </option>
-                    ))}
-                  </select>
+                    {editSubtask.status === "完了" ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+                    {editSubtask.status === "完了" ? "完了済み" : "完了にする"}
+                  </button>
                 </div>
               </div>
               <div>

@@ -19,7 +19,7 @@ export const COLOR_POSITIVE = "#2563eb"; // 黒字(青)
 export const COLOR_NEGATIVE = "#dc2626"; // 赤字(赤)
 
 export const TODO_CATEGORIES = ["たくらみ", "みせづくり", "汗かき", "経営・管理"];
-export const TODO_STATUSES = ["未着手", "進行中", "完了"];
+export const TODO_STATUSES = ["未着手", "完了"];
 export const STAFF_OPTIONS = ["さっとん", "ひさし", "あっこ", "かける", "りょーすけ", "もえ"];
 
 export const TABS = [
