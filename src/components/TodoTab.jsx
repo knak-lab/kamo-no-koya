@@ -2,12 +2,18 @@ import { useState } from "react";
 import { Plus, Trash2, ChevronDown, ChevronRight, ChevronUp, Clock, Pencil, CheckCircle2, Circle } from "lucide-react";
 import { TODO_CATEGORIES, STAFF_OPTIONS } from "../lib/constants";
 
-// 完了チェック時に表示する「済」ハンコ風スタンプ
-function DoneStamp() {
+// 完了トグル。未完了は「〇」、完了すると赤枠の「済」ハンコ風スタンプに変わる
+function DoneMark({ done, onClick }) {
   return (
-    <span className="inline-flex items-center justify-center w-6 h-6 shrink-0 rounded-full border-2 border-red-600 text-red-600 text-[9px] font-bold leading-none -rotate-12">
-      済
-    </span>
+    <button
+      onClick={onClick}
+      title="完了"
+      className={`inline-flex items-center justify-center w-6 h-6 shrink-0 rounded-full border-2 leading-none ${
+        done ? "border-red-600 text-red-600 text-[9px] font-bold -rotate-12" : "border-stone-300 text-stone-300 text-xs hover:border-stone-400 hover:text-stone-400"
+      }`}
+    >
+      {done ? "済" : "〇"}
+    </button>
   );
 }
 
@@ -137,8 +143,9 @@ export default function TodoTab({
                           )}
                         </button>
                         <div className="min-w-0 flex-1">
-                          {/* 1行目: タイトル */}
+                          {/* 1行目: 〇/済・タイトル */}
                           <div className="flex items-center gap-1.5 flex-wrap">
+                            <DoneMark done={done} onClick={() => updateTodo(t.id, "status", done ? "未着手" : "完了")} />
                             <button
                               onClick={() => setEditTaskId(t.id)}
                               className={`font-medium text-sm hover:underline text-left flex items-center gap-1 ${
@@ -148,19 +155,9 @@ export default function TodoTab({
                               {t.task}
                               <Pencil size={10} className="text-stone-300" />
                             </button>
-                            {done && <DoneStamp />}
                           </div>
-                          {/* 2行目: 完了・ちょっとあと・期限/サブタスク件数 */}
+                          {/* 2行目: ちょっとあと・期限/サブタスク件数 */}
                           <div className="flex items-center gap-2 flex-wrap mt-1.5">
-                            <label className="flex items-center gap-1 text-[10px] text-stone-500 shrink-0 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={done}
-                                onChange={() => updateTodo(t.id, "status", done ? "未着手" : "完了")}
-                                className="w-4 h-4 accent-emerald-700 cursor-pointer"
-                              />
-                              完了
-                            </label>
                             <button
                               onClick={() => toggleTodoSnooze(t.id)}
                               title="ちょっとあと"
@@ -215,14 +212,9 @@ export default function TodoTab({
                                     </button>
                                   </div>
                                   <div className="min-w-0 flex-1">
-                                    {/* 1行目: チェックボックス・タイトル */}
+                                    {/* 1行目: 〇/済・タイトル */}
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <input
-                                        type="checkbox"
-                                        checked={sDone}
-                                        onChange={() => updateSubtask(s.id, "status", sDone ? "未着手" : "完了")}
-                                        className="w-4 h-4 accent-emerald-700 cursor-pointer shrink-0"
-                                      />
+                                      <DoneMark done={sDone} onClick={() => updateSubtask(s.id, "status", sDone ? "未着手" : "完了")} />
                                       <button
                                         onClick={() => setEditSubtaskId(s.id)}
                                         className={`hover:underline text-left flex items-center gap-1 ${
@@ -232,7 +224,6 @@ export default function TodoTab({
                                         {s.name}
                                         <Pencil size={10} className="text-stone-300" />
                                       </button>
-                                      {sDone && <DoneStamp />}
                                     </div>
                                     {/* 2行目: 担当・期限・ちょっとあと */}
                                     <div className="flex items-center gap-2 flex-wrap mt-1">
