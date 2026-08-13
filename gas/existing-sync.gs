@@ -45,6 +45,7 @@ function syncOrders() {
     sheet.appendRow(["id","日付","商品名","数量","金額(円)","支払方法","取得日時"]);
     sheet.getRange(1,1,1,7).setFontWeight("bold").setBackground("#c8956c").setFontColor("#ffffff");
   }
+  const channelCol = ensureSalesChannelColumn_(sheet); // 実店舗(Square)/ネット(BASE)の区別。定義はSheets.gs
 
   // 既存IDを取得(重複防止)
   const existing = new Set();
@@ -108,7 +109,9 @@ function syncOrders() {
   } while (cursor);
 
   if (newRows.length > 0) {
-    sheet.getRange(sheet.getLastRow()+1, 1, newRows.length, 7).setValues(newRows);
+    const startRow = sheet.getLastRow()+1;
+    sheet.getRange(startRow, 1, newRows.length, 7).setValues(newRows);
+    sheet.getRange(startRow, channelCol, newRows.length, 1).setValues(newRows.map(() => ["Square"]));
     Logger.log(`売上 ${newRows.length}件 追加`);
   } else {
     Logger.log("売上: 新規データなし");

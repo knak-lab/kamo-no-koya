@@ -89,6 +89,8 @@ export default function MasterTab({
   squareSyncLog,
   squareSyncing,
   runSyncCatalogFromSquare,
+  baseSyncing,
+  runSyncProductsToBase,
   recalcZeroCostRunning,
   recalcZeroCostResult,
   runRecalcZeroCostSales,
@@ -948,13 +950,52 @@ export default function MasterTab({
           </button>
         </div>
 
-        {squareSyncLog.length > 0 && (
+        {squareSyncLog.filter((l) => !l.type.startsWith("base")).length > 0 && (
           <div className="mt-3 text-xs text-stone-500 space-y-0.5">
-            {squareSyncLog.slice(0, 5).map((l, i) => (
-              <div key={i}>
-                {l.timestamp} — {l.type} — {l.status} {l.message ? `(${l.message})` : ""}
-              </div>
-            ))}
+            {squareSyncLog
+              .filter((l) => !l.type.startsWith("base"))
+              .slice(0, 5)
+              .map((l, i) => (
+                <div key={i}>
+                  {l.timestamp} — {l.type} — {l.status} {l.message ? `(${l.message})` : ""}
+                </div>
+              ))}
+          </div>
+        )}
+      </section>
+
+      {/* BASE連携(商品マスタ→BASE反映) */}
+      <section className="bg-white rounded-lg border border-stone-200 p-4">
+        <h2 className="font-semibold mb-1">BASE連携</h2>
+        <p className="text-xs text-stone-500 mb-3">
+          商品マスタ(商品名・価格)をBASE(ネットショップ)へ反映します。既にBASE側に登録済みの商品は更新、未登録の商品は新規登録(非公開状態)されます。価格は50〜500,000円の範囲外だとスキップされます。
+        </p>
+        <div className="flex items-center justify-between border border-stone-200 rounded-md p-3">
+          <div>
+            <div className="text-sm font-medium">今すぐ反映(アプリ → BASE)</div>
+            <div className="text-xs text-stone-500 mt-0.5">
+              初回利用前にApps Scriptエディタで baseGetAuthorizeUrl() を実行し、認可を済ませておく必要があります。
+            </div>
+          </div>
+          <button
+            onClick={runSyncProductsToBase}
+            disabled={baseSyncing}
+            className="shrink-0 ml-4 bg-amber-700 text-white rounded px-3 py-1.5 text-sm hover:bg-amber-800 disabled:opacity-50"
+          >
+            {baseSyncing ? "反映中…" : "今すぐ反映"}
+          </button>
+        </div>
+
+        {squareSyncLog.filter((l) => l.type.startsWith("base")).length > 0 && (
+          <div className="mt-3 text-xs text-stone-500 space-y-0.5">
+            {squareSyncLog
+              .filter((l) => l.type.startsWith("base"))
+              .slice(0, 5)
+              .map((l, i) => (
+                <div key={i}>
+                  {l.timestamp} — {l.type} — {l.status} {l.message ? `(${l.message})` : ""}
+                </div>
+              ))}
           </div>
         )}
       </section>

@@ -45,7 +45,7 @@ const SUBTASKS_FIELD_BY_HEADER = { "サブタスクID": "id", "親タスクID": 
 
 // ---- このアプリ専用の新規シート(実データとの衝突なし) ----
 const SHEET_PRODUCTS = "商品マスター_原価管理";
-const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion", "procedure"];
+const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion", "procedure", "baseItemId"];
 
 const SHEET_RECIPES = "レシピ"; // 実データ採用(20材料+5梱包材の横持ち形式)
 const RECIPE_MAX_INGREDIENTS = 20;
@@ -126,6 +126,17 @@ function getOrCreateSheet_(name, headers, seedRows, textCols) {
     });
   }
   return sheet;
+}
+
+// PRODUCTS_HDR等、位置ベースで列を扱うこのアプリ専用シートに新しい列を追加した際、
+// 既存シートのヘッダー行(1行目)に列名が無ければ末尾に埋める(データは一切触らない)。
+// getOrCreateSheet_はシート新規作成時にしかヘッダーを書かないため、既存シートに
+// 後から列を増やす場合はこちらを呼ぶ。
+function backfillHeaderRow_(sheet, headers) {
+  const lastCol = sheet.getLastColumn();
+  if (lastCol < headers.length) {
+    sheet.getRange(1, lastCol + 1, 1, headers.length - lastCol).setValues([headers.slice(lastCol)]);
+  }
 }
 
 // 名前だけでシートを取得する(存在しなければnull。新規作成はしない = 実データシート専用)
@@ -311,6 +322,7 @@ function writeByHeaderOrder_(sheet, objects, fieldByHeader, keyHeader) {
 
 function getProducts_() {
   const sheet = getOrCreateSheet_(SHEET_PRODUCTS, PRODUCTS_HDR);
+  backfillHeaderRow_(sheet, PRODUCTS_HDR);
   return rowsToObjects_(PRODUCTS_HDR, getDataRows_(sheet)).map(function (p) {
     return {
       id: String(p.id),
@@ -320,12 +332,14 @@ function getProducts_() {
       squareCatalogId: p.squareCatalogId || "",
       squareCatalogVersion: p.squareCatalogVersion || "",
       procedure: p.procedure || "",
+      baseItemId: p.baseItemId || "",
     };
   });
 }
 
 function saveProducts_(products) {
   const sheet = getOrCreateSheet_(SHEET_PRODUCTS, PRODUCTS_HDR);
+  backfillHeaderRow_(sheet, PRODUCTS_HDR);
   clearDataRows_(sheet);
   writeRows_(sheet, objectsToRows_(PRODUCTS_HDR, products), PRODUCTS_HDR.length);
 }
@@ -864,6 +878,19 @@ function getSalesSheetReadOnly_() {
   return getSs_().getSheetByName(SALES_SHEET_NAME) || null;
 }
 
+// 売上_Squareシートに「チャネル」列(実店舗Square/ネットBASEの区別)を確保し、その列番号(1始まり)を返す。
+// 既に存在すればその位置を返すのみ。存在しなければコスト列(8,9)の後ろ(10列目以降)に新設する。
+// 既存の未チャネル行(過去のSquare取込分)は空欄のまま残る = getSales_側で空欄を"Square"として扱う。
+function ensureSalesChannelColumn_(sheet) {
+  const lastCol = sheet.getLastColumn();
+  const headers = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+  const idx = headers.indexOf("チャネル");
+  if (idx >= 0) return idx + 1;
+  const col = Math.max(lastCol, 9) + 1;
+  sheet.getRange(1, col).setValue("チャネル");
+  return col;
+}
+
 function getCatalogReadOnly_() {
   const sheet = getSs_().getSheetByName(CATALOG_SHEET_NAME);
   if (!sheet) return [];
@@ -899,6 +926,7 @@ function getSales_() {
   const amountIdx = headers.indexOf("金額(円)");
   const costIdx = headers.indexOf("unitCostAtSale");
   const costSubIdx = headers.indexOf("costSubtotal");
+  const channelIdx = headers.indexOf("チャネル");
 
   return data
     .slice(1)
@@ -915,6 +943,8 @@ function getSales_() {
         productId: String(r[nameIdx] || ""),
         qty: Number(r[qtyIdx]) || 0,
         amount: Number(r[amountIdx]) || 0,
+        // 過去にチャネル列が無かった頃の行(実質すべてSquare取込)は空欄のままなので"Square"扱いにする
+        channel: channelIdx >= 0 && r[channelIdx] ? String(r[channelIdx]) : "Square",
       };
       if (costIdx >= 0 && r[costIdx] !== "" && r[costIdx] !== undefined && r[costIdx] !== null) {
         row.unitCostAtSale = Number(r[costIdx]);

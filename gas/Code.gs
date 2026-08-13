@@ -2,10 +2,13 @@
 //  カモの小屋 収益分析アプリ — GAS Web App エントリポイント
 //
 //  API: doGet/doPost の2エンドポイントのみ。
+//    GET ?code=... (state付き)  → BASE OAuth認可コールバック(base-sync.gs参照。
+//        BASE側からのリダイレクトのためtoken認証は通さない)
 //    GET ?action=debugHeaders → 実データ9シートの生ヘッダー行を返す(読み取り専用。
 //        シートの作成・変更は一切行わない)
 //    GET (それ以外)            → getAll_() の内容を返す
-//    POST → body.action で分岐 ("saveAll" / "saveTodos" / "syncCatalogFromSquare" / "recalcZeroCostSales" / "syncSalesFromSquare")
+//    POST → body.action で分岐 ("saveAll" / "saveTodos" / "syncCatalogFromSquare" /
+//        "recalcZeroCostSales" / "syncSalesFromSquare" / "syncProductsToBase" / "syncOrdersFromBase")
 //
 //  CORSはブラウザのプリフライト(OPTIONS)を回避するため、フロント側の
 //  fetchはContent-Type: text/plain;charset=utf-8 でJSON文字列を送る。
@@ -22,6 +25,10 @@ function isAuthorized_(token) {
 }
 
 function doGet(e) {
+  // BASEのOAuth認可リダイレクトはこのURLへcode付きで返ってくる(token認証は通さない。
+  // 認可コードそのものと、後続のclient_secretでのトークン交換・stateチェックが
+  // このリクエストの正当性の担保になる。詳細はbase-sync.gs参照)
+  if (e.parameter.code) return handleBaseOAuthCallback_(e);
   if (!isAuthorized_(e.parameter.token)) return err_("Unauthorized");
   try {
     if (e.parameter.action === "debugHeaders") {
@@ -59,6 +66,10 @@ function doPost(e) {
         return ok_(recalcZeroCostSales());
       case "syncSalesFromSquare":
         return ok_(syncSalesFromSquare());
+      case "syncProductsToBase":
+        return ok_(syncProductsToBase());
+      case "syncOrdersFromBase":
+        return ok_(syncOrdersFromBase());
       default:
         return err_("Unknown action: " + body.action);
     }

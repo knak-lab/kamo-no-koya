@@ -6,6 +6,8 @@ import DateAccordion from "./DateAccordion";
 export default function InputTab({
   salesSyncing,
   runSyncSalesFromSquare,
+  baseOrdersSyncing,
+  runSyncOrdersFromBase,
   targetForm,
   setTargetForm,
   addTarget,
@@ -102,6 +104,25 @@ export default function InputTab({
             className="shrink-0 ml-4 bg-amber-700 text-white rounded px-3 py-1.5 text-sm hover:bg-amber-800 disabled:opacity-50"
           >
             {salesSyncing ? "取込中…" : "売上データ取込"}
+          </button>
+        </div>
+      </section>
+
+      {/* BASE注文取込 */}
+      <section className="bg-white rounded-lg border border-stone-200 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold mb-1">BASE注文取込</h2>
+            <p className="text-xs text-stone-500">
+              BASE(ネットショップ)の注文を今すぐ取り込みます。実店舗(Square)と同じ売上明細に「チャネル」で区別して記録され、原価も合わせて計算されます。
+            </p>
+          </div>
+          <button
+            onClick={runSyncOrdersFromBase}
+            disabled={baseOrdersSyncing}
+            className="shrink-0 ml-4 bg-amber-700 text-white rounded px-3 py-1.5 text-sm hover:bg-amber-800 disabled:opacity-50"
+          >
+            {baseOrdersSyncing ? "取込中…" : "BASE注文取込"}
           </button>
         </div>
       </section>

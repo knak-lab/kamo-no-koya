@@ -54,4 +54,10 @@ export const gasApi = {
 
   // Square注文の即時取り込み(売上データ取込ボタン)。取り込み後の原価スタンプまで行う
   syncSalesFromSquare: () => post({ action: "syncSalesFromSquare" }),
+
+  // 商品マスタ(商品名・価格)をBASEへ一方向反映(新規登録 or 更新)
+  syncProductsToBase: () => post({ action: "syncProductsToBase" }),
+
+  // BASEの注文を売上_Squareシートへチャネル"BASE"として取り込む
+  syncOrdersFromBase: () => post({ action: "syncOrdersFromBase" }),
 };

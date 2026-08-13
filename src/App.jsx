@@ -226,6 +226,8 @@ export default function App() {
   const [recalcZeroCostRunning, setRecalcZeroCostRunning] = useState(false);
   const [recalcZeroCostResult, setRecalcZeroCostResult] = useState(null);
   const [salesSyncing, setSalesSyncing] = useState(false);
+  const [baseSyncing, setBaseSyncing] = useState(false);
+  const [baseOrdersSyncing, setBaseOrdersSyncing] = useState(false);
 
   // ========== TODO・サブタスク ==========
   const [todos, setTodos] = useState([]);
@@ -958,6 +960,34 @@ export default function App() {
       setSalesSyncing(false);
     }
   };
+  // --- ハンドラ: BASE連携 ---
+  const runSyncProductsToBase = async () => {
+    setBaseSyncing(true);
+    try {
+      const res = await gasApi.syncProductsToBase();
+      if (res.products) setProducts(res.products);
+      if (res.squareSyncLog) setSquareSyncLog(res.squareSyncLog);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    } finally {
+      setBaseSyncing(false);
+    }
+  };
+  const runSyncOrdersFromBase = async () => {
+    setBaseOrdersSyncing(true);
+    try {
+      const res = await gasApi.syncOrdersFromBase();
+      if (res.squareSyncLog) setSquareSyncLog(res.squareSyncLog);
+      const fresh = await gasApi.getAll();
+      setSales(fresh.sales || []);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    } finally {
+      setBaseOrdersSyncing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -1004,6 +1034,8 @@ export default function App() {
           <InputTab
             salesSyncing={salesSyncing}
             runSyncSalesFromSquare={runSyncSalesFromSquare}
+            baseOrdersSyncing={baseOrdersSyncing}
+            runSyncOrdersFromBase={runSyncOrdersFromBase}
             targetForm={targetForm}
             setTargetForm={setTargetForm}
             addTarget={addTarget}
@@ -1204,6 +1236,8 @@ export default function App() {
             confirmSquareSyncToggle={confirmSquareSyncToggle}
             squareSyncLog={squareSyncLog}
             squareSyncing={squareSyncing}
+            baseSyncing={baseSyncing}
+            runSyncProductsToBase={runSyncProductsToBase}
             runSyncCatalogFromSquare={runSyncCatalogFromSquare}
             recalcZeroCostRunning={recalcZeroCostRunning}
             recalcZeroCostResult={recalcZeroCostResult}
