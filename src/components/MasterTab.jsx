@@ -98,11 +98,11 @@ export default function MasterTab({
   const [procedureOpen, setProcedureOpen] = useState(false);
   return (
     <>
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
           <div className="flex flex-col gap-3 mb-1">
             <div>
               <div className="text-xs text-stone-500 mb-1">区分(検索・新規登録の対象)</div>
-              <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs">
+              <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs">
                 {[
                   { value: "single", label: "単品" },
                   { value: "set", label: "セット" },
@@ -123,7 +123,7 @@ export default function MasterTab({
             <div className="relative">
               <label className="block text-xs text-stone-500 mb-1">商品を検索・選択</label>
               <input
-                className="border rounded px-2 py-1 text-sm w-full max-w-xs"
+                className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-sm w-full max-w-xs"
                 value={productQuery}
                 onChange={(e) => {
                   setProductQuery(e.target.value);
@@ -177,11 +177,11 @@ export default function MasterTab({
               <div className="flex gap-2">
                 <button
                   onClick={cancelProductDraft}
-                  className="px-3 py-1.5 text-xs rounded border border-stone-300 text-stone-600 hover:bg-stone-50"
+                  className="px-3.5 py-1.5 text-xs rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-stone-400 transition-colors"
                 >
                   キャンセル
                 </button>
-                <button onClick={saveProductDraft} className="px-3 py-1.5 text-xs rounded bg-amber-700 text-white hover:bg-amber-800">
+                <button onClick={saveProductDraft} className="px-3.5 py-1.5 text-xs rounded-lg bg-amber-700 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all">
                   保存
                 </button>
               </div>
@@ -189,7 +189,7 @@ export default function MasterTab({
 
             <div>
               <div className="text-xs text-stone-500 mb-1">区分</div>
-              <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs">
+              <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs">
                 {[
                   { value: "single", label: "単品" },
                   { value: "set", label: "セット" },
@@ -211,7 +211,7 @@ export default function MasterTab({
               <label className="block text-xs text-stone-500 mb-1">価格(円)</label>
               <input
                 type="number"
-                className="border rounded px-2 py-1 text-sm w-28"
+                className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-sm w-28"
                 value={productDraft.price}
                 onChange={(e) => updateDraftField("price", e.target.value)}
               />
@@ -222,7 +222,7 @@ export default function MasterTab({
               <input
                 type="number"
                 step="0.1"
-                className="border rounded px-2 py-1 text-sm w-28"
+                className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-sm w-28"
                 value={costRatioDraft}
                 onFocus={() => setEditingRatio(true)}
                 onChange={(e) => handleCostRatioChange(e.target.value)}
@@ -265,7 +265,7 @@ export default function MasterTab({
                 <input
                   type="number"
                   min={1}
-                  className="border rounded px-2 py-1 w-16"
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-16"
                   value={productDraft.servings}
                   onChange={(e) => updateDraftServings(e.target.value)}
                   onBlur={(e) => {
@@ -294,7 +294,7 @@ export default function MasterTab({
                   return (
                     <div key={row.id} className="flex items-center gap-2 text-xs">
                       <select
-                        className="border rounded px-2 py-1 flex-1"
+                        className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow flex-1"
                         value={row.materialId}
                         onChange={(e) => updateDraftIngredientRow("ingredients", row.id, "materialId", e.target.value)}
                       >
@@ -306,7 +306,7 @@ export default function MasterTab({
                       </select>
                       <input
                         type="number"
-                        className="border rounded px-2 py-1 w-20"
+                        className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-20"
                         value={row.amount}
                         onFocus={(e) => e.target.select()}
                         onChange={(e) => updateDraftIngredientRow("ingredients", row.id, "amount", e.target.value)}
@@ -347,7 +347,7 @@ export default function MasterTab({
                       return (
                         <div key={row.id} className="flex items-center gap-2 text-xs">
                           <select
-                            className="border rounded px-2 py-1 flex-1"
+                            className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow flex-1"
                             value={row.refId || ""}
                             onChange={(e) => updateDraftBreakdownRow(row.id, "refId", e.target.value)}
                           >
@@ -361,7 +361,7 @@ export default function MasterTab({
                           </select>
                           <input
                             type="number"
-                            className="border rounded px-2 py-1 w-16"
+                            className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-16"
                             value={row.qty}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => updateDraftBreakdownRow(row.id, "qty", e.target.value)}
@@ -396,7 +396,7 @@ export default function MasterTab({
                       return (
                         <div key={row.id} className="flex items-center gap-2 text-xs">
                           <select
-                            className="border rounded px-2 py-1 flex-1"
+                            className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow flex-1"
                             value={row.refId || ""}
                             onChange={(e) => updateDraftBreakdownRow(row.id, "refId", e.target.value)}
                           >
@@ -408,7 +408,7 @@ export default function MasterTab({
                           </select>
                           <input
                             type="number"
-                            className="border rounded px-2 py-1 w-16"
+                            className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-16"
                             value={row.qty}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => updateDraftBreakdownRow(row.id, "qty", e.target.value)}
@@ -443,7 +443,7 @@ export default function MasterTab({
                   return (
                     <div key={row.id} className="flex items-center gap-2 text-xs">
                       <select
-                        className="border rounded px-2 py-1 flex-1"
+                        className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow flex-1"
                         value={row.materialId}
                         onChange={(e) => updateDraftIngredientRow("packaging", row.id, "materialId", e.target.value)}
                       >
@@ -455,7 +455,7 @@ export default function MasterTab({
                       </select>
                       <input
                         type="number"
-                        className="border rounded px-2 py-1 w-20"
+                        className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-20"
                         value={row.amount}
                         onFocus={(e) => e.target.select()}
                         onChange={(e) => updateDraftIngredientRow("packaging", row.id, "amount", e.target.value)}
@@ -483,7 +483,7 @@ export default function MasterTab({
             </button>
             {procedureOpen && (
               <textarea
-                className="mt-1 border rounded px-2 py-1.5 text-xs w-full h-32"
+                className="mt-1 border border-stone-300 rounded-lg px-2.5 py-2 text-xs w-full h-32 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
                 value={productDraft.procedure || ""}
                 onChange={(e) => updateDraftField("procedure", e.target.value)}
                 placeholder="この商品の制作手順を入力"
@@ -495,8 +495,8 @@ export default function MasterTab({
         </section>
 
       {/* 商品マスター一覧 */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">商品マスター(単品)</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">商品マスター(単品)</h2>
         <p className="text-xs text-stone-500 mb-3">
           新規登録は上の検索欄から行います。商品名はレシピ・売上から参照されるキーなので、変更は鉛筆アイコンからのみ行えます。
         </p>
@@ -540,7 +540,7 @@ export default function MasterTab({
                           {renamingId === p.id ? (
                             <input
                               autoFocus
-                              className="border rounded px-1 py-0.5 text-xs w-28"
+                              className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-xs w-28"
                               value={p.name}
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => updateProduct(p.id, "name", e.target.value)}
@@ -604,13 +604,13 @@ export default function MasterTab({
       </section>
 
       {/* 材料・包材マスタ */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-3">材料・包材マスタ</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">材料・包材マスタ</h2>
         <div className="flex flex-wrap gap-2 items-end mb-3 text-sm">
           <div>
             <label className="block text-xs text-stone-500 mb-1">材料名</label>
             <input
-              className="border rounded px-2 py-1 w-32"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-32"
               value={materialForm.name}
               onChange={(e) => setMaterialForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="薄力粉"
@@ -619,7 +619,7 @@ export default function MasterTab({
           <div>
             <label className="block text-xs text-stone-500 mb-1">区分</label>
             <select
-              className="border rounded px-2 py-1"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
               value={materialForm.category}
               onChange={(e) => setMaterialForm((f) => ({ ...f, category: e.target.value }))}
             >
@@ -630,7 +630,7 @@ export default function MasterTab({
           <div>
             <label className="block text-xs text-stone-500 mb-1">単位</label>
             <select
-              className="border rounded px-2 py-1"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
               value={materialForm.unit}
               onChange={(e) => setMaterialForm((f) => ({ ...f, unit: e.target.value }))}
             >
@@ -646,12 +646,12 @@ export default function MasterTab({
             <input
               type="number"
               step="0.01"
-              className="border rounded px-2 py-1 w-24"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-24"
               value={materialForm.unitPrice}
               onChange={(e) => setMaterialForm((f) => ({ ...f, unitPrice: e.target.value }))}
             />
           </div>
-          <button onClick={addMaterial} className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800">
+          <button onClick={addMaterial} className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all">
             <Plus size={14} /> 追加
           </button>
         </div>
@@ -681,7 +681,7 @@ export default function MasterTab({
                   <tr key={m.id} id={`material-row-${m.id}`} className="border-b border-stone-100">
                     <td className="py-1 pr-2">
                       <input
-                        className="border rounded px-1 py-0.5 w-28"
+                        className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-28"
                         value={m.name}
                         onChange={(e) => updateMaterial(m.id, "name", e.target.value)}
                         onBlur={() => commitMaterialRename(m.id)}
@@ -689,7 +689,7 @@ export default function MasterTab({
                     </td>
                     <td className="py-1 pr-2">
                       <select
-                        className="border rounded px-1 py-0.5"
+                        className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
                         value={m.category}
                         onChange={(e) => updateMaterial(m.id, "category", e.target.value)}
                       >
@@ -698,7 +698,7 @@ export default function MasterTab({
                       </select>
                     </td>
                     <td className="py-1 pr-2">
-                      <select className="border rounded px-1 py-0.5" value={m.unit} onChange={(e) => updateMaterial(m.id, "unit", e.target.value)}>
+                      <select className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow" value={m.unit} onChange={(e) => updateMaterial(m.id, "unit", e.target.value)}>
                         {UNITS.map((u) => (
                           <option key={u} value={u}>
                             {u}
@@ -712,7 +712,7 @@ export default function MasterTab({
                         <input
                           type="number"
                           step="0.01"
-                          className="border rounded px-1 py-0.5 w-20"
+                          className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-20"
                           value={m.unitPrice}
                           onChange={(e) => updateMaterial(m.id, "unitPrice", e.target.value)}
                         />
@@ -733,13 +733,13 @@ export default function MasterTab({
       </section>
 
       {/* 販売先(委託先)マスタ */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-3">販売先(委託先)マスタ</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">販売先(委託先)マスタ</h2>
         <div className="flex flex-wrap gap-2 items-end mb-3 text-sm">
           <div>
             <label className="block text-xs text-stone-500 mb-1">販売先</label>
             <input
-              className="border rounded px-2 py-1 w-32"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-32"
               value={rebateForm.name}
               onChange={(e) => setRebateForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="□□商店"
@@ -750,7 +750,7 @@ export default function MasterTab({
             <input
               type="number"
               step="0.1"
-              className="border rounded px-2 py-1 w-20"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-20"
               value={rebateForm.rate}
               onChange={(e) => setRebateForm((f) => ({ ...f, rate: e.target.value }))}
               placeholder="15"
@@ -759,13 +759,13 @@ export default function MasterTab({
           <div>
             <label className="block text-xs text-stone-500 mb-1">備考</label>
             <input
-              className="border rounded px-2 py-1 w-40"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-40"
               value={rebateForm.memo}
               onChange={(e) => setRebateForm((f) => ({ ...f, memo: e.target.value }))}
               placeholder="任意"
             />
           </div>
-          <button onClick={addRebateClient} className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800">
+          <button onClick={addRebateClient} className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all">
             <Plus size={14} /> 追加
           </button>
         </div>
@@ -793,14 +793,14 @@ export default function MasterTab({
                 {rebateClients.map((c) => (
                   <tr key={c.id} className="border-b border-stone-100">
                     <td className="py-1 pr-2">
-                      <input className="border rounded px-1 py-0.5 w-28" value={c.name} onChange={(e) => updateRebateClient(c.id, "name", e.target.value)} />
+                      <input className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-28" value={c.name} onChange={(e) => updateRebateClient(c.id, "name", e.target.value)} />
                     </td>
                     <td className="py-1 pr-2">
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
                           step="0.1"
-                          className="border rounded px-1 py-0.5 w-16"
+                          className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-16"
                           value={Math.round(c.rate * 1000) / 10}
                           onFocus={(e) => e.target.select()}
                           onChange={(e) => updateRebateClient(c.id, "rate", e.target.value)}
@@ -810,7 +810,7 @@ export default function MasterTab({
                     </td>
                     <td className="py-1 pr-2">
                       <input
-                        className="border rounded px-1 py-0.5 w-40"
+                        className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-40"
                         value={c.memo || ""}
                         onChange={(e) => updateRebateClient(c.id, "memo", e.target.value)}
                         placeholder="任意"
@@ -830,8 +830,8 @@ export default function MasterTab({
       </section>
 
       {/* 経費マスタ(時間単価) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">経費マスタ(時間単価)</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">経費マスタ(時間単価)</h2>
         <p className="text-xs text-stone-500 mb-3">
           時間単価で管理する項目です(店舗利用料・人件費など)。入力タブで時間を入れると自動で金額を計算します。項目は自由に追加できます。
         </p>
@@ -840,7 +840,7 @@ export default function MasterTab({
           <div>
             <label className="block text-xs text-stone-500 mb-1">項目名</label>
             <input
-              className="border rounded px-2 py-1 w-40"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-40"
               value={expenseRateForm.name}
               onChange={(e) => setExpenseRateForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="臨時スタッフ人件費"
@@ -850,12 +850,12 @@ export default function MasterTab({
             <label className="block text-xs text-stone-500 mb-1">時間単価(円/時)</label>
             <input
               type="number"
-              className="border rounded px-2 py-1 w-24"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-24"
               value={expenseRateForm.rate}
               onChange={(e) => setExpenseRateForm((f) => ({ ...f, rate: e.target.value }))}
             />
           </div>
-          <button onClick={addExpenseRate} className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800">
+          <button onClick={addExpenseRate} className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all">
             <Plus size={14} /> 追加
           </button>
         </div>
@@ -887,7 +887,7 @@ export default function MasterTab({
                         <span>¥</span>
                         <input
                           type="number"
-                          className="border rounded px-1 py-0.5 w-24"
+                          className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-24"
                           value={expenseRates[item] || 0}
                           onFocus={(e) => e.target.select()}
                           onChange={(e) => updateExpenseRate(item, e.target.value)}
@@ -909,12 +909,12 @@ export default function MasterTab({
       </section>
 
       {/* Square連携(商品マスタの正の切り替え) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">Square連携</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">Square連携</h2>
         <p className="text-xs text-stone-500 mb-3">
           商品マスタ(商品名・価格)をどちらが正として扱うかを切り替えます。切り替えは現場運用に直結するため、確認ダイアログが出ます。
         </p>
-        <div className="flex items-center justify-between border border-stone-200 rounded-md p-3">
+        <div className="flex items-center justify-between border border-stone-200/80 rounded-xl p-3">
           <div>
             <div className="text-sm font-medium">{squareSyncFromSquare ? "Square → アプリ(現在の運用)" : "アプリ → Square"}</div>
             <div className="text-xs text-stone-500 mt-0.5">
@@ -934,7 +934,7 @@ export default function MasterTab({
           </button>
         </div>
 
-        <div className="mt-4 flex items-center justify-between border border-stone-200 rounded-md p-3">
+        <div className="mt-4 flex items-center justify-between border border-stone-200/80 rounded-xl p-3">
           <div>
             <div className="text-sm font-medium">今すぐ同期(Square → アプリ)</div>
             <div className="text-xs text-stone-500 mt-0.5">
@@ -944,7 +944,7 @@ export default function MasterTab({
           <button
             onClick={runSyncCatalogFromSquare}
             disabled={squareSyncing}
-            className="shrink-0 ml-4 bg-amber-700 text-white rounded px-3 py-1.5 text-sm hover:bg-amber-800 disabled:opacity-50"
+            className="shrink-0 ml-4 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
           >
             {squareSyncing ? "同期中…" : "今すぐ同期"}
           </button>
@@ -965,12 +965,12 @@ export default function MasterTab({
       </section>
 
       {/* BASE連携(商品マスタ→BASE反映) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">BASE連携</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">BASE連携</h2>
         <p className="text-xs text-stone-500 mb-3">
           商品マスタ(商品名・価格)をBASE(ネットショップ)へ反映します。既にBASE側に登録済みの商品は更新、未登録の商品は新規登録(非公開状態)されます。価格は50〜500,000円の範囲外だとスキップされます。
         </p>
-        <div className="flex items-center justify-between border border-stone-200 rounded-md p-3">
+        <div className="flex items-center justify-between border border-stone-200/80 rounded-xl p-3">
           <div>
             <div className="text-sm font-medium">今すぐ反映(アプリ → BASE)</div>
             <div className="text-xs text-stone-500 mt-0.5">
@@ -980,7 +980,7 @@ export default function MasterTab({
           <button
             onClick={runSyncProductsToBase}
             disabled={baseSyncing}
-            className="shrink-0 ml-4 bg-amber-700 text-white rounded px-3 py-1.5 text-sm hover:bg-amber-800 disabled:opacity-50"
+            className="shrink-0 ml-4 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
           >
             {baseSyncing ? "反映中…" : "今すぐ反映"}
           </button>
@@ -1001,12 +1001,12 @@ export default function MasterTab({
       </section>
 
       {/* 原価スナップショット再計算(レシピ登録前に0円確定してしまった売上行の救済) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">原価スナップショット再計算</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">原価スナップショット再計算</h2>
         <p className="text-xs text-stone-500 mb-3">
           レシピ・内訳を登録する前に売れてしまい原価0円のまま確定した売上行だけを、現在のレシピで再計算します。すでに0円以外で確定している行(正常な過去の粗利)には触れません。
         </p>
-        <div className="flex items-center justify-between border border-stone-200 rounded-md p-3">
+        <div className="flex items-center justify-between border border-stone-200/80 rounded-xl p-3">
           <div>
             <div className="text-sm font-medium">原価0円の売上行を再計算</div>
             {recalcZeroCostResult !== null && (
@@ -1016,7 +1016,7 @@ export default function MasterTab({
           <button
             onClick={runRecalcZeroCostSales}
             disabled={recalcZeroCostRunning}
-            className="shrink-0 ml-4 bg-amber-700 text-white rounded px-3 py-1.5 text-sm hover:bg-amber-800 disabled:opacity-50"
+            className="shrink-0 ml-4 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
           >
             {recalcZeroCostRunning ? "再計算中…" : "再計算する"}
           </button>
@@ -1024,8 +1024,8 @@ export default function MasterTab({
       </section>
 
       {/* 商品名の統合(エイリアス。入力タブのヌケモレチェックから設定。通常は閉じておく) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">商品名の統合(売上明細のマージ)</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">商品名の統合(売上明細のマージ)</h2>
         <p className="text-xs text-stone-500 mb-3">
           売上明細の商品名(Square由来)が商品マスタと一致しなかったものを、既存商品の売上として統合した一覧です。「入力」タブのヌケモレチェックから設定できます。
         </p>
@@ -1069,8 +1069,8 @@ export default function MasterTab({
       </section>
 
       {/* 売上明細の個別修正(saleId単位。入力タブのヌケモレチェックから設定。通常は閉じておく) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">売上明細の個別修正</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">売上明細の個別修正</h2>
         <p className="text-xs text-stone-500 mb-3">
           商品マスタと一致しない売上明細1行を、名前で一括統合せず個別に商品・数量を指定して解決した一覧です。「入力」タブのヌケモレチェックから設定できます。
         </p>
@@ -1121,8 +1121,8 @@ export default function MasterTab({
       </section>
 
       {/* 包材費0円チェック除外(入力タブのヌケモレチェックから設定。通常は閉じておく) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">包材費0円チェック除外</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">包材費0円チェック除外</h2>
         <p className="text-xs text-stone-500 mb-3">
           「商品マスタで包材費が0円」のヌケモレチェックで、意図的に包材が無い商品を個別に「不要」扱いにした一覧です。
         </p>
@@ -1175,11 +1175,11 @@ export default function MasterTab({
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setSquareSyncConfirmOpen(false)}
-                className="px-3 py-1.5 text-sm rounded border border-stone-300 text-stone-600 hover:bg-stone-50"
+                className="px-3.5 py-1.5 text-sm rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-stone-400 transition-colors"
               >
                 キャンセル
               </button>
-              <button onClick={confirmSquareSyncToggle} className="px-3 py-1.5 text-sm rounded bg-amber-700 text-white hover:bg-amber-800">
+              <button onClick={confirmSquareSyncToggle} className="px-3.5 py-1.5 text-sm rounded-lg bg-amber-700 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all">
                 実行する
               </button>
             </div>
@@ -1196,7 +1196,7 @@ export default function MasterTab({
             <div className="flex justify-end gap-2">
               <button
                 onClick={cancelPendingProductSwitch}
-                className="px-3 py-1.5 text-sm rounded border border-stone-300 text-stone-600 hover:bg-stone-50"
+                className="px-3.5 py-1.5 text-sm rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-stone-400 transition-colors"
               >
                 キャンセル
               </button>

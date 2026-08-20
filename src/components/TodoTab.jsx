@@ -52,13 +52,13 @@ export default function TodoTab({
 
   return (
     <>
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-3">タスク追加</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">タスク追加</h2>
         <div className="flex flex-wrap gap-2 items-end mb-3 text-sm">
           <div>
             <label className="block text-xs text-stone-500 mb-1">カテゴリ</label>
             <select
-              className="border rounded px-2 py-1"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
               value={todoForm.category}
               onChange={(e) => setTodoForm((f) => ({ ...f, category: e.target.value }))}
             >
@@ -72,7 +72,7 @@ export default function TodoTab({
           <div>
             <label className="block text-xs text-stone-500 mb-1">タスク</label>
             <input
-              className="border rounded px-2 py-1 w-48"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-48"
               value={todoForm.task}
               onChange={(e) => setTodoForm((f) => ({ ...f, task: e.target.value }))}
               placeholder="例: 夏メニュー試作"
@@ -82,12 +82,12 @@ export default function TodoTab({
             <label className="block text-xs text-stone-500 mb-1">期限</label>
             <input
               type="date"
-              className="border rounded px-2 py-1"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
               value={todoForm.deadline}
               onChange={(e) => setTodoForm((f) => ({ ...f, deadline: e.target.value }))}
             />
           </div>
-          <button onClick={addTodo} className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800">
+          <button onClick={addTodo} className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all">
             <Plus size={14} /> 追加
           </button>
         </div>
@@ -112,7 +112,7 @@ export default function TodoTab({
 
       <div className="space-y-6">
         {todos.length === 0 && (
-          <p className="text-xs text-stone-400 bg-white rounded-lg border border-stone-200 p-4">タスクがありません。</p>
+          <p className="text-xs text-stone-400 bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">タスクがありません。</p>
         )}
         {TODO_CATEGORIES.map((category) => {
           const categoryTasks = todos.filter(
@@ -133,7 +133,7 @@ export default function TodoTab({
                   const expanded = expandedTaskId === t.id;
                   const done = t.status === "完了";
                   return (
-                    <section key={t.id} className={`bg-white rounded-lg border border-stone-200 p-4 ${t.snoozed ? "opacity-50" : ""}`}>
+                    <section key={t.id} className={`bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5 ${t.snoozed ? "opacity-50" : ""}`}>
                       <div className="flex items-start gap-2">
                         <button onClick={() => setExpandedTaskId(expanded ? null : t.id)} className="shrink-0 mt-0.5">
                           {expanded ? (
@@ -267,7 +267,7 @@ export default function TodoTab({
                 <label className="block text-stone-500 mb-1">サブタスク名</label>
                 <input
                   autoFocus
-                  className="border rounded px-2 py-1 w-full"
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
                   value={msf.name}
                   onChange={(e) => setSubtaskFormField(subtaskModalTaskId, "name", e.target.value)}
                 />
@@ -276,7 +276,7 @@ export default function TodoTab({
                 <div className="flex-1">
                   <label className="block text-stone-500 mb-1">担当</label>
                   <select
-                    className="border rounded px-2 py-1 w-full"
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
                     value={msf.assignee}
                     onChange={(e) => setSubtaskFormField(subtaskModalTaskId, "assignee", e.target.value)}
                   >
@@ -291,7 +291,7 @@ export default function TodoTab({
                   <label className="block text-stone-500 mb-1">期限</label>
                   <input
                     type="date"
-                    className="border rounded px-2 py-1 w-full"
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
                     value={msf.deadline}
                     onChange={(e) => setSubtaskFormField(subtaskModalTaskId, "deadline", e.target.value)}
                   />
@@ -301,7 +301,7 @@ export default function TodoTab({
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setSubtaskModalTaskId(null)}
-                className="px-3 py-1.5 text-sm rounded border border-stone-300 text-stone-600 hover:bg-stone-50"
+                className="px-3.5 py-1.5 text-sm rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-stone-400 transition-colors"
               >
                 キャンセル
               </button>
@@ -311,7 +311,7 @@ export default function TodoTab({
                   addSubtask(subtaskModalTaskId);
                   setSubtaskModalTaskId(null);
                 }}
-                className="px-3 py-1.5 text-sm rounded bg-amber-700 text-white hover:bg-amber-800"
+                className="px-3.5 py-1.5 text-sm rounded-lg bg-amber-700 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
               >
                 追加
               </button>
@@ -329,7 +329,7 @@ export default function TodoTab({
                 <label className="block text-stone-500 mb-1">タスク名</label>
                 <input
                   autoFocus
-                  className="border rounded px-2 py-1 w-full"
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
                   value={editTask.task}
                   onChange={(e) => updateTodo(editTask.id, "task", e.target.value)}
                 />
@@ -338,7 +338,7 @@ export default function TodoTab({
                 <div>
                   <label className="block text-stone-500 mb-1">カテゴリ</label>
                   <select
-                    className="border rounded px-2 py-1 w-full"
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
                     value={editTask.category}
                     onChange={(e) => updateTodo(editTask.id, "category", e.target.value)}
                   >
@@ -353,7 +353,7 @@ export default function TodoTab({
                   <label className="block text-stone-500 mb-1">完了</label>
                   <button
                     onClick={() => updateTodo(editTask.id, "status", editTask.status === "完了" ? "未着手" : "完了")}
-                    className={`w-full flex items-center justify-center gap-1 border rounded px-2 py-1 ${
+                    className={`w-full flex items-center justify-center gap-1 border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow ${
                       editTask.status === "完了"
                         ? "border-emerald-300 text-emerald-700 bg-emerald-50"
                         : "border-stone-300 text-stone-600 hover:bg-stone-50"
@@ -368,7 +368,7 @@ export default function TodoTab({
                 <label className="block text-stone-500 mb-1">期限</label>
                 <input
                   type="date"
-                  className="border rounded px-2 py-1 w-full"
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
                   value={editTask.deadline}
                   onChange={(e) => updateTodo(editTask.id, "deadline", e.target.value)}
                 />
@@ -377,7 +377,7 @@ export default function TodoTab({
             <div className="flex justify-end mt-4">
               <button
                 onClick={() => setEditTaskId(null)}
-                className="px-3 py-1.5 text-sm rounded bg-amber-700 text-white hover:bg-amber-800"
+                className="px-3.5 py-1.5 text-sm rounded-lg bg-amber-700 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
               >
                 閉じる
               </button>
@@ -395,7 +395,7 @@ export default function TodoTab({
                 <label className="block text-stone-500 mb-1">サブタスク名</label>
                 <input
                   autoFocus
-                  className="border rounded px-2 py-1 w-full"
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
                   value={editSubtask.name}
                   onChange={(e) => updateSubtask(editSubtask.id, "name", e.target.value)}
                 />
@@ -404,7 +404,7 @@ export default function TodoTab({
                 <div>
                   <label className="block text-stone-500 mb-1">担当</label>
                   <select
-                    className="border rounded px-2 py-1 w-full"
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
                     value={editSubtask.assignee}
                     onChange={(e) => updateSubtask(editSubtask.id, "assignee", e.target.value)}
                   >
@@ -419,7 +419,7 @@ export default function TodoTab({
                   <label className="block text-stone-500 mb-1">完了</label>
                   <button
                     onClick={() => updateSubtask(editSubtask.id, "status", editSubtask.status === "完了" ? "未着手" : "完了")}
-                    className={`w-full flex items-center justify-center gap-1 border rounded px-2 py-1 ${
+                    className={`w-full flex items-center justify-center gap-1 border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow ${
                       editSubtask.status === "完了"
                         ? "border-emerald-300 text-emerald-700 bg-emerald-50"
                         : "border-stone-300 text-stone-600 hover:bg-stone-50"
@@ -434,7 +434,7 @@ export default function TodoTab({
                 <label className="block text-stone-500 mb-1">期限</label>
                 <input
                   type="date"
-                  className="border rounded px-2 py-1 w-full"
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
                   value={editSubtask.deadline}
                   onChange={(e) => updateSubtask(editSubtask.id, "deadline", e.target.value)}
                 />
@@ -443,7 +443,7 @@ export default function TodoTab({
             <div className="flex justify-end mt-4">
               <button
                 onClick={() => setEditSubtaskId(null)}
-                className="px-3 py-1.5 text-sm rounded bg-amber-700 text-white hover:bg-amber-800"
+                className="px-3.5 py-1.5 text-sm rounded-lg bg-amber-700 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
               >
                 閉じる
               </button>

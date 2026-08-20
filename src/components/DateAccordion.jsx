@@ -37,7 +37,7 @@ export default function DateAccordion({ items, getDate, renderDay, sortDesc = tr
           0
         );
         return (
-          <div key={year} className="border border-stone-200 rounded-md">
+          <div key={year} className="border border-stone-200/80 rounded-xl">
             <button
               onClick={() => toggleYear(year)}
               className="w-full flex items-center gap-1 px-2 py-1.5 text-left font-medium hover:bg-stone-50"

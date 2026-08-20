@@ -92,16 +92,16 @@ export default function InputTab({
   return (
     <>
       {/* 売上データ取込(Square注文の即時取り込み) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold mb-1">売上データ取込</h2>
+            <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">売上データ取込</h2>
             <p className="text-xs text-stone-500">Squareの注文を今すぐ取り込み、原価も合わせて計算します(通常は毎日22:00頃に自動実行されます)。</p>
           </div>
           <button
             onClick={runSyncSalesFromSquare}
             disabled={salesSyncing}
-            className="shrink-0 ml-4 bg-amber-700 text-white rounded px-3 py-1.5 text-sm hover:bg-amber-800 disabled:opacity-50"
+            className="shrink-0 ml-4 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
           >
             {salesSyncing ? "取込中…" : "売上データ取込"}
           </button>
@@ -109,10 +109,10 @@ export default function InputTab({
       </section>
 
       {/* BASE注文取込 */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold mb-1">BASE注文取込</h2>
+            <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">BASE注文取込</h2>
             <p className="text-xs text-stone-500">
               BASE(ネットショップ)の注文を今すぐ取り込みます。実店舗(Square)と同じ売上明細に「チャネル」で区別して記録され、原価も合わせて計算されます。
             </p>
@@ -120,7 +120,7 @@ export default function InputTab({
           <button
             onClick={runSyncOrdersFromBase}
             disabled={baseOrdersSyncing}
-            className="shrink-0 ml-4 bg-amber-700 text-white rounded px-3 py-1.5 text-sm hover:bg-amber-800 disabled:opacity-50"
+            className="shrink-0 ml-4 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
           >
             {baseOrdersSyncing ? "取込中…" : "BASE注文取込"}
           </button>
@@ -128,8 +128,8 @@ export default function InputTab({
       </section>
 
       {/* 目標(月単位・売上/粗利率/利益) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">目標</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">目標</h2>
         <p className="text-xs text-stone-500 mb-3">
           月単位で売上・利益の目標額と、粗利率の目標を入力します。粗利目標(金額)は「売上目標 × 粗利率」で自動計算されます。
         </p>
@@ -138,7 +138,7 @@ export default function InputTab({
             <label className="block text-xs text-stone-500 mb-1">対象月</label>
             <input
               type="month"
-              className="border rounded px-2 py-1"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
               value={targetForm.month}
               onChange={(e) => setTargetForm((f) => ({ ...f, month: e.target.value }))}
             />
@@ -147,7 +147,7 @@ export default function InputTab({
             <label className="block text-xs text-stone-500 mb-1">売上目標(円)</label>
             <input
               type="number"
-              className="border rounded px-2 py-1 w-28"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-28"
               value={targetForm.salesBudget}
               onFocus={(e) => e.target.select()}
               onChange={(e) => setTargetForm((f) => ({ ...f, salesBudget: e.target.value }))}
@@ -158,7 +158,7 @@ export default function InputTab({
             <input
               type="number"
               step="0.1"
-              className="border rounded px-2 py-1 w-24"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-24"
               value={targetForm.grossMarginRatio}
               onFocus={(e) => e.target.select()}
               onChange={(e) => setTargetForm((f) => ({ ...f, grossMarginRatio: e.target.value }))}
@@ -168,13 +168,13 @@ export default function InputTab({
             <label className="block text-xs text-stone-500 mb-1">利益目標(円)</label>
             <input
               type="number"
-              className="border rounded px-2 py-1 w-28"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-28"
               value={targetForm.profitBudget}
               onFocus={(e) => e.target.select()}
               onChange={(e) => setTargetForm((f) => ({ ...f, profitBudget: e.target.value }))}
             />
           </div>
-          <button onClick={addTarget} className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800">
+          <button onClick={addTarget} className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all">
             <Plus size={14} /> 登録
           </button>
         </div>
@@ -197,7 +197,7 @@ export default function InputTab({
                 const grossAmount = (b.salesBudget || 0) * ((b.grossMarginRatio || 0) / 100);
                 const isEditing = editingTargetMonth === ym;
                 return (
-                  <div key={ym} className="border border-stone-200 rounded-md p-3">
+                  <div key={ym} className="border border-stone-200/80 rounded-xl p-3">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-sm">{ym}</span>
                       <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export default function InputTab({
                           <label className="block text-stone-500 mb-1">売上目標(円)</label>
                           <input
                             type="number"
-                            className="border rounded px-2 py-1 w-28"
+                            className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-28"
                             value={b.salesBudget || 0}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => setMgmtBudgetField(ym, "salesBudget", e.target.value)}
@@ -230,7 +230,7 @@ export default function InputTab({
                           <input
                             type="number"
                             step="0.1"
-                            className="border rounded px-2 py-1 w-24"
+                            className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-24"
                             value={b.grossMarginRatio || 0}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => setMgmtBudgetField(ym, "grossMarginRatio", e.target.value)}
@@ -244,7 +244,7 @@ export default function InputTab({
                           <label className="block text-stone-500 mb-1">利益目標(円)</label>
                           <input
                             type="number"
-                            className="border rounded px-2 py-1 w-28"
+                            className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-28"
                             value={b.profitBudget || 0}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => setMgmtBudgetField(ym, "profitBudget", e.target.value)}
@@ -279,8 +279,8 @@ export default function InputTab({
       </section>
 
       {/* 日次設定(販売形態・委託先) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">日次設定(販売形態・委託先)</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">日次設定(販売形態・委託先)</h2>
         <p className="text-xs text-stone-500 mb-3">
           「委託販売」などリベート対象の形態を選んだ日だけ、隣で委託先を選べます。年・月・日をクリックして開閉できます。
         </p>
@@ -291,7 +291,7 @@ export default function InputTab({
               const months = settingDateTree[year];
               const yearCount = Object.values(months).reduce((a, arr) => a + arr.length, 0);
               return (
-                <div key={year} className="border border-stone-200 rounded-md">
+                <div key={year} className="border border-stone-200/80 rounded-xl">
                   <button
                     onClick={() => toggleYear(year)}
                     className="w-full flex items-center gap-1 px-2 py-1.5 text-left font-medium hover:bg-stone-50"
@@ -342,7 +342,7 @@ export default function InputTab({
                                             <div>
                                               <label className="block text-stone-500 mb-0.5">販売形態</label>
                                               <select
-                                                className="border rounded px-1 py-0.5 text-xs"
+                                                className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-xs"
                                                 value={meta.channelId || ""}
                                                 onChange={(e) => {
                                                   const nextChannelId = e.target.value;
@@ -362,7 +362,7 @@ export default function InputTab({
                                               <div>
                                                 <label className="block text-stone-500 mb-0.5">委託先(販売先)</label>
                                                 <select
-                                                  className="border rounded px-1 py-0.5 text-xs"
+                                                  className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-xs"
                                                   value={meta.clientId || ""}
                                                   onChange={(e) => setDayField(date, "clientId", e.target.value)}
                                                 >
@@ -394,8 +394,8 @@ export default function InputTab({
       </section>
 
       {/* 経費入力 */}
-      <section id="expense-input-section" className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">経費入力</h2>
+      <section id="expense-input-section" className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">経費入力</h2>
         <p className="text-xs text-stone-500 mb-3">
           入力先は1つ。「{RAW_MATERIAL_ITEM}」を選んだ分だけ、裏側で標準原価と突き合わせて原価差異を計算します。
         </p>
@@ -404,7 +404,7 @@ export default function InputTab({
             <label className="block text-xs text-stone-500 mb-1">日付</label>
             <input
               type="date"
-              className="border rounded px-2 py-1"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
               value={expenseForm.date}
               onChange={(e) => setExpenseForm((f) => ({ ...f, date: e.target.value }))}
             />
@@ -412,7 +412,7 @@ export default function InputTab({
           <div>
             <label className="block text-xs text-stone-500 mb-1">項目</label>
             <select
-              className="border rounded px-2 py-1"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
               value={expenseForm.item}
               onChange={(e) => setExpenseForm((f) => ({ ...f, item: e.target.value, amount: "", hours: "" }))}
             >
@@ -430,7 +430,7 @@ export default function InputTab({
                 <input
                   type="number"
                   step="0.5"
-                  className="border rounded px-2 py-1 w-20"
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-20"
                   value={expenseForm.hours}
                   onFocus={(e) => e.target.select()}
                   onChange={(e) => setExpenseForm((f) => ({ ...f, hours: e.target.value }))}
@@ -450,14 +450,14 @@ export default function InputTab({
               <label className="block text-xs text-stone-500 mb-1">金額</label>
               <input
                 type="number"
-                className="border rounded px-2 py-1 w-24"
+                className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-24"
                 value={expenseForm.amount}
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => setExpenseForm((f) => ({ ...f, amount: e.target.value }))}
               />
             </div>
           )}
-          <button onClick={addExpense} className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800">
+          <button onClick={addExpense} className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all">
             <Plus size={14} /> 追加
           </button>
         </div>
@@ -483,18 +483,22 @@ export default function InputTab({
       </section>
 
       {/* ヌケモレチェック */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">ヌケモレチェック</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">ヌケモレチェック</h2>
         <p className="text-xs text-stone-500 mb-3">
           よくある入力漏れ・データ不整合を自動でチェックします。項目をクリックすると該当箇所を開いて編集できます。
         </p>
         <div className="space-y-2">
           {/* 売上明細の商品が商品マスタに無い(不明)。同じ商品名でも日によって実商品が違いうるため、
               名前で一括統合せず1行(日付)ごとに商品・数量を指定して解決する */}
-          <div className="border border-stone-200 rounded-md p-2">
+          <div className="border border-stone-200/80 rounded-xl p-2">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium">売上明細の商品が商品マスタに無い(不明)</span>
-              <span className={`text-xs font-semibold ${dataGaps.unknownSales.length ? "text-red-600" : "text-emerald-600"}`}>
+              <span
+                className={`text-xs font-semibold rounded-full px-2 py-0.5 ${
+                  dataGaps.unknownSales.length ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
+                }`}
+              >
                 {dataGaps.unknownSales.length ? `${dataGaps.unknownSales.length}件` : "問題なし"}
               </span>
             </div>
@@ -566,10 +570,14 @@ export default function InputTab({
             },
             { label: "材料・包材マスタで仕入単価が0円", items: dataGaps.zeroPriceMaterials, onClick: onEditMaterial },
           ].map((check) => (
-            <div key={check.label} className="border border-stone-200 rounded-md p-2">
+            <div key={check.label} className="border border-stone-200/80 rounded-xl p-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">{check.label}</span>
-                <span className={`text-xs font-semibold ${check.items.length ? "text-red-600" : "text-emerald-600"}`}>
+                <span
+                  className={`text-xs font-semibold rounded-full px-2 py-0.5 ${
+                    check.items.length ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
+                  }`}
+                >
                   {check.items.length ? `${check.items.length}件` : "問題なし"}
                 </span>
               </div>

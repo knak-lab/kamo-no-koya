@@ -4,9 +4,9 @@ import { yen } from "../lib/constants";
 
 export default function PLTab({ monthlyRows }) {
   return (
-    <section className="bg-white rounded-lg border border-stone-200 p-4 space-y-4">
+    <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5 space-y-4">
       <div>
-        <h2 className="font-semibold">PL(損益計算書) — 実際の入出金ベース</h2>
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight">PL(損益計算書) — 実際の入出金ベース</h2>
         <p className="text-xs text-stone-500 mt-1">標準原価ではなく、実際に仕入れた原材料・資材の金額を使います。</p>
       </div>
 
@@ -14,7 +14,7 @@ export default function PLTab({ monthlyRows }) {
         const diff = m.営業利益_財務 - (m.fBudget.profitBudget || 0);
         const 売上総利益 = m.売上_実績 - m.原材料仕入_実績;
         return (
-          <div key={m.yearMonth} className="border border-stone-200 rounded-md p-4">
+          <div key={m.yearMonth} className="border border-stone-200/80 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="font-semibold">{m.yearMonth}</span>
               <span className={`flex items-center gap-1 text-sm font-medium ${diff >= 0 ? "text-emerald-700" : "text-red-600"}`}>

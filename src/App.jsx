@@ -991,24 +991,28 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center gap-3 text-stone-500 text-sm overflow-hidden">
-        <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="w-48 h-48 animate-pulse" />
-        読み込み中…
+      <div className="min-h-screen bg-gradient-to-b from-amber-50 via-stone-50 to-stone-50 flex flex-col items-center justify-center gap-4 text-stone-500 text-sm overflow-hidden">
+        <div className="relative flex items-center justify-center">
+          <span className="absolute inset-0 rounded-full bg-amber-200/50 blur-2xl scale-110" />
+          <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="relative w-40 h-40 animate-pulse drop-shadow-lg" />
+        </div>
+        <p className="font-display tracking-wide text-stone-400">読み込み中…</p>
         <WanderingDuck />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50/60 via-stone-50 to-stone-50 text-stone-900 font-sans">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        <header className="border-b border-stone-300 pb-4">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3">
-              <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="w-12 h-12 shrink-0" />
+        <header className="relative overflow-hidden rounded-3xl bg-white border border-stone-200/70 shadow-sm shadow-stone-300/30 px-5 py-4">
+          <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-amber-100/70 blur-3xl" />
+          <div className="relative flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3.5">
+              <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="w-12 h-12 shrink-0 rounded-xl shadow-sm" />
               <div>
-                <p className="text-xs tracking-widest text-amber-700 font-semibold uppercase">カモの小屋 収益分析</p>
-                <h1 className="text-2xl font-bold mt-1">カモの小屋！</h1>
+                <p className="text-[11px] tracking-[0.2em] text-amber-700 font-semibold uppercase">カモの小屋 収益分析</p>
+                <h1 className="font-display text-2xl font-bold mt-1 text-stone-900">カモの小屋！</h1>
                 <p className="text-sm text-stone-500 mt-1">商品マスタで計算した原価が、売上の日次・月次集計にそのまま連動します。</p>
               </div>
             </div>
@@ -1016,13 +1020,13 @@ export default function App() {
           </div>
         </header>
 
-        <div className="flex gap-1 bg-stone-200 rounded-lg p-1 w-fit flex-wrap">
+        <div className="flex gap-1 bg-stone-200/70 rounded-2xl p-1 w-fit flex-wrap backdrop-blur-sm">
           {TABS.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
-                tab === t.key ? "bg-white shadow text-amber-800" : "text-stone-600 hover:text-stone-900"
+              className={`px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
+                tab === t.key ? "bg-white shadow-sm shadow-stone-300/50 text-amber-800" : "text-stone-600 hover:text-stone-900"
               }`}
             >
               {t.label}
@@ -1250,9 +1254,15 @@ export default function App() {
 }
 
 function SaveIndicator({ state, loadError }) {
-  if (loadError) return <span className="text-xs text-red-600">{loadError}</span>;
+  if (loadError) return <span className="text-xs text-red-600 font-medium">{loadError}</span>;
   const label = { idle: "", saving: "保存中…", saved: "保存しました", error: "保存に失敗しました" }[state];
   if (!label) return null;
-  const color = state === "error" ? "text-red-600" : "text-stone-400";
-  return <span className={`text-xs ${color} shrink-0`}>{label}</span>;
+  const dotColor = { saving: "bg-amber-400 animate-pulse", saved: "bg-emerald-500", error: "bg-red-500" }[state];
+  const textColor = state === "error" ? "text-red-600" : "text-stone-400";
+  return (
+    <span className={`flex items-center gap-1.5 text-xs ${textColor} shrink-0`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+      {label}
+    </span>
+  );
 }

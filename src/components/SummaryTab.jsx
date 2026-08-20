@@ -49,10 +49,10 @@ export default function SummaryTab({
   return (
     <>
       {/* 予実 */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-3">予実</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">予実</h2>
         <div className="flex flex-wrap gap-4 mb-3">
-          <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs">
+          <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs">
             {["month", "day"].map((p) => (
               <button
                 key={p}
@@ -63,7 +63,7 @@ export default function SummaryTab({
               </button>
             ))}
           </div>
-          <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs">
+          <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs">
             {["sales", "profit"].map((k) => (
               <button
                 key={k}
@@ -74,7 +74,7 @@ export default function SummaryTab({
               </button>
             ))}
           </div>
-          <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs flex-wrap">
+          <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs flex-wrap">
             <button
               onClick={() => setSummaryChannel("all")}
               className={`px-3 py-1 rounded ${summaryChannel === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
@@ -92,7 +92,7 @@ export default function SummaryTab({
             ))}
           </div>
           {!isMonth && allYearMonths.length > 0 && (
-            <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs flex-wrap">
+            <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs flex-wrap">
               <button
                 onClick={() => setSummaryYearMonth("all")}
                 className={`px-3 py-1 rounded ${summaryYearMonth === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
@@ -152,10 +152,10 @@ export default function SummaryTab({
       </section>
 
       {/* 客数と客単価 */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-3">客数と客単価</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">客数と客単価</h2>
         <div className="flex flex-wrap gap-4 mb-3">
-          <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs">
+          <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs">
             {["month", "day"].map((p) => (
               <button
                 key={p}
@@ -166,7 +166,7 @@ export default function SummaryTab({
               </button>
             ))}
           </div>
-          <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs flex-wrap">
+          <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs flex-wrap">
             <button
               onClick={() => setCustomerChannel("all")}
               className={`px-3 py-1 rounded ${customerChannel === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
@@ -184,7 +184,7 @@ export default function SummaryTab({
             ))}
           </div>
           {customerPeriod === "day" && allYearMonths.length > 0 && (
-            <div className="flex gap-1 bg-stone-100 rounded-md p-1 w-fit text-xs flex-wrap">
+            <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs flex-wrap">
               <button
                 onClick={() => setCustomerYearMonth("all")}
                 className={`px-3 py-1 rounded ${customerYearMonth === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
@@ -229,8 +229,8 @@ export default function SummaryTab({
       </section>
 
       {/* 商品別売上(上位10) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-3">商品別売上(上位10)</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">商品別売上(上位10)</h2>
         {productSalesRanking.length > 0 ? (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -249,8 +249,8 @@ export default function SummaryTab({
       </section>
 
       {/* 日次売上明細(日次集計・月次予算入力) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">日次売上明細</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">日次売上明細</h2>
         <p className="text-xs text-stone-500 mb-3">
           販売形態・委託先は「入力」タブの日次設定で選びます。ここは自動計算の結果表示のみです。年・月・日をクリックして開閉できます。
         </p>
@@ -323,8 +323,8 @@ export default function SummaryTab({
       </section>
 
       {/* 売上明細(Square由来・読み取り専用) */}
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
-        <h2 className="font-semibold mb-1">売上明細</h2>
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">売上明細</h2>
         <p className="text-xs text-stone-500 mb-3">
           Squareから同期された売上を1件ずつ表示します(読み取り専用)。年・月・日をクリックして開閉できます。
         </p>

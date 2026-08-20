@@ -88,9 +88,9 @@ export default function CalendarTab({
 
   return (
     <>
-      <section className="bg-white rounded-lg border border-stone-200 p-4">
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold">
+          <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight">
             {viewMonth.slice(0, 4)}年{Number(viewMonth.slice(5, 7))}月
           </h2>
           <div className="flex items-center gap-1">
@@ -166,8 +166,8 @@ export default function CalendarTab({
 
       {selectedDate && (
         <>
-          <section className="bg-white rounded-lg border border-stone-200 p-4">
-            <h2 className="font-semibold mb-3">{formatDateLabel(selectedDate)}</h2>
+          <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+            <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">{formatDateLabel(selectedDate)}</h2>
 
             <div className="mb-4">
               <h3 className="text-sm font-medium mb-1">販売形態・委託先</h3>
@@ -175,7 +175,7 @@ export default function CalendarTab({
                 <div>
                   <label className="block text-stone-500 mb-0.5">販売形態</label>
                   <select
-                    className="border rounded px-1 py-0.5"
+                    className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
                     value={meta.channelId || ""}
                     onChange={(e) => {
                       const nextChannelId = e.target.value;
@@ -195,7 +195,7 @@ export default function CalendarTab({
                   <div>
                     <label className="block text-stone-500 mb-0.5">委託先(販売先)</label>
                     <select
-                      className="border rounded px-1 py-0.5"
+                      className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
                       value={meta.clientId || ""}
                       onChange={(e) => setDayField(selectedDate, "clientId", e.target.value)}
                     >
@@ -237,7 +237,7 @@ export default function CalendarTab({
                     <div>
                       <label className="block text-stone-500 mb-1">項目</label>
                       <select
-                        className="border rounded px-2 py-1"
+                        className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
                         value={selectedFeeItem}
                         onChange={(e) => setFeeForm((f) => ({ ...f, item: e.target.value }))}
                       >
@@ -253,7 +253,7 @@ export default function CalendarTab({
                       <input
                         type="number"
                         step="0.5"
-                        className="border rounded px-2 py-1 w-20"
+                        className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-20"
                         value={feeForm.hours}
                         onFocus={(e) => e.target.select()}
                         onChange={(e) => setFeeForm((f) => ({ ...f, hours: e.target.value }))}
@@ -267,7 +267,7 @@ export default function CalendarTab({
                     </div>
                     <button
                       onClick={submitFee}
-                      className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800"
+                      className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
                     >
                       <Plus size={14} /> 追加
                     </button>
@@ -296,7 +296,7 @@ export default function CalendarTab({
                 <div>
                   <label className="block text-stone-500 mb-1">タイトル</label>
                   <input
-                    className="border rounded px-2 py-1 w-40"
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-40"
                     value={eventForm.title}
                     onChange={(e) => setEventForm((f) => ({ ...f, title: e.target.value }))}
                     placeholder="例: ○○マルシェ出店"
@@ -305,7 +305,7 @@ export default function CalendarTab({
                 <div>
                   <label className="block text-stone-500 mb-1">メモ</label>
                   <input
-                    className="border rounded px-2 py-1 w-48"
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-48"
                     value={eventForm.memo}
                     onChange={(e) => setEventForm((f) => ({ ...f, memo: e.target.value }))}
                     placeholder="持ち物・注意事項など任意"
@@ -313,7 +313,7 @@ export default function CalendarTab({
                 </div>
                 <button
                   onClick={submitEvent}
-                  className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800"
+                  className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
                 >
                   <Plus size={14} /> 追加
                 </button>
@@ -331,7 +331,7 @@ export default function CalendarTab({
                       {t.task}
                     </div>
                     <select
-                      className="border rounded px-1 py-0.5"
+                      className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
                       value={t.status}
                       onChange={(e) => updateTodo(t.id, "status", e.target.value)}
                     >
@@ -348,7 +348,7 @@ export default function CalendarTab({
                 <div>
                   <label className="block text-stone-500 mb-1">カテゴリ</label>
                   <select
-                    className="border rounded px-2 py-1"
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
                     value={todoQuickForm.category}
                     onChange={(e) => setTodoQuickForm((f) => ({ ...f, category: e.target.value }))}
                   >
@@ -362,7 +362,7 @@ export default function CalendarTab({
                 <div>
                   <label className="block text-stone-500 mb-1">タスク</label>
                   <input
-                    className="border rounded px-2 py-1 w-48"
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-48"
                     value={todoQuickForm.task}
                     onChange={(e) => setTodoQuickForm((f) => ({ ...f, task: e.target.value }))}
                     placeholder="例: 前日仕込み"
@@ -370,7 +370,7 @@ export default function CalendarTab({
                 </div>
                 <button
                   onClick={submitTodo}
-                  className="flex items-center gap-1 bg-amber-700 text-white rounded px-3 py-1.5 hover:bg-amber-800"
+                  className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
                 >
                   <Plus size={14} /> 追加
                 </button>
