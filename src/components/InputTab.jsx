@@ -1,9 +1,18 @@
 import { useState } from "react";
-import { Plus, Trash2, ChevronDown, ChevronRight, Pencil } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, Loader2 } from "lucide-react";
 import { yen, RAW_MATERIAL_ITEM } from "../lib/constants";
 import DateAccordion from "./DateAccordion";
 
+const SUB_TABS = [
+  { key: "intake", label: "取込・目標" },
+  { key: "daily", label: "日次設定" },
+  { key: "expense", label: "経費" },
+  { key: "check", label: "ヌケモレチェック" },
+];
+
 export default function InputTab({
+  subTab,
+  setSubTab,
   salesSyncing,
   runSyncSalesFromSquare,
   baseOrdersSyncing,
@@ -56,30 +65,6 @@ export default function InputTab({
       return next;
     });
   };
-  const [openYears, setOpenYears] = useState({});
-  const [openMonths, setOpenMonths] = useState({});
-  const [openDates, setOpenDates] = useState({});
-  const toggleYear = (y) => setOpenYears((prev) => ({ ...prev, [y]: !prev[y] }));
-  const toggleMonth = (key) => setOpenMonths((prev) => ({ ...prev, [key]: !prev[key] }));
-  const toggleDate = (d) => setOpenDates((prev) => ({ ...prev, [d]: !prev[d] }));
-
-  // ヌケモレチェックの項目から、該当箇所を開いてスクロールする
-  const focusSettingDate = (date) => {
-    const [y, m] = date.split("-");
-    setOpenYears((prev) => ({ ...prev, [y]: true }));
-    setOpenMonths((prev) => ({ ...prev, [`${y}-${m}`]: true }));
-    setOpenDates((prev) => ({ ...prev, [date]: true }));
-    requestAnimationFrame(() => {
-      document.getElementById(`setting-date-${date}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  };
-  const focusExpenseDate = (date) => {
-    setExpenseForm((f) => ({ ...f, date }));
-    requestAnimationFrame(() => {
-      document.getElementById("expense-input-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  };
-
   // 日次設定の対象日を 年 > 月 > 日 のツリーにまとめる(settingDatesは既にソート済み)
   const settingDateTree = {};
   settingDates.forEach((date) => {
@@ -88,9 +73,74 @@ export default function InputTab({
     settingDateTree[y][m] = settingDateTree[y][m] || [];
     settingDateTree[y][m].push(date);
   });
+  const settingYears = Object.keys(settingDateTree).sort();
+  const latestSettingYear = settingYears.at(-1);
+  const latestSettingMonth = latestSettingYear ? Object.keys(settingDateTree[latestSettingYear]).sort().at(-1) : null;
+
+  const [openYears, setOpenYears] = useState(() => (latestSettingYear ? { [latestSettingYear]: true } : {}));
+  const [openMonths, setOpenMonths] = useState(() =>
+    latestSettingYear && latestSettingMonth ? { [`${latestSettingYear}-${latestSettingMonth}`]: true } : {}
+  );
+  const [openDates, setOpenDates] = useState({});
+  const toggleYear = (y) => setOpenYears((prev) => ({ ...prev, [y]: !prev[y] }));
+  const toggleMonth = (key) => setOpenMonths((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleDate = (d) => setOpenDates((prev) => ({ ...prev, [d]: !prev[d] }));
+
+  // ヌケモレチェックの項目から、該当サブタブに切り替えて該当箇所を開きスクロールする
+  const focusSettingDate = (date) => {
+    const [y, m] = date.split("-");
+    setSubTab("daily");
+    setOpenYears((prev) => ({ ...prev, [y]: true }));
+    setOpenMonths((prev) => ({ ...prev, [`${y}-${m}`]: true }));
+    setOpenDates((prev) => ({ ...prev, [date]: true }));
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById(`setting-date-${date}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
+  };
+  const focusExpenseDate = (date) => {
+    setSubTab("expense");
+    setExpenseForm((f) => ({ ...f, date }));
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById("expense-input-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  };
+
+  const totalGapCount =
+    dataGaps.unknownSales.length +
+    dataGaps.missingChannel.length +
+    dataGaps.missingClient.length +
+    dataGaps.hibiDatesWithoutFee.length +
+    dataGaps.zeroRawMaterialProducts.length +
+    dataGaps.zeroPackagingProducts.length +
+    dataGaps.zeroPriceMaterials.length;
 
   return (
     <>
+      <div className="flex gap-1 bg-stone-200/70 rounded-2xl p-1 w-fit flex-wrap backdrop-blur-sm">
+        {SUB_TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setSubTab(t.key)}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
+              subTab === t.key ? "bg-white shadow-sm shadow-stone-300/50 text-amber-800" : "text-stone-600 hover:text-stone-900"
+            }`}
+          >
+            {t.label}
+            {t.key === "check" && totalGapCount > 0 && (
+              <span className="text-[10px] font-semibold rounded-full bg-red-100 text-red-600 px-1.5 py-0.5 leading-none">
+                {totalGapCount}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {subTab === "intake" && (
+      <>
       {/* 売上データ取込(Square注文の即時取り込み) */}
       <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <div className="flex items-center justify-between">
@@ -103,7 +153,13 @@ export default function InputTab({
             disabled={salesSyncing}
             className="shrink-0 ml-4 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
           >
-            {salesSyncing ? "取込中…" : "売上データ取込"}
+            {salesSyncing ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 size={14} className="animate-spin" /> 取込中…
+              </span>
+            ) : (
+              "売上データ取込"
+            )}
           </button>
         </div>
       </section>
@@ -122,7 +178,13 @@ export default function InputTab({
             disabled={baseOrdersSyncing}
             className="shrink-0 ml-4 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
           >
-            {baseOrdersSyncing ? "取込中…" : "BASE注文取込"}
+            {baseOrdersSyncing ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 size={14} className="animate-spin" /> 取込中…
+              </span>
+            ) : (
+              "BASE注文取込"
+            )}
           </button>
         </div>
       </section>
@@ -208,7 +270,7 @@ export default function InputTab({
                           <Pencil size={12} /> {isEditing ? "閉じる" : "編集"}
                         </button>
                         <button onClick={() => removeTargetMonth(ym)}>
-                          <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                          <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                         </button>
                       </div>
                     </div>
@@ -277,7 +339,11 @@ export default function InputTab({
           </div>
         )}
       </section>
+      </>
+      )}
 
+      {subTab === "daily" && (
+      <>
       {/* 日次設定(販売形態・委託先) */}
       <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">日次設定(販売形態・委託先)</h2>
@@ -392,7 +458,11 @@ export default function InputTab({
             })}
         </div>
       </section>
+      </>
+      )}
 
+      {subTab === "expense" && (
+      <>
       {/* 経費入力 */}
       <section id="expense-input-section" className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">経費入力</h2>
@@ -472,7 +542,7 @@ export default function InputTab({
                   <span className="flex items-center gap-2">
                     {yen(e.amount)}
                     <button onClick={() => removeExpense(e.id)}>
-                      <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                      <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                     </button>
                   </span>
                 </div>
@@ -481,7 +551,11 @@ export default function InputTab({
           )}
         />
       </section>
+      </>
+      )}
 
+      {subTab === "check" && (
+      <>
       {/* ヌケモレチェック */}
       <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">ヌケモレチェック</h2>
@@ -628,6 +702,8 @@ export default function InputTab({
           ))}
         </div>
       </section>
+      </>
+      )}
     </>
   );
 }

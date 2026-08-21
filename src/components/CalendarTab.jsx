@@ -223,7 +223,7 @@ export default function CalendarTab({
                         {e.hours != null && <span className="text-stone-400">（{e.hours}h）</span>} ・ {yen(e.amount)}
                       </div>
                       <button onClick={() => removeExpense(e.id)}>
-                        <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                        <Trash2 size={12} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                       </button>
                     </div>
                   ))}
@@ -287,7 +287,7 @@ export default function CalendarTab({
                       {e.memo && <div className="text-stone-500">{e.memo}</div>}
                     </div>
                     <button onClick={() => removeCalendarEvent(e.id)}>
-                      <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                      <Trash2 size={12} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                     </button>
                   </div>
                 ))}

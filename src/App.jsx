@@ -140,6 +140,8 @@ function useAutosave(hasLoadedRef, snapshotRef, saveFn, setSaveState, deps) {
 
 export default function App() {
   const [tab, setTab] = useState("input");
+  const [inputSubTab, setInputSubTab] = useState("intake");
+  const [masterSubTab, setMasterSubTab] = useState("products");
 
   // ========== ロード・保存状態 ==========
   const [loading, setLoading] = useState(true);
@@ -609,6 +611,7 @@ export default function App() {
   // ヌケモレチェックから商品編集へ直接ジャンプ(既存商品は開く、未登録なら新規登録フォームを開く)
   const jumpToProductInMaster = (name) => {
     setTab("master");
+    setMasterSubTab("products");
     const existing = products.find((p) => p.id === name || p.name === name);
     if (existing) {
       requestOpenProduct(existing);
@@ -658,6 +661,7 @@ export default function App() {
   // ヌケモレチェックから材料・包材マスタの該当行へ直接ジャンプ
   const jumpToMaterialInMaster = (name) => {
     setTab("master");
+    setMasterSubTab("materials");
     setMaterialListOpen(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -1036,6 +1040,8 @@ export default function App() {
 
         {tab === "input" && (
           <InputTab
+            subTab={inputSubTab}
+            setSubTab={setInputSubTab}
             salesSyncing={salesSyncing}
             runSyncSalesFromSquare={runSyncSalesFromSquare}
             baseOrdersSyncing={baseOrdersSyncing}
@@ -1121,6 +1127,7 @@ export default function App() {
             rebateMap={rebateMap}
             sales={resolvedSales}
             productMap={productMap}
+            mgmtBudgets={mgmtBudgets}
           />
         )}
 
@@ -1155,6 +1162,8 @@ export default function App() {
 
         {tab === "master" && (
           <MasterTab
+            subTab={masterSubTab}
+            setSubTab={setMasterSubTab}
             productDraft={productDraft}
             draftCost={draftCost}
             saveProductDraft={saveProductDraft}

@@ -1,8 +1,17 @@
 import { useState } from "react";
-import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, PlusCircle } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, PlusCircle, Loader2 } from "lucide-react";
 import { yen, pct, RAW, PACK, UNITS } from "../lib/constants";
 
+const SUB_TABS = [
+  { key: "products", label: "商品" },
+  { key: "materials", label: "仕入・取引先" },
+  { key: "integrations", label: "連携" },
+  { key: "data", label: "データ整備" },
+];
+
 export default function MasterTab({
+  subTab,
+  setSubTab,
   productDraft,
   draftCost,
   saveProductDraft,
@@ -98,6 +107,22 @@ export default function MasterTab({
   const [procedureOpen, setProcedureOpen] = useState(false);
   return (
     <>
+      <div className="flex gap-1 bg-stone-200/70 rounded-2xl p-1 w-fit flex-wrap backdrop-blur-sm">
+        {SUB_TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setSubTab(t.key)}
+            className={`px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
+              subTab === t.key ? "bg-white shadow-sm shadow-stone-300/50 text-amber-800" : "text-stone-600 hover:text-stone-900"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {subTab === "products" && (
+      <>
       <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
           <div className="flex flex-col gap-3 mb-1">
             <div>
@@ -314,7 +339,7 @@ export default function MasterTab({
                       <span className="text-stone-500 w-6">{mat?.unit || "g"}</span>
                       <span className="w-20 text-right tabular-nums text-stone-500">{yen((mat?.unitPrice || 0) * row.amount)}</span>
                       <button onClick={() => removeDraftIngredientRow("ingredients", row.id)}>
-                        <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                        <Trash2 size={12} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                       </button>
                     </div>
                   );
@@ -368,7 +393,7 @@ export default function MasterTab({
                           />
                           <span className="w-24 text-right tabular-nums text-stone-500">{yen(lineCost)}</span>
                           <button onClick={() => removeDraftBreakdownRow(row.id)}>
-                            <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                            <Trash2 size={12} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                           </button>
                         </div>
                       );
@@ -415,7 +440,7 @@ export default function MasterTab({
                           />
                           <span className="w-24 text-right tabular-nums text-stone-500">{yen(unitCost)}</span>
                           <button onClick={() => removeDraftBreakdownRow(row.id)}>
-                            <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                            <Trash2 size={12} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                           </button>
                         </div>
                       );
@@ -463,7 +488,7 @@ export default function MasterTab({
                       <span className="text-stone-500 w-6">{mat?.unit || "個"}</span>
                       <span className="w-20 text-right tabular-nums text-stone-500">{yen((mat?.unitPrice || 0) * row.amount)}</span>
                       <button onClick={() => removeDraftIngredientRow("packaging", row.id)}>
-                        <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                        <Trash2 size={12} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                       </button>
                     </div>
                   );
@@ -591,7 +616,7 @@ export default function MasterTab({
                             setProducts((prev) => prev.filter((x) => x.id !== p.id));
                           }}
                         >
-                          <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                          <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                         </button>
                       </td>
                     </tr>
@@ -602,7 +627,11 @@ export default function MasterTab({
           </div>
         )}
       </section>
+      </>
+      )}
 
+      {subTab === "materials" && (
+      <>
       {/* 材料・包材マスタ */}
       <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">材料・包材マスタ</h2>
@@ -721,7 +750,7 @@ export default function MasterTab({
                     </td>
                     <td>
                       <button onClick={() => removeMaterial(m.id)}>
-                        <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                        <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                       </button>
                     </td>
                   </tr>
@@ -818,7 +847,7 @@ export default function MasterTab({
                     </td>
                     <td>
                       <button onClick={() => removeRebateClient(c.id)}>
-                        <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                        <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                       </button>
                     </td>
                   </tr>
@@ -897,7 +926,7 @@ export default function MasterTab({
                     </td>
                     <td>
                       <button onClick={() => removeExpenseRate(item)}>
-                        <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                        <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                       </button>
                     </td>
                   </tr>
@@ -907,7 +936,11 @@ export default function MasterTab({
           </div>
         )}
       </section>
+      </>
+      )}
 
+      {subTab === "integrations" && (
+      <>
       {/* Square連携(商品マスタの正の切り替え) */}
       <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">Square連携</h2>
@@ -946,7 +979,13 @@ export default function MasterTab({
             disabled={squareSyncing}
             className="shrink-0 ml-4 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
           >
-            {squareSyncing ? "同期中…" : "今すぐ同期"}
+            {squareSyncing ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 size={14} className="animate-spin" /> 同期中…
+              </span>
+            ) : (
+              "今すぐ同期"
+            )}
           </button>
         </div>
 
@@ -982,7 +1021,13 @@ export default function MasterTab({
             disabled={baseSyncing}
             className="shrink-0 ml-4 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
           >
-            {baseSyncing ? "反映中…" : "今すぐ反映"}
+            {baseSyncing ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 size={14} className="animate-spin" /> 反映中…
+              </span>
+            ) : (
+              "今すぐ反映"
+            )}
           </button>
         </div>
 
@@ -1018,11 +1063,21 @@ export default function MasterTab({
             disabled={recalcZeroCostRunning}
             className="shrink-0 ml-4 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
           >
-            {recalcZeroCostRunning ? "再計算中…" : "再計算する"}
+            {recalcZeroCostRunning ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 size={14} className="animate-spin" /> 再計算中…
+              </span>
+            ) : (
+              "再計算する"
+            )}
           </button>
         </div>
       </section>
+      </>
+      )}
 
+      {subTab === "data" && (
+      <>
       {/* 商品名の統合(エイリアス。入力タブのヌケモレチェックから設定。通常は閉じておく) */}
       <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">商品名の統合(売上明細のマージ)</h2>
@@ -1056,7 +1111,7 @@ export default function MasterTab({
                       <td className="py-1 pr-2">{products.find((p) => p.id === productId)?.name || productId}</td>
                       <td>
                         <button onClick={() => removeProductAlias(rawName)} title="統合を解除">
-                          <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                          <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                         </button>
                       </td>
                     </tr>
@@ -1107,7 +1162,7 @@ export default function MasterTab({
                         <td className="py-1 pr-2">{override.qty}</td>
                         <td>
                           <button onClick={() => removeSaleOverride(saleId)} title="修正を解除">
-                            <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                            <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                           </button>
                         </td>
                       </tr>
@@ -1151,7 +1206,7 @@ export default function MasterTab({
                       <td className="py-1 pr-2">{products.find((p) => p.id === productId)?.name || productId}</td>
                       <td>
                         <button onClick={() => togglePackagingExempt(productId)} title="除外を解除">
-                          <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                          <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                         </button>
                       </td>
                     </tr>
@@ -1162,6 +1217,8 @@ export default function MasterTab({
           </div>
         )}
       </section>
+      </>
+      )}
 
       {/* フェールセーフ確認ダイアログ */}
       {squareSyncConfirmOpen && (

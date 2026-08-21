@@ -5,13 +5,6 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 // items: 日付を持つ任意のオブジェクト配列。getDate(item)で"YYYY-MM-DD"を取り出す。
 // renderDay(dayItems, date): 日を開いたときに表示する中身を返す render prop。
 export default function DateAccordion({ items, getDate, renderDay, sortDesc = true, emptyText = "データがありません" }) {
-  const [openYears, setOpenYears] = useState({});
-  const [openMonths, setOpenMonths] = useState({});
-  const [openDays, setOpenDays] = useState({});
-  const toggleYear = (y) => setOpenYears((prev) => ({ ...prev, [y]: !prev[y] }));
-  const toggleMonth = (key) => setOpenMonths((prev) => ({ ...prev, [key]: !prev[key] }));
-  const toggleDay = (date) => setOpenDays((prev) => ({ ...prev, [date]: !prev[date] }));
-
   const tree = {};
   items.forEach((item) => {
     const date = getDate(item);
@@ -22,6 +15,19 @@ export default function DateAccordion({ items, getDate, renderDay, sortDesc = tr
     tree[y][m][date] = tree[y][m][date] || [];
     tree[y][m][date].push(item);
   });
+
+  // 直近(最新)の年・月はクリックせずに見える状態で初期表示する(表示順の設定=sortDescに関わらず、常に最新)
+  const latestYear = Object.keys(tree).sort().at(-1);
+  const latestMonth = latestYear ? Object.keys(tree[latestYear]).sort().at(-1) : null;
+
+  const [openYears, setOpenYears] = useState(() => (latestYear ? { [latestYear]: true } : {}));
+  const [openMonths, setOpenMonths] = useState(() =>
+    latestYear && latestMonth ? { [`${latestYear}-${latestMonth}`]: true } : {}
+  );
+  const [openDays, setOpenDays] = useState({});
+  const toggleYear = (y) => setOpenYears((prev) => ({ ...prev, [y]: !prev[y] }));
+  const toggleMonth = (key) => setOpenMonths((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleDay = (date) => setOpenDays((prev) => ({ ...prev, [date]: !prev[date] }));
 
   const sortKeys = (keys) => keys.sort((a, b) => (sortDesc ? b.localeCompare(a) : a.localeCompare(b)));
   const years = sortKeys(Object.keys(tree));

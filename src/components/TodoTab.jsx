@@ -171,7 +171,7 @@ export default function TodoTab({
                               {t.deadline ? `期限: ${t.deadline}` : "期限未設定"} ・ サブタスク{taskSubtasks.length}件
                             </span>
                             <button onClick={() => removeTodo(t.id)} className="ml-auto shrink-0">
-                              <Trash2 size={13} className="text-stone-400 hover:text-red-500" />
+                              <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                             </button>
                           </div>
                         </div>
@@ -239,7 +239,7 @@ export default function TodoTab({
                                         <Clock size={11} /> ちょっとあと
                                       </button>
                                       <button onClick={() => removeSubtask(s.id)} className="ml-auto shrink-0">
-                                        <Trash2 size={12} className="text-stone-400 hover:text-red-500" />
+                                        <Trash2 size={12} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                                       </button>
                                     </div>
                                   </div>
