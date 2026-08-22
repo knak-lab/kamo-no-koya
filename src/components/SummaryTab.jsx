@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import DateAccordion from "./DateAccordion";
 import PLTab from "./PLTab";
 import { TrendingUp, TrendingDown, Wallet, Target, Percent, ChevronDown, ChevronRight } from "lucide-react";
@@ -86,19 +86,50 @@ export default function SummaryTab({
             <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight">今月実績({latestYm})</h2>
             <span className="text-[11px] text-stone-400">売上が発生している最新月</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <StatTile icon={Target} label="目標売上" value={yen(budget?.salesBudget || 0)} />
-            <StatTile icon={Target} label="目標原価率" value={`${(budget?.costRatio || 0).toFixed(1)}%`} />
-            <StatTile icon={Target} label="目標営業利益" value={yen(budget?.profitBudget || 0)} />
-            <StatTile icon={Wallet} label="実績売上" value={yen(kpiSales)} />
-            <StatTile icon={Percent} label="実績原価率" value={`${kpiCostRatio.toFixed(1)}%`} />
-            <StatTile
-              icon={kpiProfit >= 0 ? TrendingUp : TrendingDown}
-              label="実績営業利益"
-              value={yen(kpiProfit)}
-              tone={kpiProfit >= 0 ? "good" : "bad"}
-            />
-          </div>
+          {(() => {
+            const targetTiles = [
+              { key: "sales", node: <StatTile icon={Target} label="目標売上" value={yen(budget?.salesBudget || 0)} /> },
+              { key: "cost", node: <StatTile icon={Target} label="目標原価率" value={`${(budget?.costRatio || 0).toFixed(1)}%`} /> },
+              { key: "profit", node: <StatTile icon={Target} label="目標営業利益" value={yen(budget?.profitBudget || 0)} /> },
+            ];
+            const actualTiles = [
+              { key: "sales", node: <StatTile icon={Wallet} label="実績売上" value={yen(kpiSales)} /> },
+              { key: "cost", node: <StatTile icon={Percent} label="実績原価率" value={`${kpiCostRatio.toFixed(1)}%`} /> },
+              {
+                key: "profit",
+                node: (
+                  <StatTile
+                    icon={kpiProfit >= 0 ? TrendingUp : TrendingDown}
+                    label="実績営業利益"
+                    value={yen(kpiProfit)}
+                    tone={kpiProfit >= 0 ? "good" : "bad"}
+                  />
+                ),
+              },
+            ];
+            return (
+              <>
+                {/* スマホ: 3行×2列(左に目標・右に実績を同じ指標で並べる) */}
+                <div className="grid grid-cols-2 gap-3 sm:hidden">
+                  {targetTiles.map((t, i) => (
+                    <Fragment key={t.key}>
+                      {t.node}
+                      {actualTiles[i].node}
+                    </Fragment>
+                  ))}
+                </div>
+                {/* PC: 2行×3列(上段が目標・下段が実績) */}
+                <div className="hidden sm:grid sm:grid-cols-3 gap-3">
+                  {targetTiles.map((t) => (
+                    <Fragment key={t.key}>{t.node}</Fragment>
+                  ))}
+                  {actualTiles.map((t) => (
+                    <Fragment key={t.key}>{t.node}</Fragment>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </section>
       )}
 
