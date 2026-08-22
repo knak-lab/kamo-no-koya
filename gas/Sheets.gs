@@ -69,9 +69,10 @@ const SHEET_SETTINGS = "設定";
 const SETTINGS_HDR = ["squareSyncFromSquare"];
 const SETTINGS_SEED = [[true]];
 
-// todoタブの「タスク追加」ボタン下に表示するビジュアル画像(PNG)。
+// todoタブの「タスク追加」ボタン下に表示するビジュアル画像(PNG/JPEG)。
 // Googleスプレッドシートは1セル50,000文字までのため、base64文字列を
-// CHUNK_SIZE単位で複数行に分割して保存し、読み出し時に連結する。
+// CHUNK_SIZE単位で複数行に分割して保存し、読み出し時に連結する
+// (1行目はMIMEタイプ、2行目以降がbase64チャンク。詳細はgetTodoVisual_/saveTodoVisual_参照)。
 const SHEET_TODO_VISUAL = "TODOビジュアル";
 const TODO_VISUAL_HDR = ["chunk"];
 const TODO_VISUAL_CHUNK_SIZE = 40000;
@@ -808,28 +809,35 @@ function saveSettings_(settings) {
   writeRows_(sheet, [[!!(settings && settings.squareSyncFromSquare)]], SETTINGS_HDR.length);
 }
 
+// 1行目にMIMEタイプ(image/png or image/jpeg)、2行目以降にbase64チャンクを保存する
 function getTodoVisual_() {
   const sheet = getOrCreateSheet_(SHEET_TODO_VISUAL, TODO_VISUAL_HDR, null, [1]);
   const rows = getDataRows_(sheet);
-  if (rows.length === 0) return "";
-  const base64 = rows.map(function (r) { return r[0] === null || r[0] === undefined ? "" : String(r[0]); }).join("");
-  return base64 ? "data:image/png;base64," + base64 : "";
+  if (rows.length < 2) return "";
+  const mimeType = String(rows[0][0] || "");
+  const base64 = rows
+    .slice(1)
+    .map(function (r) { return r[0] === null || r[0] === undefined ? "" : String(r[0]); })
+    .join("");
+  return mimeType && base64 ? "data:" + mimeType + ";base64," + base64 : "";
 }
 
 function saveTodoVisual_(dataUrl) {
   const sheet = getOrCreateSheet_(SHEET_TODO_VISUAL, TODO_VISUAL_HDR, null, [1]);
   clearDataRows_(sheet);
-  const base64 = String(dataUrl || "").replace(/^data:image\/png;base64,/, "");
-  if (!base64) return { todoVisual: "" };
+  const match = String(dataUrl || "").match(/^data:(image\/(?:png|jpeg));base64,(.*)$/);
+  if (!match) return { todoVisual: "" };
+  const mimeType = match[1];
+  const base64 = match[2];
   if (base64.length > TODO_VISUAL_MAX_BASE64_CHARS) {
     throw new Error("画像が大きすぎます。もう少し小さい画像を選んでください。");
   }
-  const rows = [];
+  const rows = [[mimeType]];
   for (let i = 0; i < base64.length; i += TODO_VISUAL_CHUNK_SIZE) {
     rows.push([base64.slice(i, i + TODO_VISUAL_CHUNK_SIZE)]);
   }
   writeRows_(sheet, rows, TODO_VISUAL_HDR.length, [1]);
-  return { todoVisual: "data:image/png;base64," + base64 };
+  return { todoVisual: "data:" + mimeType + ";base64," + base64 };
 }
 
 // ─────────────────────────────────────────

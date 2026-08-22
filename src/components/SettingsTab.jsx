@@ -3,9 +3,11 @@ import { Upload, Trash2, Loader2 } from "lucide-react";
 
 const MAX_DIMENSION = 800; // 長辺をこのサイズ以下にリサイズしてから保存する
 const MAX_BASE64_CHARS = 200000; // GAS側の上限(約150KB)と合わせる
+const ACCEPTED_TYPES = ["image/png", "image/jpeg"];
 
-// 選んだPNGファイルを長辺MAX_DIMENSION以下に縮小し、data URL(PNG)として返す
+// 選んだPNG/JPEGファイルを長辺MAX_DIMENSION以下に縮小し、data URL(元と同じ形式)として返す
 function resizeToDataUrl(file) {
+  const mimeType = file.type === "image/jpeg" ? "image/jpeg" : "image/png";
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("ファイルの読み込みに失敗しました"));
@@ -23,7 +25,7 @@ function resizeToDataUrl(file) {
         canvas.width = width;
         canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/png"));
+        resolve(canvas.toDataURL(mimeType, mimeType === "image/jpeg" ? 0.85 : undefined));
       };
       img.src = reader.result;
     };
@@ -41,8 +43,8 @@ export default function SettingsTab({ todoVisual, saveTodoVisual, saving }) {
     e.target.value = ""; // 同じファイルを連続で選び直せるようにする
     if (!file) return;
     setError("");
-    if (file.type !== "image/png") {
-      setError("PNGファイルを選んでください。");
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setError("PNGまたはJPEGファイルを選んでください。");
       return;
     }
     try {
@@ -94,7 +96,7 @@ export default function SettingsTab({ todoVisual, saveTodoVisual, saving }) {
       <div className="border border-stone-200/80 rounded-xl p-4">
         <h3 className="font-medium text-sm text-stone-800 mb-1">todoタブのビジュアル画像</h3>
         <p className="text-xs text-stone-500 mb-3">
-          todoタブの「タスク追加」ボタンの下に表示する画像です。PNGファイルを選んで保存すると、全員の画面に反映されます。
+          todoタブの「タスク追加」ボタンの下に表示する画像です。PNGまたはJPEGファイルを選んで保存すると、全員の画面に反映されます。
           長辺{MAX_DIMENSION}px程度に自動で縮小されます。
         </p>
 
@@ -111,8 +113,8 @@ export default function SettingsTab({ todoVisual, saveTodoVisual, saving }) {
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-1 text-sm border border-stone-300 rounded-lg px-3.5 py-1.5 cursor-pointer hover:bg-stone-50 transition-colors">
             <Upload size={14} />
-            PNGを選ぶ
-            <input type="file" accept="image/png" className="hidden" onChange={handleFileChange} />
+            画像を選ぶ
+            <input type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleFileChange} />
           </label>
           <button
             onClick={handleSave}
