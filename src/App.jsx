@@ -237,7 +237,7 @@ export default function App() {
 
   // ========== TODO・サブタスク ==========
   const [todos, setTodos] = useState([]);
-  const [todoForm, setTodoForm] = useState({ category: TODO_CATEGORIES[0], task: "", deadline: "", status: "未着手" });
+  const [todoForm, setTodoForm] = useState({ category: TODO_CATEGORIES[0], task: "", deadline: "", status: "未着手", assignee: STAFF_OPTIONS[0] });
   const [subtasks, setSubtasks] = useState([]);
   const [subtaskForms, setSubtaskForms] = useState({});
   const [expandedTaskId, setExpandedTaskId] = useState(null);

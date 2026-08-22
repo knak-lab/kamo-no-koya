@@ -38,7 +38,7 @@ const SHEET_DAILY_META = "日次集計";
 const DAILY_META_FIELD_BY_HEADER = { "日付": "date", "年月": "yearMonth", "販売先": "clientName", "販売形態": "channelName" };
 
 const SHEET_TODOS = "TODO";
-const TODOS_FIELD_BY_HEADER = { "タスクID": "id", "カテゴリ": "category", "タスク": "task", "期限": "deadline", "ステータス": "status", "snoozed": "snoozed" };
+const TODOS_FIELD_BY_HEADER = { "タスクID": "id", "カテゴリ": "category", "タスク": "task", "期限": "deadline", "ステータス": "status", "snoozed": "snoozed", "assignee": "assignee" };
 
 const SHEET_SUBTASKS = "サブタスク";
 const SUBTASKS_FIELD_BY_HEADER = { "サブタスクID": "id", "親タスクID": "parentTaskId", "分類": "legacyCategory", "サブタスク名": "name", "担当": "assignee", "期限": "deadline", "ステータス": "status", "snoozed": "snoozed", "statusUpdatedAt": "statusUpdatedAt" };
@@ -1089,6 +1089,7 @@ function getTodos_() {
   const sheet = getExistingSheet_(SHEET_TODOS);
   if (!sheet) return [];
   ensureColumn_(sheet, "snoozed");
+  ensureColumn_(sheet, "assignee");
   const objs = readByHeaderName_(sheet);
   return objs
     .filter(function (o) {
@@ -1102,6 +1103,7 @@ function getTodos_() {
         deadline: cellToStr_(o["期限"]),
         status: o["ステータス"] || "未着手",
         snoozed: o["snoozed"] === true || o["snoozed"] === "TRUE",
+        assignee: o["assignee"] || "",
       };
     });
 }
@@ -1110,6 +1112,7 @@ function saveTodos_(todos) {
   const sheet = getExistingSheet_(SHEET_TODOS);
   if (!sheet) return;
   ensureColumn_(sheet, "snoozed");
+  ensureColumn_(sheet, "assignee");
   writeByHeaderOrder_(sheet, todos || [], TODOS_FIELD_BY_HEADER, "タスクID");
   const deadlineCol = ensureColumn_(sheet, "期限");
   const rows = Math.max(sheet.getMaxRows() - 1, 1);

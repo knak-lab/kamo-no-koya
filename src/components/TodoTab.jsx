@@ -143,6 +143,7 @@ export default function TodoTab({
                               <Clock size={11} /> ちょっとあと
                             </button>
                             <span className="text-xs text-stone-400">
+                              {t.assignee ? `担当: ${t.assignee} ・ ` : ""}
                               {t.deadline ? `期限: ${t.deadline}` : "期限未設定"} ・ サブタスク{taskSubtasks.length}件
                             </span>
                             <button onClick={() => removeTodo(t.id)} className="ml-auto shrink-0">
@@ -262,14 +263,30 @@ export default function TodoTab({
                   placeholder="例: 夏メニュー試作"
                 />
               </div>
-              <div>
-                <label className="block text-stone-500 mb-1">期限</label>
-                <input
-                  type="date"
-                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
-                  value={todoForm.deadline}
-                  onChange={(e) => setTodoForm((f) => ({ ...f, deadline: e.target.value }))}
-                />
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-stone-500 mb-1">担当</label>
+                  <select
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
+                    value={todoForm.assignee}
+                    onChange={(e) => setTodoForm((f) => ({ ...f, assignee: e.target.value }))}
+                  >
+                    {STAFF_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-stone-500 mb-1">期限</label>
+                  <input
+                    type="date"
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
+                    value={todoForm.deadline}
+                    onChange={(e) => setTodoForm((f) => ({ ...f, deadline: e.target.value }))}
+                  />
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-4">
@@ -386,6 +403,31 @@ export default function TodoTab({
                   </select>
                 </div>
                 <div>
+                  <label className="block text-stone-500 mb-1">担当</label>
+                  <select
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
+                    value={editTask.assignee || STAFF_OPTIONS[0]}
+                    onChange={(e) => updateTodo(editTask.id, "assignee", e.target.value)}
+                  >
+                    {STAFF_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-stone-500 mb-1">期限</label>
+                  <input
+                    type="date"
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
+                    value={editTask.deadline}
+                    onChange={(e) => updateTodo(editTask.id, "deadline", e.target.value)}
+                  />
+                </div>
+                <div>
                   <label className="block text-stone-500 mb-1">完了</label>
                   <button
                     onClick={() => updateTodo(editTask.id, "status", editTask.status === "完了" ? "未着手" : "完了")}
@@ -399,15 +441,6 @@ export default function TodoTab({
                     {editTask.status === "完了" ? "完了済み" : "完了にする"}
                   </button>
                 </div>
-              </div>
-              <div>
-                <label className="block text-stone-500 mb-1">期限</label>
-                <input
-                  type="date"
-                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
-                  value={editTask.deadline}
-                  onChange={(e) => updateTodo(editTask.id, "deadline", e.target.value)}
-                />
               </div>
             </div>
             <div className="flex justify-end mt-4">
