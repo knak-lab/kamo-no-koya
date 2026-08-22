@@ -173,7 +173,7 @@ export default function SummaryTab({
                 {summaryMetric === "sales" && (
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} unit="%" domain={[0, 100]} />
                 )}
-                <Tooltip formatter={(v, name) => (name.includes("粗利率") ? `${v}%` : yen(v))} />
+                <Tooltip formatter={(v, name) => (name.includes("原価率") ? `${v}%` : yen(v))} />
                 <Legend />
                 {showTarget && <Bar yAxisId="left" dataKey="目標" fill="#d6d3d1" radius={[3, 3, 0, 0]} />}
                 <Bar yAxisId="left" dataKey="実績" radius={[3, 3, 0, 0]}>
@@ -182,13 +182,13 @@ export default function SummaryTab({
                   ))}
                 </Bar>
                 {summaryMetric === "sales" && (
-                  <Line yAxisId="right" type="monotone" dataKey="実績粗利率" stroke="#86efac" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="実績原価率" stroke="#86efac" strokeWidth={2} dot={{ r: 3 }} />
                 )}
                 {summaryMetric === "sales" && showTarget && (
                   <Line
                     yAxisId="right"
                     type="monotone"
-                    dataKey="目標粗利率"
+                    dataKey="目標原価率"
                     stroke="#9ca3af"
                     strokeWidth={2}
                     strokeDasharray="4 4"
@@ -380,7 +380,7 @@ export default function SummaryTab({
             />
 
             <p className="text-xs text-stone-500 mt-3">
-              月次の目標(売上・粗利率・利益)は「入力」タブの「目標」セクションで編集できます。
+              月次の目標(売上・原価率・利益)は「入力」タブの「目標」セクションで編集できます。
             </p>
           </div>
         )}

@@ -200,11 +200,11 @@ export function computeMonthlyChartData({ monthlyByChannel, monthMetric, monthCh
     .map((row) => ({
       name: row.yearMonth,
       実績: row[key],
-      実績粗利率: row.売上 > 0 ? Math.round((row.粗利 / row.売上) * 1000) / 10 : 0,
+      実績原価率: row.売上 > 0 ? Math.round(((row.売上 - row.粗利) / row.売上) * 1000) / 10 : 0,
       ...(showTarget
         ? {
             目標: getTargetAmount(mgmtBudgets, row.yearMonth, monthMetric),
-            目標粗利率: mgmtBudgets[row.yearMonth]?.costRatio != null ? 100 - mgmtBudgets[row.yearMonth].costRatio : 0,
+            目標原価率: mgmtBudgets[row.yearMonth]?.costRatio || 0,
           }
         : {}),
     }));
@@ -219,7 +219,7 @@ export function computeDailyChartData({ dailyRows, dayChannel, dayMetric, dayYea
   return filtered.map((d) => ({
     name: d.date,
     実績: d[field],
-    実績粗利率: d.売上_日次 > 0 ? Math.round((d.粗利_日次 / d.売上_日次) * 1000) / 10 : 0,
+    実績原価率: d.売上_日次 > 0 ? Math.round(((d.売上_日次 - d.粗利_日次) / d.売上_日次) * 1000) / 10 : 0,
   }));
 }
 
