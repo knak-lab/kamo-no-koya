@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, Trash2, Loader2 } from "lucide-react";
+import { Upload, Trash2, Loader2, Plus } from "lucide-react";
 import { resizeToDataUrl } from "../lib/image";
 
 // 画像1件の選択・プレビュー・保存・削除を扱う共通カード。
@@ -187,6 +187,60 @@ function SummaryImagesCard({ images, addSummaryImage, removeSummaryImage }) {
   );
 }
 
+// 商品マスタのカテゴリ一覧(追加・削除)。並び順=登録順で、商品マスタ一覧の
+// グルーピング順にそのまま使われる。
+function ProductCategoriesCard({ productCategories, addProductCategory, removeProductCategory }) {
+  const [newCategory, setNewCategory] = useState("");
+
+  const handleAdd = () => {
+    if (!newCategory.trim()) return;
+    addProductCategory(newCategory);
+    setNewCategory("");
+  };
+
+  return (
+    <div className="border border-stone-200/80 rounded-xl p-4">
+      <h3 className="font-medium text-sm text-stone-800 mb-1">商品カテゴリ</h3>
+      <p className="text-xs text-stone-500 mb-3">
+        商品マスタで各商品に設定できるカテゴリの一覧です。ここでの追加・削除が商品マスタのカテゴリ選択肢・一覧のグルーピングに反映されます。
+      </p>
+
+      {productCategories.length > 0 ? (
+        <ul className="space-y-1 mb-3">
+          {productCategories.map((c) => (
+            <li key={c} className="flex items-center justify-between border border-stone-200/80 rounded-lg px-2.5 py-1.5 text-sm">
+              <span>{c}</span>
+              <button onClick={() => removeProductCategory(c)} title="削除">
+                <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-stone-400 mb-3">カテゴリがありません。</p>
+      )}
+
+      <div className="flex gap-2">
+        <input
+          value={newCategory}
+          onChange={(e) => setNewCategory(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleAdd();
+          }}
+          placeholder="新しいカテゴリ名"
+          className="flex-1 border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
+        />
+        <button
+          onClick={handleAdd}
+          className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all shrink-0"
+        >
+          <Plus size={14} /> 追加
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsTab({
   todoVisual,
   saveTodoVisual,
@@ -199,6 +253,9 @@ export default function SettingsTab({
   summaryImages,
   addSummaryImage,
   removeSummaryImage,
+  productCategories,
+  addProductCategory,
+  removeProductCategory,
 }) {
   return (
     <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
@@ -228,6 +285,8 @@ export default function SettingsTab({
         />
 
         <SummaryImagesCard images={summaryImages} addSummaryImage={addSummaryImage} removeSummaryImage={removeSummaryImage} />
+
+        <ProductCategoriesCard productCategories={productCategories} addProductCategory={addProductCategory} removeProductCategory={removeProductCategory} />
 
         <div className="border border-stone-200/80 rounded-xl p-4">
           <h3 className="font-medium text-sm text-stone-800 mb-1">オンラインショップのURL</h3>

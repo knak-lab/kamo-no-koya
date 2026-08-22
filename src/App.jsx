@@ -161,6 +161,8 @@ export default function App() {
   // ========== 商品マスター(単品・セット)+ レシピ ==========
   const [products, setProducts] = useState([]);
   const [recipes, setRecipes] = useState({});
+  // 商品カテゴリ一覧(設定タブから編集。表示順=配列順)
+  const [productCategories, setProductCategories] = useState([]);
   const [productListOpen, setProductListOpen] = useState(false);
   const [productQuery, setProductQuery] = useState("");
   const [comboOpen, setComboOpen] = useState(false);
@@ -298,6 +300,7 @@ export default function App() {
         setBizPlanFiles(data.bizPlanFiles || []);
         setSummaryImages(data.summaryImages || []);
         setProducts(data.products || []);
+        setProductCategories(data.productCategories || []);
         setProductAliases(data.productAliases || {});
         setSaleOverrides(data.saleOverrides || {});
         setPackagingExemptions(data.packagingExemptions || []);
@@ -350,6 +353,7 @@ export default function App() {
       calendarEvents,
       bizPlanItems,
       products,
+      productCategories,
       productAliases,
       saleOverrides,
       packagingExemptions,
@@ -369,6 +373,7 @@ export default function App() {
     calendarEvents,
     bizPlanItems,
     products,
+    productCategories,
     productAliases,
     saleOverrides,
     packagingExemptions,
@@ -591,6 +596,16 @@ export default function App() {
     }
   };
 
+  // --- 商品カテゴリ一覧(設定タブで編集) ---
+  const addProductCategory = (name) => {
+    const trimmed = name.trim();
+    if (!trimmed || productCategories.includes(trimmed)) return;
+    setProductCategories((prev) => [...prev, trimmed]);
+  };
+  const removeProductCategory = (name) => {
+    setProductCategories((prev) => prev.filter((c) => c !== name));
+  };
+
   // --- 商品編集ドラフト(検索/新規登録→編集画面→「保存」で初めて確定するまでの一時編集state) ---
   const buildDraftFromProduct = (product) => {
     const recipe = getRecipe(recipes, product.id);
@@ -600,6 +615,7 @@ export default function App() {
       name: product.name,
       price: product.price,
       kind: product.kind || "single",
+      category: product.category || "",
       servings: recipe.servings,
       ingredients: recipe.ingredients,
       packaging: recipe.packaging,
@@ -613,6 +629,7 @@ export default function App() {
     name,
     price: 0,
     kind,
+    category: "",
     servings: 1,
     ingredients: [],
     packaging: [],
@@ -655,6 +672,15 @@ export default function App() {
     }
     action();
   };
+  // 「新規登録」ボタン: 検索欄への入力に関わらず、空欄の商品名から新規作成フォームを開く
+  const requestCreateBlankProduct = () => {
+    const action = () => openNewProductDraft("", kindMode);
+    if (isProductDraftDirty()) {
+      setPendingProductSwitch(() => action);
+      return;
+    }
+    action();
+  };
   const confirmDiscardAndSwitchProduct = () => {
     const action = pendingProductSwitch;
     setPendingProductSwitch(null);
@@ -672,11 +698,6 @@ export default function App() {
     } else {
       requestCreateProduct(name);
     }
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.getElementById("product-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    });
   };
 
   // ヌケモレチェックの「商品マスタに無い(不明)」商品名を、既存商品の売上としてマージする
@@ -726,14 +747,43 @@ export default function App() {
 
   const saveProductDraft = () => {
     if (!productDraft) return;
-    const { id, name, price, kind, servings, ingredients, packaging, breakdown, procedure, isNew } = productDraft;
+    const { id, name, price, kind, category, servings, ingredients, packaging, breakdown, procedure, isNew } = productDraft;
+    const trimmedName = (name || "").trim();
+    if (!trimmedName) return;
+
     if (isNew) {
-      setProducts((prev) => [...prev, { id, name, price, kind, procedure }]);
+      const finalId = trimmedName;
+      if (products.some((p) => p.id === finalId)) return; // 同名の商品が既にある場合は登録しない
+      setProducts((prev) => [...prev, { id: finalId, name: trimmedName, price, kind, category, procedure, active: true }]);
+      setRecipes((prev) => ({ ...prev, [finalId]: { servings, ingredients, packaging } }));
+      setSetBreakdowns((prev) => ({ ...prev, [finalId]: breakdown }));
     } else {
-      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, price, kind, procedure } : p)));
+      // id=商品名のため、名前変更時はレシピ・セット内訳(自分自身・他商品からの構成商品参照)の
+      // キー/参照付け替えも合わせて行う。既存の別商品と同名になる場合は名前変更のみ取り消す。
+      const nameTaken = trimmedName !== id && products.some((p) => p.id !== id && p.id === trimmedName);
+      const finalId = nameTaken ? id : trimmedName;
+
+      setProducts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, id: finalId, name: finalId === id ? p.name : trimmedName, price, kind, category, procedure } : p))
+      );
+      setRecipes((prev) => {
+        const next = { ...prev };
+        if (finalId !== id) delete next[id];
+        next[finalId] = { servings, ingredients, packaging };
+        return next;
+      });
+      setSetBreakdowns((prev) => {
+        const next = { ...prev };
+        if (finalId !== id) delete next[id];
+        next[finalId] = breakdown;
+        if (finalId !== id) {
+          Object.keys(next).forEach((pid) => {
+            next[pid] = next[pid].map((row) => (row.kind === "component" && row.refId === id ? { ...row, refId: finalId } : row));
+          });
+        }
+        return next;
+      });
     }
-    setRecipes((prev) => ({ ...prev, [id]: { servings, ingredients, packaging } }));
-    setSetBreakdowns((prev) => ({ ...prev, [id]: breakdown }));
     setProductDraft(null);
     setProductDraftSnapshot(null);
   };
@@ -1318,6 +1368,9 @@ export default function App() {
             summaryImages={summaryImages}
             addSummaryImage={addSummaryImage}
             removeSummaryImage={removeSummaryImage}
+            productCategories={productCategories}
+            addProductCategory={addProductCategory}
+            removeProductCategory={removeProductCategory}
           />
         )}
 
@@ -1342,6 +1395,8 @@ export default function App() {
             cancelPendingProductSwitch={cancelPendingProductSwitch}
             requestOpenProduct={requestOpenProduct}
             requestCreateProduct={requestCreateProduct}
+            requestCreateBlankProduct={requestCreateBlankProduct}
+            productCategories={productCategories}
             kindMode={kindMode}
             setKindMode={setKindMode}
             productQuery={productQuery}

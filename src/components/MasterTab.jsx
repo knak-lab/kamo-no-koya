@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, PlusCircle, Loader2, ClipboardList } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, PlusCircle, Loader2, ClipboardList, Search } from "lucide-react";
 import { yen, pct, RAW, PACK, UNITS } from "../lib/constants";
 
 const SUB_TABS = [
@@ -112,6 +112,8 @@ export default function MasterTab({
   cancelPendingProductSwitch,
   requestOpenProduct,
   requestCreateProduct,
+  requestCreateBlankProduct,
+  productCategories,
   kindMode,
   setKindMode,
   productQuery,
@@ -188,6 +190,78 @@ export default function MasterTab({
   const [procedureOpen, setProcedureOpen] = useState(false);
   const [quickEditId, setQuickEditId] = useState(null);
   const quickEditProduct = products.find((p) => p.id === quickEditId);
+
+  // 登録済み一覧: 商品名での絞り込み検索 + カテゴリ→区分の開閉式グルーピング(基本閉じる)
+  const [listSearchOpen, setListSearchOpen] = useState(false);
+  const [listSearchQuery, setListSearchQuery] = useState("");
+  const [openCategories, setOpenCategories] = useState({});
+  const [openKindGroups, setOpenKindGroups] = useState({});
+  const searching = listSearchQuery.trim().length > 0;
+  const KIND_OPTS = [
+    { kind: "single", label: "単品" },
+    { kind: "set", label: "セット" },
+  ];
+
+  const renderProductRow = (p) => {
+    const c = productCosts[p.id];
+    const active = p.active !== false;
+    return (
+      <tr
+        key={p.id}
+        className={`border-b border-stone-100 cursor-pointer ${productDraft?.id === p.id ? "bg-amber-50" : ""} ${active ? "" : "opacity-50"}`}
+        onClick={() => requestOpenProduct(p)}
+      >
+        <td className="py-1 pr-2 pl-2.5 font-medium">
+          <div className="flex items-center gap-1">
+            <span>{p.name}</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setQuickEditId(p.id);
+              }}
+              title="商品名・区分・価格を編集"
+            >
+              <Pencil size={11} className="text-stone-300 hover:text-amber-700" />
+            </button>
+            {productDraft?.id === p.id && <ChevronDown size={12} className="text-amber-700" />}
+          </div>
+        </td>
+        <td className="py-1 pr-2 tabular-nums">{yen(p.price)}</td>
+        <td className="py-1 pr-2 tabular-nums text-stone-500">{yen(c?.材料費)}</td>
+        <td className="py-1 pr-2 tabular-nums text-stone-500">{yen(c?.梱包材費)}</td>
+        <td className="py-1 pr-2 tabular-nums font-medium">{yen(c?.原価)}</td>
+        <td className="py-1 pr-2 tabular-nums text-stone-500">{pct(c?.原価率)}</td>
+        <td className="py-1 pr-2 tabular-nums">{yen(c?.限界利益)}</td>
+        <td className={`py-1 pr-2 tabular-nums font-semibold ${c?.限界利益率 >= 0.5 ? "text-emerald-700" : "text-amber-700"}`}>
+          {pct(c?.限界利益率)}
+        </td>
+        <td className="py-1 pr-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleProductActive(p.id);
+            }}
+            className={`text-[10px] px-1.5 py-0.5 rounded font-medium transition-colors ${
+              active ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-stone-200 text-stone-500 hover:bg-stone-300"
+            }`}
+          >
+            {active ? "有効" : "無効"}
+          </button>
+        </td>
+        <td>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setProducts((prev) => prev.filter((x) => x.id !== p.id));
+            }}
+          >
+            <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
+          </button>
+        </td>
+      </tr>
+    );
+  };
+
   return (
     <>
       <div className="flex gap-1 bg-stone-200/70 rounded-2xl p-1 w-fit flex-wrap backdrop-blur-sm">
@@ -228,6 +302,7 @@ export default function MasterTab({
               </div>
             </div>
 
+            <div className="flex items-end gap-2">
             <div className="relative">
               <label className="block text-xs text-stone-500 mb-1">商品を検索・選択</label>
               <input
@@ -272,16 +347,25 @@ export default function MasterTab({
                 </ul>
               )}
             </div>
+            <button
+              onClick={requestCreateBlankProduct}
+              className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all shrink-0"
+            >
+              <PlusCircle size={14} /> 新規登録
+            </button>
+            </div>
           </div>
+        </section>
 
-          {productDraft && (
-          <>
-          <div id="product-edit-form" className="flex flex-col gap-3 mb-1 mt-3 pt-3 border-t border-stone-100">
+      {/* 商品編集モーダル(新規登録・既存編集共通。材料・包材・手順を含む) */}
+      {productDraft && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-5">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-stone-500">編集中の商品{productDraft.isNew ? "(新規)" : ""}</div>
                 <div className="flex items-center gap-2">
-                  <div className="text-sm font-semibold">{productDraft.name}</div>
+                  <div className="text-sm font-semibold">{productDraft.name || "(未入力)"}</div>
                   {!productDraft.isNew &&
                     (() => {
                       const current = products.find((p) => p.id === productDraft.id);
@@ -310,6 +394,34 @@ export default function MasterTab({
                   保存
                 </button>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-3 mb-1 mt-3 pt-3 border-t border-stone-100">
+            <div>
+              <label className="block text-xs text-stone-500 mb-1">商品名</label>
+              <input
+                autoFocus={productDraft.isNew}
+                className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-sm w-full"
+                value={productDraft.name}
+                onChange={(e) => updateDraftField("name", e.target.value)}
+                placeholder="商品名"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-stone-500 mb-1">カテゴリ</label>
+              <select
+                className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-sm w-full max-w-xs"
+                value={productDraft.category || ""}
+                onChange={(e) => updateDraftField("category", e.target.value)}
+              >
+                <option value="">未分類</option>
+                {productCategories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -615,15 +727,15 @@ export default function MasterTab({
               />
             )}
           </div>
-          </>
-          )}
-        </section>
+          </div>
+        </div>
+      )}
 
       {/* 商品マスター一覧 */}
       <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
-        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">商品マスター(単品)</h2>
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">商品マスター</h2>
         <p className="text-xs text-stone-500 mb-3">
-          新規登録は上の検索欄から行います。商品名はレシピ・売上から参照されるキーなので、変更は鉛筆アイコンからのみ行えます。
+          新規登録は上の検索欄または「新規登録」ボタンから行います。商品名の変更は各行の鉛筆アイコンから行えます。
         </p>
 
         <button
@@ -635,90 +747,104 @@ export default function MasterTab({
         </button>
 
         {productListOpen && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full whitespace-nowrap text-xs">
-              <thead>
-                <tr className="text-left text-stone-500 border-b">
-                  <th className="py-1 pr-2">商品名</th>
-                  <th className="py-1 pr-2">区分</th>
-                  <th className="py-1 pr-2">価格</th>
-                  <th className="py-1 pr-2">材料費(按分後)</th>
-                  <th className="py-1 pr-2">包材費</th>
-                  <th className="py-1 pr-2">原価</th>
-                  <th className="py-1 pr-2">原価率</th>
-                  <th className="py-1 pr-2">限界利益</th>
-                  <th className="py-1 pr-2">限界利益率</th>
-                  <th className="py-1 pr-2">状態</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((p) => {
-                  const c = productCosts[p.id];
-                  const active = p.active !== false;
-                  return (
-                    <tr
-                      key={p.id}
-                      className={`border-b border-stone-100 cursor-pointer ${productDraft?.id === p.id ? "bg-amber-50" : ""} ${active ? "" : "opacity-50"}`}
-                      onClick={() => requestOpenProduct(p)}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-1">
+              <button
+                onClick={() => {
+                  setListSearchOpen((v) => !v);
+                  if (listSearchOpen) setListSearchQuery("");
+                }}
+                className={`flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg border transition-colors ${
+                  listSearchOpen ? "border-amber-400 text-amber-700 bg-amber-50" : "border-stone-200 text-stone-500 hover:bg-stone-50"
+                }`}
+                title="商品名で検索"
+              >
+                <Search size={13} />
+                検索
+              </button>
+              {listSearchOpen && (
+                <input
+                  autoFocus
+                  value={listSearchQuery}
+                  onChange={(e) => setListSearchQuery(e.target.value)}
+                  placeholder="商品名で絞り込み"
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-xs w-48"
+                />
+              )}
+            </div>
+
+            {(() => {
+              const filteredProducts = searching
+                ? products.filter((p) => p.name.toLowerCase().includes(listSearchQuery.trim().toLowerCase()))
+                : products;
+              const categoryGroups = [...productCategories, ""]
+                .map((cat) => ({ category: cat, products: filteredProducts.filter((p) => (p.category || "") === cat) }))
+                .filter((g) => g.products.length > 0);
+
+              if (categoryGroups.length === 0) {
+                return <p className="text-xs text-stone-400">該当する商品がありません。</p>;
+              }
+
+              return categoryGroups.map((g) => {
+                const catKey = g.category || "__uncategorized__";
+                const catOpen = searching || !!openCategories[catKey];
+                return (
+                  <div key={catKey} className="border border-stone-200/80 rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setOpenCategories((prev) => ({ ...prev, [catKey]: !prev[catKey] }))}
+                      className="w-full flex items-center gap-1.5 px-3 py-2 text-left text-sm font-medium hover:bg-stone-50"
                     >
-                      <td className="py-1 pr-2 font-medium">
-                        <div className="flex items-center gap-1">
-                          <span>{p.name}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setQuickEditId(p.id);
-                            }}
-                            title="商品名・区分・価格を編集"
-                          >
-                            <Pencil size={11} className="text-stone-300 hover:text-amber-700" />
-                          </button>
-                          {productDraft?.id === p.id && <ChevronDown size={12} className="text-amber-700" />}
-                        </div>
-                      </td>
-                      <td className="py-1 pr-2">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${p.kind === "set" ? "bg-amber-100 text-amber-700" : "bg-stone-100 text-stone-600"}`}>
-                          {p.kind === "set" ? "セット" : "単品"}
-                        </span>
-                      </td>
-                      <td className="py-1 pr-2 tabular-nums">{yen(p.price)}</td>
-                      <td className="py-1 pr-2 tabular-nums text-stone-500">{yen(c?.材料費)}</td>
-                      <td className="py-1 pr-2 tabular-nums text-stone-500">{yen(c?.梱包材費)}</td>
-                      <td className="py-1 pr-2 tabular-nums font-medium">{yen(c?.原価)}</td>
-                      <td className="py-1 pr-2 tabular-nums text-stone-500">{pct(c?.原価率)}</td>
-                      <td className="py-1 pr-2 tabular-nums">{yen(c?.限界利益)}</td>
-                      <td className={`py-1 pr-2 tabular-nums font-semibold ${c?.限界利益率 >= 0.5 ? "text-emerald-700" : "text-amber-700"}`}>
-                        {pct(c?.限界利益率)}
-                      </td>
-                      <td className="py-1 pr-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleProductActive(p.id);
-                          }}
-                          className={`text-[10px] px-1.5 py-0.5 rounded font-medium transition-colors ${
-                            active ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-stone-200 text-stone-500 hover:bg-stone-300"
-                          }`}
-                        >
-                          {active ? "有効" : "無効"}
-                        </button>
-                      </td>
-                      <td>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setProducts((prev) => prev.filter((x) => x.id !== p.id));
-                          }}
-                        >
-                          <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      {catOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      {g.category || "未分類"}
+                      <span className="text-xs font-normal text-stone-400">({g.products.length}件)</span>
+                    </button>
+                    {catOpen && (
+                      <div className="px-3 pb-3 space-y-2">
+                        {KIND_OPTS.map((k) => {
+                          const kindProducts = g.products.filter((p) => (p.kind || "single") === k.kind);
+                          if (kindProducts.length === 0) return null;
+                          const groupKey = `${catKey}::${k.kind}`;
+                          const kindOpen = searching || !!openKindGroups[groupKey];
+                          return (
+                            <div key={groupKey} className="border border-stone-100 rounded-lg overflow-hidden">
+                              <button
+                                onClick={() => setOpenKindGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }))}
+                                className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-left text-xs font-medium text-stone-600 hover:bg-stone-50"
+                              >
+                                {kindOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                {k.label}
+                                <span className="text-[11px] font-normal text-stone-400">({kindProducts.length}件)</span>
+                              </button>
+                              {kindOpen && (
+                                <div className="overflow-x-auto">
+                                  <table className="min-w-full whitespace-nowrap text-xs">
+                                    <thead>
+                                      <tr className="text-left text-stone-500 border-b">
+                                        <th className="py-1 pr-2 pl-2.5">商品名</th>
+                                        <th className="py-1 pr-2">価格</th>
+                                        <th className="py-1 pr-2">材料費(按分後)</th>
+                                        <th className="py-1 pr-2">包材費</th>
+                                        <th className="py-1 pr-2">原価</th>
+                                        <th className="py-1 pr-2">原価率</th>
+                                        <th className="py-1 pr-2">限界利益</th>
+                                        <th className="py-1 pr-2">限界利益率</th>
+                                        <th className="py-1 pr-2">状態</th>
+                                        <th></th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>{kindProducts.map((p) => renderProductRow(p))}</tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()}
           </div>
         )}
       </section>
@@ -1352,11 +1478,6 @@ export default function MasterTab({
           onEditRecipe={() => {
             setQuickEditId(null);
             requestOpenProduct(quickEditProduct);
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                document.getElementById("product-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-              });
-            });
           }}
         />
       )}

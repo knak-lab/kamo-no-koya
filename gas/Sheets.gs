@@ -45,7 +45,12 @@ const SUBTASKS_FIELD_BY_HEADER = { "サブタスクID": "id", "親タスクID": 
 
 // ---- このアプリ専用の新規シート(実データとの衝突なし) ----
 const SHEET_PRODUCTS = "商品マスター_原価管理";
-const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion", "procedure", "baseItemId", "active"];
+const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion", "procedure", "baseItemId", "active", "category"];
+
+// 商品マスタのカテゴリ一覧(設定タブから編集可能。表示順=このシートの行順)
+const SHEET_PRODUCT_CATEGORIES = "商品カテゴリ";
+const PRODUCT_CATEGORIES_HDR = ["category"];
+const PRODUCT_CATEGORIES_SEED = [["焼き菓子"], ["ケーキ"], ["ドリンク"], ["イベント"]];
 
 const SHEET_RECIPES = "レシピ"; // 実データ採用(20材料+5梱包材の横持ち形式)
 const RECIPE_MAX_INGREDIENTS = 20;
@@ -375,6 +380,7 @@ function getProducts_() {
       baseItemId: p.baseItemId || "",
       // 列追加前の既存行は空欄のままなので、明示的にfalse(無効)でない限り有効として扱う
       active: p.active === false || p.active === "FALSE" ? false : true,
+      category: p.category || "",
     };
   });
 }
@@ -384,6 +390,21 @@ function saveProducts_(products) {
   backfillHeaderRow_(sheet, PRODUCTS_HDR);
   clearDataRows_(sheet);
   writeRows_(sheet, objectsToRows_(PRODUCTS_HDR, products), PRODUCTS_HDR.length);
+}
+
+function getProductCategories_() {
+  const sheet = getOrCreateSheet_(SHEET_PRODUCT_CATEGORIES, PRODUCT_CATEGORIES_HDR, PRODUCT_CATEGORIES_SEED);
+  return getDataRows_(sheet)
+    .map(function (r) { return String(r[0] || ""); })
+    .filter(Boolean);
+}
+
+function saveProductCategories_(categories) {
+  const headers = PRODUCT_CATEGORIES_HDR;
+  const sheet = getOrCreateSheet_(SHEET_PRODUCT_CATEGORIES, headers, PRODUCT_CATEGORIES_SEED);
+  clearDataRows_(sheet);
+  const rows = (categories || []).map(function (c) { return [c]; });
+  writeRows_(sheet, rows, headers.length);
 }
 
 // ─────────────────────────────────────────
@@ -1317,6 +1338,7 @@ function getAll_() {
     bizPlanFiles: getBizPlanFiles_(),
     summaryImages: getSummaryImages_(),
     products: getProducts_(),
+    productCategories: getProductCategories_(),
     productAliases: getProductAliases_(),
     packagingExemptions: getPackagingExemptions_(),
     saleOverrides: getSaleOverrides_(),
@@ -1344,6 +1366,7 @@ function saveAll_(body) {
   saveCalendarEvents_(body.calendarEvents || []);
   saveBizPlanItems_(body.bizPlanItems || []);
   saveProducts_(body.products || []);
+  saveProductCategories_(body.productCategories || []);
   saveProductAliases_(body.productAliases || {});
   savePackagingExemptions_(body.packagingExemptions || []);
   saveSaleOverrides_(body.saleOverrides || {});
