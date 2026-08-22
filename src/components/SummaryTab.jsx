@@ -1,7 +1,7 @@
 import { useState } from "react";
 import DateAccordion from "./DateAccordion";
 import PLTab from "./PLTab";
-import { TrendingUp, TrendingDown, Wallet, Target, ChevronDown, ChevronRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Target, Percent, ChevronDown, ChevronRight } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -72,6 +72,8 @@ export default function SummaryTab({
   const latestYm = [...allYearMonths].reverse().find((ym) => dailyRows.some((d) => d.yearMonth === ym && d.売上_日次 > 0));
   const kpiRows = latestYm ? dailyRows.filter((d) => d.yearMonth === latestYm) : [];
   const kpiSales = kpiRows.reduce((a, d) => a + d.売上_日次, 0);
+  const kpiCost = kpiRows.reduce((a, d) => a + d.原価標準_日次, 0);
+  const kpiCostRatio = kpiSales > 0 ? (kpiCost / kpiSales) * 100 : 0;
   const kpiProfit = kpiRows.reduce((a, d) => a + d.営業利益_管理_日次, 0);
   const budget = latestYm ? mgmtBudgets?.[latestYm] : null;
 
@@ -84,13 +86,15 @@ export default function SummaryTab({
             <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight">今月実績({latestYm})</h2>
             <span className="text-[11px] text-stone-400">売上が発生している最新月</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <StatTile icon={Target} label="目標売上" value={yen(budget?.salesBudget || 0)} />
+            <StatTile icon={Target} label="目標原価率" value={`${(budget?.costRatio || 0).toFixed(1)}%`} />
             <StatTile icon={Target} label="目標営業利益" value={yen(budget?.profitBudget || 0)} />
-            <StatTile icon={Wallet} label="売上" value={yen(kpiSales)} />
+            <StatTile icon={Wallet} label="実績売上" value={yen(kpiSales)} />
+            <StatTile icon={Percent} label="実績原価率" value={`${kpiCostRatio.toFixed(1)}%`} />
             <StatTile
               icon={kpiProfit >= 0 ? TrendingUp : TrendingDown}
-              label="営業利益"
+              label="実績営業利益"
               value={yen(kpiProfit)}
               tone={kpiProfit >= 0 ? "good" : "bad"}
             />
