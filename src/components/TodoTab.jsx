@@ -41,6 +41,7 @@ export default function TodoTab({
   showCompletedTodos,
   setShowCompletedTodos,
 }) {
+  const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [subtaskModalTaskId, setSubtaskModalTaskId] = useState(null);
   const modalTask = todos.find((t) => t.id === subtaskModalTaskId);
   const msf = subtaskModalTaskId ? getSubtaskForm(subtaskModalTaskId) : null;
@@ -52,48 +53,14 @@ export default function TodoTab({
 
   return (
     <>
-      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
-        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">タスク追加</h2>
-        <div className="flex flex-wrap gap-2 items-end mb-3 text-sm">
-          <div>
-            <label className="block text-xs text-stone-500 mb-1">カテゴリ</label>
-            <select
-              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
-              value={todoForm.category}
-              onChange={(e) => setTodoForm((f) => ({ ...f, category: e.target.value }))}
-            >
-              {TODO_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-stone-500 mb-1">タスク</label>
-            <input
-              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-48"
-              value={todoForm.task}
-              onChange={(e) => setTodoForm((f) => ({ ...f, task: e.target.value }))}
-              placeholder="例: 夏メニュー試作"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-stone-500 mb-1">期限</label>
-            <input
-              type="date"
-              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
-              value={todoForm.deadline}
-              onChange={(e) => setTodoForm((f) => ({ ...f, deadline: e.target.value }))}
-            />
-          </div>
-          <button onClick={addTodo} className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all">
-            <Plus size={14} /> 追加
-          </button>
-        </div>
-      </section>
-
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-between gap-2">
+        <button
+          onClick={() => setAddTaskModalOpen(true)}
+          className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
+        >
+          <Plus size={14} /> タスク追加
+        </button>
+        <div className="flex gap-2">
         <button
           onClick={() => setShowCompletedTodos((v) => !v)}
           className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 bg-white border border-stone-200 rounded-full px-3 py-1"
@@ -108,6 +75,7 @@ export default function TodoTab({
           <span className="text-sm">{showSnoozed ? "👁" : "🙈"}</span>
           ちょっとあと{showSnoozed ? "を表示中" : "は非表示"}
         </button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -257,6 +225,67 @@ export default function TodoTab({
           );
         })}
       </div>
+
+      {addTaskModalOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
+            <h3 className="font-semibold text-sm mb-3">タスクを追加</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-stone-500 mb-1">カテゴリ</label>
+                <select
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
+                  value={todoForm.category}
+                  onChange={(e) => setTodoForm((f) => ({ ...f, category: e.target.value }))}
+                >
+                  {TODO_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-stone-500 mb-1">タスク</label>
+                <input
+                  autoFocus
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
+                  value={todoForm.task}
+                  onChange={(e) => setTodoForm((f) => ({ ...f, task: e.target.value }))}
+                  placeholder="例: 夏メニュー試作"
+                />
+              </div>
+              <div>
+                <label className="block text-stone-500 mb-1">期限</label>
+                <input
+                  type="date"
+                  className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
+                  value={todoForm.deadline}
+                  onChange={(e) => setTodoForm((f) => ({ ...f, deadline: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setAddTaskModalOpen(false)}
+                className="px-3.5 py-1.5 text-sm rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-stone-400 transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => {
+                  if (!todoForm.task.trim()) return;
+                  addTodo();
+                  setAddTaskModalOpen(false);
+                }}
+                className="px-3.5 py-1.5 text-sm rounded-lg bg-amber-700 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
+              >
+                追加
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {subtaskModalTaskId && msf && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
