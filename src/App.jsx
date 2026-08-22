@@ -267,6 +267,9 @@ export default function App() {
       // localStorageが使えない環境でもアプリ自体は問題なく動作させる
     }
   };
+  // サイドバーの「オンラインショップ」リンク先URL。squareSyncFromSquareと同じく
+  // 設定シートの一部として他の設定と一括autosaveされる(専用の保存アクションは持たない)
+  const [onlineShopUrl, setOnlineShopUrl] = useState("");
 
   // ========== 初回ロード ==========
   useEffect(() => {
@@ -298,6 +301,7 @@ export default function App() {
         setTodos(data.todos || []);
         setSubtasks(data.subtasks || []);
         setSquareSyncFromSquare(data.settings?.squareSyncFromSquare ?? true);
+        setOnlineShopUrl(data.settings?.onlineShopUrl || "");
         setTodoVisual(data.todoVisual || "");
         setAppIcon(data.appIcon || "");
         cacheAppIcon(data.appIcon || "");
@@ -344,7 +348,7 @@ export default function App() {
       dailyMeta,
       mgmtBudgets,
       finBudgets,
-      settings: { squareSyncFromSquare },
+      settings: { squareSyncFromSquare, onlineShopUrl },
     };
   });
   useAutosave(hasLoadedRef, mainSaveDataRef, gasApi.saveAll, setSaveState, [
@@ -363,6 +367,7 @@ export default function App() {
     mgmtBudgets,
     finBudgets,
     squareSyncFromSquare,
+    onlineShopUrl,
   ]);
 
   const todosSaveDataRef = useRef(null);
@@ -1060,7 +1065,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/60 via-stone-50 to-stone-50 text-stone-900 font-sans md:flex md:items-start md:gap-6 md:max-w-6xl md:mx-auto md:px-4 md:py-6">
-      <Sidebar tab={tab} setTab={setTab} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        tab={tab}
+        setTab={setTab}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onlineShopUrl={onlineShopUrl}
+      />
 
       <div className="min-w-0 flex-1 max-w-5xl mx-auto px-4 py-6 md:px-0 md:py-0 space-y-6">
         <header className="relative overflow-hidden rounded-3xl bg-white border border-stone-200/70 shadow-sm shadow-stone-300/30 px-5 py-4">
@@ -1215,6 +1226,8 @@ export default function App() {
             appIcon={appIcon}
             saveAppIcon={saveAppIcon}
             appIconSaving={appIconSaving}
+            onlineShopUrl={onlineShopUrl}
+            setOnlineShopUrl={setOnlineShopUrl}
           />
         )}
 

@@ -1,9 +1,9 @@
-import { X } from "lucide-react";
+import { X, ExternalLink } from "lucide-react";
 import { TABS } from "../lib/constants";
 
 // PCでは常時表示の固定サイドバー、スマホでは左からスライドインするドロワーメニュー。
 // openの真偽はスマホ表示時のみ意味を持つ(md以上はCSSで常に表示・位置固定)。
-export default function Sidebar({ tab, setTab, open, onClose }) {
+export default function Sidebar({ tab, setTab, open, onClose, onlineShopUrl }) {
   return (
     <>
       {open && <div className="md:hidden fixed inset-0 bg-black/30 z-40" onClick={onClose} />}
@@ -34,6 +34,27 @@ export default function Sidebar({ tab, setTab, open, onClose }) {
               >
                 {t.label}
               </button>
+              {t.key === "todo" &&
+                (onlineShopUrl ? (
+                  <a
+                    href={onlineShopUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={onClose}
+                    className="flex items-center gap-1 px-3.5 py-2 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 transition-all"
+                  >
+                    オンラインショップ
+                    <ExternalLink size={12} className="text-stone-400 shrink-0" />
+                  </a>
+                ) : (
+                  <span
+                    title="「設定」タブでURLを登録してください"
+                    className="flex items-center gap-1 px-3.5 py-2 rounded-xl text-sm font-medium text-stone-300 cursor-not-allowed"
+                  >
+                    オンラインショップ
+                    <ExternalLink size={12} className="text-stone-300 shrink-0" />
+                  </span>
+                ))}
             </div>
           ))}
         </div>

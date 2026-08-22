@@ -66,8 +66,8 @@ const SHEET_FIN_BUDGETS = "月次PL予算";
 const FIN_BUDGETS_HDR = ["yearMonth", "rawMaterialBudget", "otherExpenseBudget", "profitBudget"];
 
 const SHEET_SETTINGS = "設定";
-const SETTINGS_HDR = ["squareSyncFromSquare"];
-const SETTINGS_SEED = [[true]];
+const SETTINGS_HDR = ["squareSyncFromSquare", "onlineShopUrl"];
+const SETTINGS_SEED = [[true, ""]];
 
 // todoタブの「タスク追加」ボタン下に表示するビジュアル画像(PNG/JPEG)。
 // Googleスプレッドシートは1セル50,000文字までのため、base64文字列を
@@ -807,13 +807,16 @@ function getSettings_() {
   const sheet = getOrCreateSheet_(SHEET_SETTINGS, SETTINGS_HDR, SETTINGS_SEED);
   const rows = getDataRows_(sheet);
   const row = rows[0] || SETTINGS_SEED[0];
-  return { squareSyncFromSquare: row[0] === true || row[0] === "TRUE" };
+  return {
+    squareSyncFromSquare: row[0] === true || row[0] === "TRUE",
+    onlineShopUrl: row[1] === null || row[1] === undefined ? "" : String(row[1]),
+  };
 }
 
 function saveSettings_(settings) {
   const sheet = getOrCreateSheet_(SHEET_SETTINGS, SETTINGS_HDR, SETTINGS_SEED);
   clearDataRows_(sheet);
-  writeRows_(sheet, [[!!(settings && settings.squareSyncFromSquare)]], SETTINGS_HDR.length);
+  writeRows_(sheet, [[!!(settings && settings.squareSyncFromSquare), String((settings && settings.onlineShopUrl) || "")]], SETTINGS_HDR.length);
 }
 
 // 1行目にMIMEタイプ(image/png or image/jpeg)、2行目以降にbase64チャンクを保存する

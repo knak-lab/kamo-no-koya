@@ -132,7 +132,16 @@ function ImageSettingCard({ title, description, currentValue, onSave, saving, al
   );
 }
 
-export default function SettingsTab({ todoVisual, saveTodoVisual, todoVisualSaving, appIcon, saveAppIcon, appIconSaving }) {
+export default function SettingsTab({
+  todoVisual,
+  saveTodoVisual,
+  todoVisualSaving,
+  appIcon,
+  saveAppIcon,
+  appIconSaving,
+  onlineShopUrl,
+  setOnlineShopUrl,
+}) {
   return (
     <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
       <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">設定</h2>
@@ -159,6 +168,21 @@ export default function SettingsTab({ todoVisual, saveTodoVisual, todoVisualSavi
           allowJpeg={false}
           maxDimension={512}
         />
+
+        <div className="border border-stone-200/80 rounded-xl p-4">
+          <h3 className="font-medium text-sm text-stone-800 mb-1">オンラインショップのURL</h3>
+          <p className="text-xs text-stone-500 mb-3">
+            サイドバーの「todo」の下に表示される「オンラインショップ」リンクの遷移先です。入力すると自動で保存されます(未入力の間はリンクを押せません)。
+          </p>
+          <input
+            type="url"
+            inputMode="url"
+            placeholder="https://example.com/shop"
+            className="w-full border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-sm"
+            value={onlineShopUrl}
+            onChange={(e) => setOnlineShopUrl(e.target.value)}
+          />
+        </div>
       </div>
     </section>
   );
