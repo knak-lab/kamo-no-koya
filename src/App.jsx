@@ -33,6 +33,7 @@ import SummaryTab from "./components/SummaryTab";
 import TodoTab from "./components/TodoTab";
 import MasterTab from "./components/MasterTab";
 import SettingsTab from "./components/SettingsTab";
+import BizPlanTab from "./components/BizPlanTab";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const APP_ICON_CACHE_KEY = "kamo-app-icon";
@@ -246,6 +247,12 @@ export default function App() {
   // ========== カレンダー(出店計画・イベント予定) ==========
   const [calendarEvents, setCalendarEvents] = useState([]); // [{id, date, title, memo}]
 
+  // ========== 事業計画(タイトルごとにセクション分けした開閉式カード) ==========
+  const [bizPlanItems, setBizPlanItems] = useState([]); // [{id, title, url, memo}]
+  // 添付ファイル(サムネイル・ドキュメント・写真)。saveAllの全洗い替えとは別に、
+  // Drive連携の専用アクション(addBizPlanFile/removeBizPlanFile)で個別に増減する
+  const [bizPlanFiles, setBizPlanFiles] = useState([]); // [{id, itemId, kind, name, mimeType, url, uploadedAt}]
+
   // ========== 設定(管理者向け。todoタブのビジュアル画像・アプリアイコンなど) ==========
   const [todoVisual, setTodoVisual] = useState(""); // PNG/JPEG data URL または空文字
   const [todoVisualSaving, setTodoVisualSaving] = useState(false);
@@ -285,6 +292,8 @@ export default function App() {
         if (cancelled) return;
         setMaterials(data.materials || []);
         setCalendarEvents(data.calendarEvents || []);
+        setBizPlanItems(data.bizPlanItems || []);
+        setBizPlanFiles(data.bizPlanFiles || []);
         setProducts(data.products || []);
         setProductAliases(data.productAliases || {});
         setSaleOverrides(data.saleOverrides || {});
@@ -336,6 +345,7 @@ export default function App() {
     mainSaveDataRef.current = {
       materials,
       calendarEvents,
+      bizPlanItems,
       products,
       productAliases,
       saleOverrides,
@@ -354,6 +364,7 @@ export default function App() {
   useAutosave(hasLoadedRef, mainSaveDataRef, gasApi.saveAll, setSaveState, [
     materials,
     calendarEvents,
+    bizPlanItems,
     products,
     productAliases,
     saleOverrides,
@@ -929,6 +940,36 @@ export default function App() {
       return [...prev, { ...src, id: uid(), title: `${src.title}（コピー）` }];
     });
   };
+  // --- ハンドラ: 事業計画 ---
+  const addBizPlanItem = (title) => {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    setBizPlanItems((prev) => [...prev, { id: uid(), title: trimmed, url: "", memo: "" }]);
+  };
+  const updateBizPlanItem = (id, field, value) =>
+    setBizPlanItems((prev) => prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)));
+  const removeBizPlanItem = async (id) => {
+    if (!window.confirm("このセクションを削除しますか？添付ファイルもすべて削除されます。")) return;
+    setBizPlanItems((prev) => prev.filter((it) => it.id !== id));
+    setBizPlanFiles((prev) => prev.filter((f) => f.itemId !== id));
+    try {
+      await gasApi.removeBizPlanItem(id);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    }
+  };
+  // サムネイル・添付ファイルはDriveへ即時保存するため、saveAllのデバウンスとは切り離す
+  const addBizPlanFile = async (itemId, kind, fileName, mimeType, dataUrl) => {
+    const record = await gasApi.addBizPlanFile(itemId, kind, fileName, mimeType, dataUrl);
+    setBizPlanFiles((prev) => [...prev.filter((f) => !(kind === "thumbnail" && f.itemId === itemId && f.kind === "thumbnail")), record]);
+    return record;
+  };
+  const removeBizPlanFile = async (fileId) => {
+    await gasApi.removeBizPlanFile(fileId);
+    setBizPlanFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
+
   const setMgmtBudgetField = (ym, field, value) =>
     setMgmtBudgets((prev) => ({
       ...prev,
@@ -1227,6 +1268,18 @@ export default function App() {
             showCompletedTodos={showCompletedTodos}
             setShowCompletedTodos={setShowCompletedTodos}
             todoVisual={todoVisual}
+          />
+        )}
+
+        {tab === "bizplan" && (
+          <BizPlanTab
+            items={bizPlanItems}
+            files={bizPlanFiles}
+            addItem={addBizPlanItem}
+            updateItem={updateBizPlanItem}
+            removeItem={removeBizPlanItem}
+            addFile={addBizPlanFile}
+            removeFile={removeBizPlanFile}
           />
         )}
 

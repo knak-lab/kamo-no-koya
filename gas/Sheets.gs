@@ -90,6 +90,23 @@ const APP_ICON_MAX_BASE64_CHARS = 200000;
 const SHEET_CALENDAR_EVENTS = "予定";
 const CALENDAR_EVENTS_HDR = ["id", "date", "title", "memo", "channelId"];
 
+// 事業計画タブ: セクション(タイトル/URL/自由記入欄)本体。開閉状態はフロント側のみで
+// 保持し保存しない(常に「基本閉じる」)。添付ファイル(サムネイル・ドキュメント・写真)は
+// このシートには持たず、事業計画_添付 + Google Driveで別管理する(理由は下記参照)。
+const SHEET_BIZPLAN_ITEMS = "事業計画";
+const BIZPLAN_ITEMS_HDR = ["id", "title", "url", "memo"];
+
+// 事業計画の添付ファイル(サムネイル画像・ドキュメント・写真)のメタ情報。
+// 実ファイル本体はGoogle Drive(事業計画専用フォルダ配下、セクションid名のサブフォルダ)に
+// 保存し、このシートにはfileId・閲覧用urlなどの参照のみを持つ。
+// kind: "thumbnail"(セクションのサムネイル。1セクション1枚まで) | "attachment"(ドロップ欄に
+// 追加されたドキュメント・写真。複数可)。
+// saveAll_の全洗い替え保存とは分離し、addBizPlanFile_/removeBizPlanFile_で1件ずつ即時に
+// 読み書きする(saveAllの度にDriveへ触れるのを避けるため。他のtodoVisual/appIcon同様の方針)。
+const SHEET_BIZPLAN_FILES = "事業計画_添付";
+const BIZPLAN_FILES_HDR = ["id", "itemId", "kind", "name", "mimeType", "fileId", "url", "uploadedAt"];
+const BIZPLAN_DRIVE_ROOT_FOLDER_NAME = "カモの小屋_事業計画_添付";
+
 const SHEET_SYNC_LOG = "Square同期ログ";
 const SYNC_LOG_HDR = ["timestamp", "type", "status", "message"];
 
@@ -376,6 +393,131 @@ function saveCalendarEvents_(events) {
   const sheet = getOrCreateSheet_(SHEET_CALENDAR_EVENTS, headers, null, [2]);
   clearDataRows_(sheet);
   writeRows_(sheet, objectsToRows_(headers, events || []), headers.length, [2]);
+}
+
+// ─────────────────────────────────────────
+//  事業計画(新規シート。セクション本体はsaveAll_で他シートと一緒に洗い替え保存、
+//  添付ファイルはDrive連携のため専用アクションで個別に読み書きする)
+// ─────────────────────────────────────────
+
+function getBizPlanItems_() {
+  const sheet = getOrCreateSheet_(SHEET_BIZPLAN_ITEMS, BIZPLAN_ITEMS_HDR, null, [1]);
+  return rowsToObjects_(BIZPLAN_ITEMS_HDR, getDataRows_(sheet)).map(function (it) {
+    return { id: String(it.id), title: it.title || "", url: it.url || "", memo: it.memo || "" };
+  });
+}
+
+function saveBizPlanItems_(items) {
+  const headers = BIZPLAN_ITEMS_HDR;
+  const sheet = getOrCreateSheet_(SHEET_BIZPLAN_ITEMS, headers, null, [1]);
+  clearDataRows_(sheet);
+  writeRows_(sheet, objectsToRows_(headers, items || []), headers.length, [1]);
+}
+
+function getBizPlanFiles_() {
+  const sheet = getOrCreateSheet_(SHEET_BIZPLAN_FILES, BIZPLAN_FILES_HDR, null, [1, 2, 6]);
+  return rowsToObjects_(BIZPLAN_FILES_HDR, getDataRows_(sheet)).map(function (f) {
+    return {
+      id: String(f.id),
+      itemId: String(f.itemId),
+      kind: f.kind || "attachment",
+      name: f.name || "",
+      mimeType: f.mimeType || "",
+      fileId: f.fileId || "",
+      url: f.url || "",
+      uploadedAt: f.uploadedAt || "",
+    };
+  });
+}
+
+function getBizPlanDriveRootFolder_() {
+  const folders = DriveApp.getFoldersByName(BIZPLAN_DRIVE_ROOT_FOLDER_NAME);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(BIZPLAN_DRIVE_ROOT_FOLDER_NAME);
+}
+
+function getBizPlanItemFolder_(itemId) {
+  const root = getBizPlanDriveRootFolder_();
+  const folders = root.getFoldersByName(String(itemId));
+  if (folders.hasNext()) return folders.next();
+  return root.createFolder(String(itemId));
+}
+
+// dataUrl("data:<mime>;base64,<...>")をDriveへ保存し、リンクを知っている全員が
+// 閲覧できるよう共有設定する(このアプリ自体がANYONE_ANONYMOUSで動く前提のため)
+function saveBizPlanBlobToDrive_(itemId, fileName, dataUrl) {
+  const match = String(dataUrl || "").match(/^data:([^;]+);base64,(.*)$/);
+  if (!match) throw new Error("不正なファイルデータです");
+  const contentType = match[1];
+  const bytes = Utilities.base64Decode(match[2]);
+  const blob = Utilities.newBlob(bytes, contentType, fileName || "file");
+  const folder = getBizPlanItemFolder_(itemId);
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  const isImage = /^image\//.test(contentType);
+  const url = isImage ? "https://drive.google.com/thumbnail?id=" + file.getId() + "&sz=w1000" : file.getUrl();
+  return { fileId: file.getId(), contentType: contentType, url: url };
+}
+
+function addBizPlanFile_(itemId, kind, fileName, mimeType, dataUrl) {
+  if (!itemId) throw new Error("itemIdが指定されていません");
+  const safeKind = kind === "thumbnail" ? "thumbnail" : "attachment";
+  const uploaded = saveBizPlanBlobToDrive_(itemId, fileName, dataUrl);
+  const sheet = getOrCreateSheet_(SHEET_BIZPLAN_FILES, BIZPLAN_FILES_HDR, null, [1, 2, 6]);
+
+  // サムネイルは1セクション1枚までのため、既存のサムネイルがあれば置き換える
+  if (safeKind === "thumbnail") {
+    getBizPlanFiles_()
+      .filter(function (f) { return f.itemId === String(itemId) && f.kind === "thumbnail"; })
+      .forEach(function (f) { removeBizPlanFile_(f.id); });
+  }
+
+  const record = {
+    id: Utilities.getUuid(),
+    itemId: String(itemId),
+    kind: safeKind,
+    name: fileName || mimeType || "file",
+    mimeType: mimeType || uploaded.contentType,
+    fileId: uploaded.fileId,
+    url: uploaded.url,
+    uploadedAt: new Date().toISOString(),
+  };
+  sheet.appendRow(objectsToRows_(BIZPLAN_FILES_HDR, [record])[0]);
+  return record;
+}
+
+function removeBizPlanFile_(fileRowId) {
+  const sheet = getOrCreateSheet_(SHEET_BIZPLAN_FILES, BIZPLAN_FILES_HDR, null, [1, 2, 6]);
+  const rows = getDataRows_(sheet);
+  const idx = rows.findIndex(function (r) { return String(r[0]) === String(fileRowId); });
+  if (idx < 0) return { removed: false };
+  const driveFileId = rows[idx][5];
+  if (driveFileId) {
+    try {
+      DriveApp.getFileById(driveFileId).setTrashed(true);
+    } catch (ex) {
+      // Drive上に既にファイルが無い場合でも、シート側の行削除は続行する
+    }
+  }
+  sheet.deleteRow(idx + 2);
+  return { removed: true };
+}
+
+// セクション削除: 配下の添付ファイル(Drive実体・シート行)とDriveフォルダ、
+// セクション自体の行をまとめて削除する
+function removeBizPlanItem_(itemId) {
+  getBizPlanFiles_()
+    .filter(function (f) { return f.itemId === String(itemId); })
+    .forEach(function (f) { removeBizPlanFile_(f.id); });
+  try {
+    const root = getBizPlanDriveRootFolder_();
+    const folders = root.getFoldersByName(String(itemId));
+    while (folders.hasNext()) folders.next().setTrashed(true);
+  } catch (ex) {
+    // フォルダが既に無い場合でも、セクション行の削除は続行する
+  }
+  saveBizPlanItems_(getBizPlanItems_().filter(function (it) { return it.id !== String(itemId); }));
+  return { removed: true };
 }
 
 // ─────────────────────────────────────────
@@ -1107,6 +1249,8 @@ function getAll_() {
   return {
     materials: getMaterials_(),
     calendarEvents: getCalendarEvents_(),
+    bizPlanItems: getBizPlanItems_(),
+    bizPlanFiles: getBizPlanFiles_(),
     products: getProducts_(),
     productAliases: getProductAliases_(),
     packagingExemptions: getPackagingExemptions_(),
@@ -1133,6 +1277,7 @@ function getAll_() {
 function saveAll_(body) {
   saveMaterials_(body.materials || []);
   saveCalendarEvents_(body.calendarEvents || []);
+  saveBizPlanItems_(body.bizPlanItems || []);
   saveProducts_(body.products || []);
   saveProductAliases_(body.productAliases || {});
   savePackagingExemptions_(body.packagingExemptions || []);

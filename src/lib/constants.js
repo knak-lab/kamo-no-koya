@@ -29,6 +29,7 @@ export const TABS = [
   { key: "management", label: "サマリ", group: 1 },
   { key: "calendar", label: "カレンダー", group: 1 },
   { key: "todo", label: "todo", group: 1 },
+  { key: "bizplan", label: "事業計画", group: 1 },
   { key: "input", label: "入力", group: 2 },
   { key: "master", label: "マスタ", group: 2 },
   { key: "settings", label: "設定", group: 3 },

@@ -66,4 +66,15 @@ export const gasApi = {
 
   // トップ左上・読み込み画面のアプリアイコン(PNG data URL限定)を保存。空文字で削除
   saveAppIcon: (dataUrl) => post({ action: "saveAppIcon", dataUrl }),
+
+  // 事業計画セクションへファイルを1件追加(kind: "thumbnail"|"attachment")。
+  // Google Driveへ保存され、ファイルのメタ情報(id/url等)が返る
+  addBizPlanFile: (itemId, kind, fileName, mimeType, dataUrl) =>
+    post({ action: "addBizPlanFile", itemId, kind, fileName, mimeType, dataUrl }),
+
+  // 事業計画の添付ファイルを1件削除(Drive上のファイルも削除される)
+  removeBizPlanFile: (fileId) => post({ action: "removeBizPlanFile", fileId }),
+
+  // 事業計画のセクションを1件削除(配下の添付ファイル・Driveフォルダも削除される)
+  removeBizPlanItem: (itemId) => post({ action: "removeBizPlanItem", itemId }),
 };

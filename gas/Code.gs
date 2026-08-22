@@ -9,7 +9,8 @@
 //    GET (それ以外)            → getAll_() の内容を返す
 //    POST → body.action で分岐 ("saveAll" / "saveTodos" / "syncCatalogFromSquare" /
 //        "recalcZeroCostSales" / "syncSalesFromSquare" / "syncProductsToBase" / "syncOrdersFromBase" /
-//        "saveTodoVisual" / "saveAppIcon")
+//        "saveTodoVisual" / "saveAppIcon" /
+//        "addBizPlanFile" / "removeBizPlanFile" / "removeBizPlanItem")
 //
 //  CORSはブラウザのプリフライト(OPTIONS)を回避するため、フロント側の
 //  fetchはContent-Type: text/plain;charset=utf-8 でJSON文字列を送る。
@@ -75,6 +76,12 @@ function doPost(e) {
         return ok_(saveTodoVisual_(body.dataUrl));
       case "saveAppIcon":
         return ok_(saveAppIcon_(body.dataUrl));
+      case "addBizPlanFile":
+        return ok_(addBizPlanFile_(body.itemId, body.kind, body.fileName, body.mimeType, body.dataUrl));
+      case "removeBizPlanFile":
+        return ok_(removeBizPlanFile_(body.fileId));
+      case "removeBizPlanItem":
+        return ok_(removeBizPlanItem_(body.itemId));
       default:
         return err_("Unknown action: " + body.action);
     }
