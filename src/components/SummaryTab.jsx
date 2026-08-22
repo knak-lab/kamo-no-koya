@@ -1,7 +1,7 @@
 import { useState } from "react";
 import DateAccordion from "./DateAccordion";
 import PLTab from "./PLTab";
-import { TrendingUp, TrendingDown, Wallet, Percent, Users, ChevronDown, ChevronRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Target, ChevronDown, ChevronRight } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -71,44 +71,27 @@ export default function SummaryTab({
   const kpiRows = latestYm ? dailyRows.filter((d) => d.yearMonth === latestYm) : [];
   const kpiSales = kpiRows.reduce((a, d) => a + d.売上_日次, 0);
   const kpiProfit = kpiRows.reduce((a, d) => a + d.営業利益_管理_日次, 0);
-  const kpiGross = kpiRows.reduce((a, d) => a + d.粗利_日次, 0);
-  const kpiCustomers = kpiRows.reduce((a, d) => a + d.客数, 0);
-  const kpiGrossRatio = kpiSales > 0 ? kpiGross / kpiSales : 0;
   const budget = latestYm ? mgmtBudgets?.[latestYm] : null;
-  const salesDiff = budget?.salesBudget ? kpiSales - budget.salesBudget : null;
-  const profitDiff = budget?.profitBudget ? kpiProfit - budget.profitBudget : null;
 
   return (
     <>
-      {/* 直近実績サマリ */}
+      {/* 今月実績サマリ */}
       {latestYm && (
         <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight">直近実績({latestYm})</h2>
+            <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight">今月実績({latestYm})</h2>
             <span className="text-[11px] text-stone-400">売上が発生している最新月</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatTile
-              icon={Wallet}
-              label="売上"
-              value={yen(kpiSales)}
-              sub={salesDiff !== null ? `予算比 ${salesDiff >= 0 ? "+" : ""}${yen(salesDiff)}` : undefined}
-              tone={salesDiff !== null ? (salesDiff >= 0 ? "good" : "bad") : undefined}
-            />
+            <StatTile icon={Target} label="目標売上" value={yen(budget?.salesBudget || 0)} />
+            <StatTile icon={Target} label="目標営業利益" value={yen(budget?.profitBudget || 0)} />
+            <StatTile icon={Wallet} label="売上" value={yen(kpiSales)} />
             <StatTile
               icon={kpiProfit >= 0 ? TrendingUp : TrendingDown}
-              label="営業利益(管理)"
+              label="営業利益"
               value={yen(kpiProfit)}
-              sub={profitDiff !== null ? `予算比 ${profitDiff >= 0 ? "+" : ""}${yen(profitDiff)}` : undefined}
               tone={kpiProfit >= 0 ? "good" : "bad"}
             />
-            <StatTile
-              icon={Percent}
-              label="粗利率"
-              value={`${(kpiGrossRatio * 100).toFixed(1)}%`}
-              sub={budget?.grossMarginRatio ? `目標 ${budget.grossMarginRatio.toFixed(1)}%` : undefined}
-            />
-            <StatTile icon={Users} label="客数" value={`${kpiCustomers}人`} />
           </div>
         </section>
       )}
