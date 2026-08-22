@@ -67,6 +67,7 @@ export default function MasterTab({
   renamingId,
   setRenamingId,
   setProducts,
+  toggleProductActive,
   materialForm,
   setMaterialForm,
   addMaterial,
@@ -197,7 +198,24 @@ export default function MasterTab({
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-stone-500">編集中の商品{productDraft.isNew ? "(新規)" : ""}</div>
-                <div className="text-sm font-semibold">{productDraft.name}</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-semibold">{productDraft.name}</div>
+                  {!productDraft.isNew &&
+                    (() => {
+                      const current = products.find((p) => p.id === productDraft.id);
+                      const active = current?.active !== false;
+                      return (
+                        <button
+                          onClick={() => toggleProductActive(productDraft.id)}
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-medium transition-colors ${
+                            active ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-stone-200 text-stone-500 hover:bg-stone-300"
+                          }`}
+                        >
+                          {active ? "有効" : "無効"}
+                        </button>
+                      );
+                    })()}
+                </div>
               </div>
               <div className="flex gap-2">
                 <button
@@ -548,16 +566,18 @@ export default function MasterTab({
                   <th className="py-1 pr-2">原価率</th>
                   <th className="py-1 pr-2">限界利益</th>
                   <th className="py-1 pr-2">限界利益率</th>
+                  <th className="py-1 pr-2">状態</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {products.map((p) => {
                   const c = productCosts[p.id];
+                  const active = p.active !== false;
                   return (
                     <tr
                       key={p.id}
-                      className={`border-b border-stone-100 cursor-pointer ${productDraft?.id === p.id ? "bg-amber-50" : ""}`}
+                      className={`border-b border-stone-100 cursor-pointer ${productDraft?.id === p.id ? "bg-amber-50" : ""} ${active ? "" : "opacity-50"}`}
                       onClick={() => requestOpenProduct(p)}
                     >
                       <td className="py-1 pr-2 font-medium">
@@ -608,6 +628,19 @@ export default function MasterTab({
                       <td className="py-1 pr-2 tabular-nums">{yen(c?.限界利益)}</td>
                       <td className={`py-1 pr-2 tabular-nums font-semibold ${c?.限界利益率 >= 0.5 ? "text-emerald-700" : "text-amber-700"}`}>
                         {pct(c?.限界利益率)}
+                      </td>
+                      <td className="py-1 pr-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleProductActive(p.id);
+                          }}
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-medium transition-colors ${
+                            active ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-stone-200 text-stone-500 hover:bg-stone-300"
+                          }`}
+                        >
+                          {active ? "有効" : "無効"}
+                        </button>
                       </td>
                       <td>
                         <button

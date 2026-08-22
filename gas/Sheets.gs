@@ -45,7 +45,7 @@ const SUBTASKS_FIELD_BY_HEADER = { "サブタスクID": "id", "親タスクID": 
 
 // ---- このアプリ専用の新規シート(実データとの衝突なし) ----
 const SHEET_PRODUCTS = "商品マスター_原価管理";
-const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion", "procedure", "baseItemId"];
+const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion", "procedure", "baseItemId", "active"];
 
 const SHEET_RECIPES = "レシピ"; // 実データ採用(20材料+5梱包材の横持ち形式)
 const RECIPE_MAX_INGREDIENTS = 20;
@@ -373,6 +373,8 @@ function getProducts_() {
       squareCatalogVersion: p.squareCatalogVersion || "",
       procedure: p.procedure || "",
       baseItemId: p.baseItemId || "",
+      // 列追加前の既存行は空欄のままなので、明示的にfalse(無効)でない限り有効として扱う
+      active: p.active === false || p.active === "FALSE" ? false : true,
     };
   });
 }

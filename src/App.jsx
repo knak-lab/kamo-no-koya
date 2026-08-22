@@ -561,6 +561,10 @@ export default function App() {
   const updateProduct = (id, field, value) => {
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: field === "price" ? Number(value) : value } : p)));
   };
+  // active未設定(undefined)は「有効」として扱う(既存商品の後方互換のため)
+  const toggleProductActive = (id) => {
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, active: p.active === false } : p)));
+  };
   const commitProductRename = (id) => {
     const product = products.find((p) => p.id === id);
     if (!product) return;
@@ -1374,6 +1378,7 @@ export default function App() {
             renamingId={renamingId}
             setRenamingId={setRenamingId}
             setProducts={setProducts}
+            toggleProductActive={toggleProductActive}
             materialForm={materialForm}
             setMaterialForm={setMaterialForm}
             addMaterial={addMaterial}
