@@ -29,7 +29,6 @@ import {
 import InputTab from "./components/InputTab";
 import CalendarTab from "./components/CalendarTab";
 import SummaryTab from "./components/SummaryTab";
-import PLTab from "./components/PLTab";
 import TodoTab from "./components/TodoTab";
 import MasterTab from "./components/MasterTab";
 
@@ -1024,17 +1023,19 @@ export default function App() {
           </div>
         </header>
 
-        <div className="flex gap-1 bg-stone-200/70 rounded-2xl p-1 w-fit flex-wrap backdrop-blur-sm">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
-                tab === t.key ? "bg-white shadow-sm shadow-stone-300/50 text-amber-800" : "text-stone-600 hover:text-stone-900"
-              }`}
-            >
-              {t.label}
-            </button>
+        <div className="flex items-center gap-1 bg-stone-200/70 rounded-2xl p-1 w-fit flex-wrap backdrop-blur-sm">
+          {TABS.map((t, i) => (
+            <div key={t.key} className="flex items-center gap-1">
+              {i > 0 && t.group !== TABS[i - 1].group && <span className="w-px self-stretch bg-stone-400/40 mx-0.5" />}
+              <button
+                onClick={() => setTab(t.key)}
+                className={`px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
+                  tab === t.key ? "bg-white shadow-sm shadow-stone-300/50 text-amber-800" : "text-stone-600 hover:text-stone-900"
+                }`}
+              >
+                {t.label}
+              </button>
+            </div>
           ))}
         </div>
 
@@ -1128,10 +1129,9 @@ export default function App() {
             sales={resolvedSales}
             productMap={productMap}
             mgmtBudgets={mgmtBudgets}
+            monthlyRows={monthlyRows}
           />
         )}
-
-        {tab === "financial" && <PLTab monthlyRows={monthlyRows} />}
 
         {tab === "todo" && (
           <TodoTab

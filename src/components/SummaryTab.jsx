@@ -1,5 +1,7 @@
+import { useState } from "react";
 import DateAccordion from "./DateAccordion";
-import { TrendingUp, TrendingDown, Wallet, Percent, Users } from "lucide-react";
+import PLTab from "./PLTab";
+import { TrendingUp, TrendingDown, Wallet, Percent, Users, ChevronDown, ChevronRight } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -57,7 +59,9 @@ export default function SummaryTab({
   productMap,
   allYearMonths,
   mgmtBudgets,
+  monthlyRows,
 }) {
+  const [plOpen, setPlOpen] = useState(false);
   const isMonth = summaryPeriod === "month";
   const chartData = isMonth ? monthlyChartData : dailyChartData;
   const showTarget = isMonth && summaryChannel === "all";
@@ -423,6 +427,22 @@ export default function SummaryTab({
             </div>
           )}
         />
+      </section>
+
+      {/* PL(実際の入出金ベース。標準原価ではなく実際の仕入額を使う詳細な集計のため、デフォルト非表示) */}
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 overflow-hidden">
+        <button
+          onClick={() => setPlOpen((v) => !v)}
+          className="w-full flex items-center gap-1.5 px-5 py-4 text-left hover:bg-stone-50"
+        >
+          {plOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight">PL(損益計算書)</h2>
+        </button>
+        {plOpen && (
+          <div className="px-5 pb-5">
+            <PLTab monthlyRows={monthlyRows} />
+          </div>
+        )}
       </section>
     </>
   );
