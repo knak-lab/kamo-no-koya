@@ -22,15 +22,16 @@ export const TODO_CATEGORIES = ["たくらみ", "みせづくり", "汗かき", 
 export const TODO_STATUSES = ["未着手", "完了"];
 export const STAFF_OPTIONS = ["さっとん", "ひさし", "あっこ", "かける", "りょーすけ", "もえ"];
 
-// 前半(サマリ・カレンダー・TODO)は日々の確認・記録、後半(入力・マスタ)は
-// データの登録・編集という性格の違いがあるため、タブバー上で見た目のグループを分ける。
-// groupの値が変わる箇所の直前に区切り線を入れる(App.jsx参照)。
+// 前半(サマリ・カレンダー・todo)は日々の確認・記録、中盤(入力・マスタ)は
+// データの登録・編集、設定は管理者向けという性格の違いがあるため、サイドバー上で
+// 見た目のグループを分ける。groupの値が変わる箇所の直前に区切り線を入れる(Sidebar.jsx参照)。
 export const TABS = [
   { key: "management", label: "サマリ", group: 1 },
   { key: "calendar", label: "カレンダー", group: 1 },
   { key: "todo", label: "todo", group: 1 },
   { key: "input", label: "入力", group: 2 },
   { key: "master", label: "マスタ", group: 2 },
+  { key: "settings", label: "設定", group: 3 },
 ];
 
 export const METRIC_LABEL = { sales: "売上", profit: "営業利益" };

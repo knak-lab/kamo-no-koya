@@ -32,6 +32,7 @@ import CalendarTab from "./components/CalendarTab";
 import SummaryTab from "./components/SummaryTab";
 import TodoTab from "./components/TodoTab";
 import MasterTab from "./components/MasterTab";
+import SettingsTab from "./components/SettingsTab";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -244,6 +245,10 @@ export default function App() {
   // ========== カレンダー(出店計画・イベント予定) ==========
   const [calendarEvents, setCalendarEvents] = useState([]); // [{id, date, title, memo}]
 
+  // ========== 設定(管理者向け。todoタブのビジュアル画像など) ==========
+  const [todoVisual, setTodoVisual] = useState(""); // PNG data URL または空文字
+  const [todoVisualSaving, setTodoVisualSaving] = useState(false);
+
   // ========== 初回ロード ==========
   useEffect(() => {
     let cancelled = false;
@@ -274,6 +279,7 @@ export default function App() {
         setTodos(data.todos || []);
         setSubtasks(data.subtasks || []);
         setSquareSyncFromSquare(data.settings?.squareSyncFromSquare ?? true);
+        setTodoVisual(data.todoVisual || "");
         setSales(data.sales || []);
         setSquareSyncLog(data.squareSyncLog || []);
         hasLoadedRef.current = true;
@@ -994,6 +1000,17 @@ export default function App() {
     }
   };
 
+  // --- ハンドラ: 設定(todoビジュアル画像) ---
+  const saveTodoVisual = async (dataUrl) => {
+    setTodoVisualSaving(true);
+    try {
+      const res = await gasApi.saveTodoVisual(dataUrl);
+      setTodoVisual(res.todoVisual || "");
+    } finally {
+      setTodoVisualSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-amber-50 via-stone-50 to-stone-50 flex flex-col items-center justify-center gap-4 text-stone-500 text-sm overflow-hidden">
@@ -1152,7 +1169,12 @@ export default function App() {
             setShowSnoozed={setShowSnoozed}
             showCompletedTodos={showCompletedTodos}
             setShowCompletedTodos={setShowCompletedTodos}
+            todoVisual={todoVisual}
           />
+        )}
+
+        {tab === "settings" && (
+          <SettingsTab todoVisual={todoVisual} saveTodoVisual={saveTodoVisual} saving={todoVisualSaving} />
         )}
 
         {tab === "master" && (

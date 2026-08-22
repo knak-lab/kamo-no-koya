@@ -40,6 +40,7 @@ export default function TodoTab({
   setShowSnoozed,
   showCompletedTodos,
   setShowCompletedTodos,
+  todoVisual,
 }) {
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [subtaskModalTaskId, setSubtaskModalTaskId] = useState(null);
@@ -77,6 +78,12 @@ export default function TodoTab({
         </button>
         </div>
       </div>
+
+      {todoVisual && (
+        <div className="flex justify-center">
+          <img src={todoVisual} alt="" className="max-h-40 rounded-2xl shadow-sm shadow-stone-300/30" />
+        </div>
+      )}
 
       <div className="space-y-6">
         {todos.length === 0 && (

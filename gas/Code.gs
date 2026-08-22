@@ -8,7 +8,8 @@
 //        シートの作成・変更は一切行わない)
 //    GET (それ以外)            → getAll_() の内容を返す
 //    POST → body.action で分岐 ("saveAll" / "saveTodos" / "syncCatalogFromSquare" /
-//        "recalcZeroCostSales" / "syncSalesFromSquare" / "syncProductsToBase" / "syncOrdersFromBase")
+//        "recalcZeroCostSales" / "syncSalesFromSquare" / "syncProductsToBase" / "syncOrdersFromBase" /
+//        "saveTodoVisual")
 //
 //  CORSはブラウザのプリフライト(OPTIONS)を回避するため、フロント側の
 //  fetchはContent-Type: text/plain;charset=utf-8 でJSON文字列を送る。
@@ -70,6 +71,8 @@ function doPost(e) {
         return ok_(syncProductsToBase());
       case "syncOrdersFromBase":
         return ok_(syncOrdersFromBase());
+      case "saveTodoVisual":
+        return ok_(saveTodoVisual_(body.dataUrl));
       default:
         return err_("Unknown action: " + body.action);
     }
