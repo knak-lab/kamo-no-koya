@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, PlusCircle, Loader2 } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, PlusCircle, Loader2, ClipboardList } from "lucide-react";
 import { yen, pct, RAW, PACK, UNITS } from "../lib/constants";
 
 const SUB_TABS = [
@@ -13,7 +13,7 @@ const SUB_TABS = [
 // 商品名・区分・価格の3項目だけをまとめて変更する(材料・包材の編集は行の
 // クリックで開く既存の編集フォームで行う)。keyにproduct.idを渡し、対象商品が
 // 変わるたびフォームstateをリセットする。
-function ProductQuickEditModal({ product, onSave, onCancel }) {
+function ProductQuickEditModal({ product, onSave, onCancel, onEditRecipe }) {
   const [name, setName] = useState(product.name);
   const [kind, setKind] = useState(product.kind || "single");
   const [price, setPrice] = useState(product.price);
@@ -61,22 +61,31 @@ function ProductQuickEditModal({ product, onSave, onCancel }) {
             />
           </div>
         </div>
-        <div className="flex justify-end gap-2 mt-4">
+        <div className="flex items-center justify-between mt-4">
           <button
-            onClick={onCancel}
-            className="px-3.5 py-1.5 text-sm rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-stone-400 transition-colors"
+            type="button"
+            onClick={onEditRecipe}
+            className="flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
           >
-            キャンセル
+            <ClipboardList size={13} /> レシピ・材料を編集
           </button>
-          <button
-            onClick={() => {
-              if (!name.trim()) return;
-              onSave({ name, kind, price });
-            }}
-            className="px-3.5 py-1.5 text-sm rounded-lg bg-amber-700 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
-          >
-            保存
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onCancel}
+              className="px-3.5 py-1.5 text-sm rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-stone-400 transition-colors"
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={() => {
+                if (!name.trim()) return;
+                onSave({ name, kind, price });
+              }}
+              className="px-3.5 py-1.5 text-sm rounded-lg bg-amber-700 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
+            >
+              保存
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1339,6 +1348,15 @@ export default function MasterTab({
           onSave={(fields) => {
             updateProductBasicFields(quickEditProduct.id, fields);
             setQuickEditId(null);
+          }}
+          onEditRecipe={() => {
+            setQuickEditId(null);
+            requestOpenProduct(quickEditProduct);
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                document.getElementById("product-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              });
+            });
           }}
         />
       )}
