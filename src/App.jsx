@@ -164,7 +164,6 @@ export default function App() {
   const [productListOpen, setProductListOpen] = useState(false);
   const [productQuery, setProductQuery] = useState("");
   const [comboOpen, setComboOpen] = useState(false);
-  const [renamingId, setRenamingId] = useState(null);
   const [editingRatio, setEditingRatio] = useState(false);
   const [costRatioDraft, setCostRatioDraft] = useState("");
   const [kindMode, setKindMode] = useState("single"); // 検索・新規登録の対象("single"|"set")
@@ -497,7 +496,7 @@ export default function App() {
 
   // ========== ハンドラ: 材料マスタ ==========
   // 材料・商品は既存データ(原材料・資材マスタ/レシピ/セット内訳マスタ)が名前をキーにしているため、
-  // id = name として扱う。名前の変更は commitMaterialRename/commitProductRename で
+  // id = name として扱う。名前の変更は commitMaterialRename/updateProductBasicFields で
   // レシピ・セット内訳側の参照も連動して書き換える(id自体は編集中は変えず、確定時にのみ変更する)。
   const addMaterial = () => {
     const trimmed = materialForm.name.trim();
@@ -558,35 +557,38 @@ export default function App() {
   };
 
   // ========== ハンドラ: 商品・レシピ ==========
-  const updateProduct = (id, field, value) => {
-    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: field === "price" ? Number(value) : value } : p)));
-  };
   // active未設定(undefined)は「有効」として扱う(既存商品の後方互換のため)
   const toggleProductActive = (id) => {
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, active: p.active === false } : p)));
   };
-  const commitProductRename = (id) => {
-    const product = products.find((p) => p.id === id);
-    if (!product) return;
-    const trimmed = (product.name || "").trim();
-    if (!trimmed || trimmed === id) return;
-    if (products.some((p) => p.id !== id && p.id === trimmed)) return; // 既存の別商品と同名なら変更しない
-    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, id: trimmed, name: trimmed } : p)));
-    setRecipes((prev) => {
-      if (!(id in prev)) return prev;
-      const next = { ...prev };
-      next[trimmed] = next[id];
-      delete next[id];
-      return next;
-    });
-    setSetBreakdowns((prev) => {
-      const next = {};
-      Object.keys(prev).forEach((pid) => {
-        const rows = prev[pid].map((row) => (row.kind === "component" && row.refId === id ? { ...row, refId: trimmed } : row));
-        next[pid === id ? trimmed : pid] = rows;
+
+  // 商品マスタ一覧の「編集」ボタン(クイック編集モーダル)から、商品名・区分・価格をまとめて
+  // 確定する。id=商品名のため、名前変更時はレシピ・セット内訳側の参照付け替えも合わせて行う。
+  const updateProductBasicFields = (id, { name, kind, price }) => {
+    const trimmed = (name || "").trim();
+    if (!trimmed) return;
+    const nameTaken = trimmed !== id && products.some((p) => p.id !== id && p.id === trimmed);
+    const newId = nameTaken ? id : trimmed;
+
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, id: newId, name: newId === id ? p.name : trimmed, kind, price: Number(price) || 0 } : p)));
+
+    if (newId !== id) {
+      setRecipes((prev) => {
+        if (!(id in prev)) return prev;
+        const next = { ...prev };
+        next[newId] = next[id];
+        delete next[id];
+        return next;
       });
-      return next;
-    });
+      setSetBreakdowns((prev) => {
+        const next = {};
+        Object.keys(prev).forEach((pid) => {
+          const rows = prev[pid].map((row) => (row.kind === "component" && row.refId === id ? { ...row, refId: newId } : row));
+          next[pid === id ? newId : pid] = rows;
+        });
+        return next;
+      });
+    }
   };
 
   // --- 商品編集ドラフト(検索/新規登録→編集画面→「保存」で初めて確定するまでの一時編集state) ---
@@ -1348,8 +1350,6 @@ export default function App() {
             setComboOpen={setComboOpen}
             comboMatches={comboMatches}
             exactMatchExists={exactMatchExists}
-            updateProduct={updateProduct}
-            commitProductRename={commitProductRename}
             costRatioDraft={costRatioDraft}
             handleCostRatioChange={handleCostRatioChange}
             setEditingRatio={setEditingRatio}
@@ -1375,8 +1375,7 @@ export default function App() {
             setPackagingExemptListOpen={setPackagingExemptListOpen}
             productListOpen={productListOpen}
             setProductListOpen={setProductListOpen}
-            renamingId={renamingId}
-            setRenamingId={setRenamingId}
+            updateProductBasicFields={updateProductBasicFields}
             setProducts={setProducts}
             toggleProductActive={toggleProductActive}
             materialForm={materialForm}

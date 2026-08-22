@@ -9,6 +9,80 @@ const SUB_TABS = [
   { key: "data", label: "データ整備" },
 ];
 
+// 商品マスタ一覧の「編集」ボタンから開く軽量モーダル。レシピ等は触らず
+// 商品名・区分・価格の3項目だけをまとめて変更する(材料・包材の編集は行の
+// クリックで開く既存の編集フォームで行う)。keyにproduct.idを渡し、対象商品が
+// 変わるたびフォームstateをリセットする。
+function ProductQuickEditModal({ product, onSave, onCancel }) {
+  const [name, setName] = useState(product.name);
+  const [kind, setKind] = useState(product.kind || "single");
+  const [price, setPrice] = useState(product.price);
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-5">
+        <h3 className="font-semibold text-sm mb-3">商品を編集</h3>
+        <div className="space-y-3 text-xs">
+          <div>
+            <label className="block text-stone-500 mb-1">商品名</label>
+            <input
+              autoFocus
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-stone-500 mb-1">区分</label>
+            <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit">
+              {[
+                { value: "single", label: "単品" },
+                { value: "set", label: "セット" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setKind(opt.value)}
+                  className={`px-3 py-1 rounded ${kind === opt.value ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-stone-500 mb-1">価格(円)</label>
+            <input
+              type="number"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-28"
+              value={price}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <button
+            onClick={onCancel}
+            className="px-3.5 py-1.5 text-sm rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-50 hover:border-stone-400 transition-colors"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={() => {
+              if (!name.trim()) return;
+              onSave({ name, kind, price });
+            }}
+            className="px-3.5 py-1.5 text-sm rounded-lg bg-amber-700 text-white shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
+          >
+            保存
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MasterTab({
   subTab,
   setSubTab,
@@ -37,8 +111,6 @@ export default function MasterTab({
   setComboOpen,
   comboMatches,
   exactMatchExists,
-  updateProduct,
-  commitProductRename,
   costRatioDraft,
   handleCostRatioChange,
   setEditingRatio,
@@ -64,8 +136,7 @@ export default function MasterTab({
   setPackagingExemptListOpen,
   productListOpen,
   setProductListOpen,
-  renamingId,
-  setRenamingId,
+  updateProductBasicFields,
   setProducts,
   toggleProductActive,
   materialForm,
@@ -106,6 +177,8 @@ export default function MasterTab({
   runRecalcZeroCostSales,
 }) {
   const [procedureOpen, setProcedureOpen] = useState(false);
+  const [quickEditId, setQuickEditId] = useState(null);
+  const quickEditProduct = products.find((p) => p.id === quickEditId);
   return (
     <>
       <div className="flex gap-1 bg-stone-200/70 rounded-2xl p-1 w-fit flex-wrap backdrop-blur-sm">
@@ -582,33 +655,13 @@ export default function MasterTab({
                     >
                       <td className="py-1 pr-2 font-medium">
                         <div className="flex items-center gap-1">
-                          {renamingId === p.id ? (
-                            <input
-                              autoFocus
-                              className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow text-xs w-28"
-                              value={p.name}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => updateProduct(p.id, "name", e.target.value)}
-                              onBlur={() => {
-                                commitProductRename(p.id);
-                                setRenamingId(null);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  commitProductRename(p.id);
-                                  setRenamingId(null);
-                                }
-                              }}
-                            />
-                          ) : (
-                            <span>{p.name}</span>
-                          )}
+                          <span>{p.name}</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setRenamingId(renamingId === p.id ? null : p.id);
+                              setQuickEditId(p.id);
                             }}
-                            title="商品名を変更"
+                            title="商品名・区分・価格を編集"
                           >
                             <Pencil size={11} className="text-stone-300 hover:text-amber-700" />
                           </button>
@@ -1275,6 +1328,19 @@ export default function MasterTab({
             </div>
           </div>
         </div>
+      )}
+
+      {/* 商品マスタ一覧の「編集」ボタンから開くクイック編集モーダル(商品名・区分・価格) */}
+      {quickEditProduct && (
+        <ProductQuickEditModal
+          key={quickEditProduct.id}
+          product={quickEditProduct}
+          onCancel={() => setQuickEditId(null)}
+          onSave={(fields) => {
+            updateProductBasicFields(quickEditProduct.id, fields);
+            setQuickEditId(null);
+          }}
+        />
       )}
 
       {/* 商品編集の未保存確認ダイアログ */}
