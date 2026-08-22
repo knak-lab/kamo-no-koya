@@ -50,6 +50,8 @@ export default function InputTab({
   packagingExemptions,
   togglePackagingExempt,
 }) {
+  const [openChecks, setOpenChecks] = useState({}); // { [checkLabel]: boolean } ヌケモレチェック各項目の開閉(デフォルト全て閉じる)
+  const toggleCheck = (label) => setOpenChecks((prev) => ({ ...prev, [label]: !prev[label] }));
   const [unknownSaleDrafts, setUnknownSaleDrafts] = useState({}); // { [saleId]: { productId, qty } }
   const getUnknownSaleDraft = (item) =>
     unknownSaleDrafts[item.id] || { productId: "", qty: item.qty };
@@ -566,8 +568,15 @@ export default function InputTab({
           {/* 売上明細の商品が商品マスタに無い(不明)。同じ商品名でも日によって実商品が違いうるため、
               名前で一括統合せず1行(日付)ごとに商品・数量を指定して解決する */}
           <div className="border border-stone-200/80 rounded-xl p-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">売上明細の商品が商品マスタに無い(不明)</span>
+            <button
+              onClick={() => dataGaps.unknownSales.length > 0 && toggleCheck("unknownSales")}
+              className="w-full flex items-center justify-between text-sm"
+            >
+              <span className="flex items-center gap-1 font-medium">
+                {dataGaps.unknownSales.length > 0 &&
+                  (openChecks.unknownSales ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
+                売上明細の商品が商品マスタに無い(不明)
+              </span>
               <span
                 className={`text-xs font-semibold rounded-full px-2 py-0.5 ${
                   dataGaps.unknownSales.length ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
@@ -575,8 +584,8 @@ export default function InputTab({
               >
                 {dataGaps.unknownSales.length ? `${dataGaps.unknownSales.length}件` : "問題なし"}
               </span>
-            </div>
-            {dataGaps.unknownSales.length > 0 && (
+            </button>
+            {dataGaps.unknownSales.length > 0 && openChecks.unknownSales && (
               <div className="mt-1.5 space-y-1">
                 {dataGaps.unknownSales.slice(0, 30).map((item) => {
                   const draft = getUnknownSaleDraft(item);
@@ -645,8 +654,14 @@ export default function InputTab({
             { label: "材料・包材マスタで仕入単価が0円", items: dataGaps.zeroPriceMaterials, onClick: onEditMaterial },
           ].map((check) => (
             <div key={check.label} className="border border-stone-200/80 rounded-xl p-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">{check.label}</span>
+              <button
+                onClick={() => check.items.length > 0 && toggleCheck(check.label)}
+                className="w-full flex items-center justify-between text-sm"
+              >
+                <span className="flex items-center gap-1 font-medium">
+                  {check.items.length > 0 && (openChecks[check.label] ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
+                  {check.label}
+                </span>
                 <span
                   className={`text-xs font-semibold rounded-full px-2 py-0.5 ${
                     check.items.length ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
@@ -654,8 +669,8 @@ export default function InputTab({
                 >
                   {check.items.length ? `${check.items.length}件` : "問題なし"}
                 </span>
-              </div>
-              {check.items.length > 0 && (
+              </button>
+              {check.items.length > 0 && openChecks[check.label] && (
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {check.items.slice(0, 30).map((item, i) => {
                     const disabled = check.disabled && check.disabled(item);
