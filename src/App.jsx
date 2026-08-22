@@ -253,6 +253,9 @@ export default function App() {
   // Drive連携の専用アクション(addBizPlanFile/removeBizPlanFile)で個別に増減する
   const [bizPlanFiles, setBizPlanFiles] = useState([]); // [{id, itemId, kind, name, mimeType, url, uploadedAt}]
 
+  // ========== サマリタブ「今月実績」上の自動切り替え画像(設定タブから登録) ==========
+  const [summaryImages, setSummaryImages] = useState([]); // [{id, name, url, uploadedAt}]
+
   // ========== 設定(管理者向け。todoタブのビジュアル画像・アプリアイコンなど) ==========
   const [todoVisual, setTodoVisual] = useState(""); // PNG/JPEG data URL または空文字
   const [todoVisualSaving, setTodoVisualSaving] = useState(false);
@@ -294,6 +297,7 @@ export default function App() {
         setCalendarEvents(data.calendarEvents || []);
         setBizPlanItems(data.bizPlanItems || []);
         setBizPlanFiles(data.bizPlanFiles || []);
+        setSummaryImages(data.summaryImages || []);
         setProducts(data.products || []);
         setProductAliases(data.productAliases || {});
         setSaleOverrides(data.saleOverrides || {});
@@ -970,6 +974,17 @@ export default function App() {
     setBizPlanFiles((prev) => prev.filter((f) => f.id !== fileId));
   };
 
+  // --- ハンドラ: サマリ画像(今月実績の上のカルーセル。Driveへ即時保存) ---
+  const addSummaryImage = async (fileName, dataUrl) => {
+    const record = await gasApi.addSummaryImage(fileName, dataUrl);
+    setSummaryImages((prev) => [...prev, record]);
+    return record;
+  };
+  const removeSummaryImage = async (imageId) => {
+    await gasApi.removeSummaryImage(imageId);
+    setSummaryImages((prev) => prev.filter((img) => img.id !== imageId));
+  };
+
   const setMgmtBudgetField = (ym, field, value) =>
     setMgmtBudgets((prev) => ({
       ...prev,
@@ -1213,6 +1228,7 @@ export default function App() {
 
         {tab === "management" && (
           <SummaryTab
+            images={summaryImages}
             summaryPeriod={summaryPeriod}
             setSummaryPeriod={setSummaryPeriod}
             summaryMetric={summaryMetric}
@@ -1293,6 +1309,9 @@ export default function App() {
             appIconSaving={appIconSaving}
             onlineShopUrl={onlineShopUrl}
             setOnlineShopUrl={setOnlineShopUrl}
+            summaryImages={summaryImages}
+            addSummaryImage={addSummaryImage}
+            removeSummaryImage={removeSummaryImage}
           />
         )}
 

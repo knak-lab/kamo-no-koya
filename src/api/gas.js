@@ -77,4 +77,10 @@ export const gasApi = {
 
   // 事業計画のセクションを1件削除(配下の添付ファイル・Driveフォルダも削除される)
   removeBizPlanItem: (itemId) => post({ action: "removeBizPlanItem", itemId }),
+
+  // サマリタブ「今月実績」の上に表示する画像を1件追加
+  addSummaryImage: (fileName, dataUrl) => post({ action: "addSummaryImage", fileName, dataUrl }),
+
+  // サマリ画像を1件削除
+  removeSummaryImage: (imageId) => post({ action: "removeSummaryImage", imageId }),
 };

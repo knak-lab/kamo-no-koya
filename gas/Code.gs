@@ -10,7 +10,8 @@
 //    POST → body.action で分岐 ("saveAll" / "saveTodos" / "syncCatalogFromSquare" /
 //        "recalcZeroCostSales" / "syncSalesFromSquare" / "syncProductsToBase" / "syncOrdersFromBase" /
 //        "saveTodoVisual" / "saveAppIcon" /
-//        "addBizPlanFile" / "removeBizPlanFile" / "removeBizPlanItem")
+//        "addBizPlanFile" / "removeBizPlanFile" / "removeBizPlanItem" /
+//        "addSummaryImage" / "removeSummaryImage")
 //
 //  CORSはブラウザのプリフライト(OPTIONS)を回避するため、フロント側の
 //  fetchはContent-Type: text/plain;charset=utf-8 でJSON文字列を送る。
@@ -82,6 +83,10 @@ function doPost(e) {
         return ok_(removeBizPlanFile_(body.fileId));
       case "removeBizPlanItem":
         return ok_(removeBizPlanItem_(body.itemId));
+      case "addSummaryImage":
+        return ok_(addSummaryImage_(body.fileName, body.dataUrl));
+      case "removeSummaryImage":
+        return ok_(removeSummaryImage_(body.imageId));
       default:
         return err_("Unknown action: " + body.action);
     }

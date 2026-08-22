@@ -1,4 +1,4 @@
-import { useState, Fragment } from "react";
+import { useEffect, useState, Fragment } from "react";
 import DateAccordion from "./DateAccordion";
 import PLTab from "./PLTab";
 import { TrendingUp, TrendingDown, Wallet, Target, Percent, ChevronDown, ChevronRight } from "lucide-react";
@@ -18,6 +18,47 @@ import {
 } from "recharts";
 import { yen, METRIC_LABEL, COLOR_POSITIVE, COLOR_NEGATIVE } from "../lib/constants";
 
+// 設定タブで登録した画像を、縦の占有を小さく保ったまま自動でディゾルブ(クロスフェード)
+// 切り替えする。1枚ならフェードなしで静止表示、0枚なら何も描画しない。
+function ImageCarousel({ images, intervalMs = 4500 }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (images.length <= 1) return undefined;
+    const timer = setInterval(() => setIndex((i) => (i + 1) % images.length), intervalMs);
+    return () => clearInterval(timer);
+  }, [images.length, intervalMs]);
+
+  if (images.length === 0) return null;
+
+  return (
+    <div className="relative w-full h-28 sm:h-32 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200/70 shadow-sm shadow-stone-300/30">
+      {images.map((img, i) => (
+        <img
+          key={img.id}
+          src={img.url}
+          alt=""
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+            i === index ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ))}
+      {images.length > 1 && (
+        <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex gap-1">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIndex(i)}
+              aria-label={`画像${i + 1}を表示`}
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${i === index ? "bg-white" : "bg-white/50"}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StatTile({ icon: Icon, label, value, sub, tone }) {
   const toneClass = tone === "bad" ? "text-red-600" : tone === "good" ? "text-emerald-700" : "text-stone-900";
   return (
@@ -33,6 +74,7 @@ function StatTile({ icon: Icon, label, value, sub, tone }) {
 }
 
 export default function SummaryTab({
+  images,
   summaryPeriod,
   setSummaryPeriod,
   summaryMetric,
@@ -79,6 +121,8 @@ export default function SummaryTab({
 
   return (
     <>
+      <ImageCarousel images={images} />
+
       {/* 今月実績サマリ */}
       {latestYm && (
         <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">

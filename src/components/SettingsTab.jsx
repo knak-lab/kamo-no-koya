@@ -104,6 +104,89 @@ function ImageSettingCard({ title, description, currentValue, onSave, saving, al
   );
 }
 
+// サマリタブ「今月実績」の上に表示する複数枚の画像(自動でディゾルブ切り替え)。
+// 1枚ずつではなく複数選択・複数登録を前提とするため、単一画像用のImageSettingCardとは別に用意する。
+function SummaryImagesCard({ images, addSummaryImage, removeSummaryImage }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const maxDimension = 640; // サマリ上部で小さく表示するだけのため、大きな解像度は持たせない
+
+  const handleFiles = async (fileList) => {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
+    setError("");
+    setUploading(true);
+    try {
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) {
+          setError("画像ファイルを選んでください。");
+          continue;
+        }
+        const dataUrl = await resizeToDataUrl(file, maxDimension);
+        await addSummaryImage(file.name, dataUrl);
+      }
+    } catch (err) {
+      setError(String(err.message || err));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemove = async (id) => {
+    if (!window.confirm("この画像を削除しますか？")) return;
+    setError("");
+    try {
+      await removeSummaryImage(id);
+    } catch (err) {
+      setError(String(err.message || err));
+    }
+  };
+
+  return (
+    <div className="border border-stone-200/80 rounded-xl p-4">
+      <h3 className="font-medium text-sm text-stone-800 mb-1">サマリページの画像(自動切り替え)</h3>
+      <p className="text-xs text-stone-500 mb-3">
+        サマリタブの「今月実績」の上に、小さく複数枚が自動で切り替わって表示されます。複数ファイルをまとめて選んで追加できます。長辺640px程度に自動で縮小されます。
+      </p>
+
+      {images.length > 0 ? (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {images.map((img) => (
+            <div key={img.id} className="relative w-16 h-16">
+              <img src={img.url} alt="" className="w-16 h-16 rounded-lg object-cover border border-stone-200" />
+              <button
+                onClick={() => handleRemove(img.id)}
+                className="absolute -top-1.5 -right-1.5 bg-white border border-stone-200 rounded-full p-0.5 text-stone-400 hover:text-red-600 shadow-sm"
+              >
+                <Trash2 size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-stone-400 mb-3">現在、画像は登録されていません。</p>
+      )}
+
+      {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
+
+      <label className="flex items-center gap-1 text-sm border border-stone-300 rounded-lg px-3.5 py-1.5 cursor-pointer hover:bg-stone-50 transition-colors w-fit">
+        {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+        画像を追加
+        <input
+          type="file"
+          accept="image/png,image/jpeg"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            handleFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
+      </label>
+    </div>
+  );
+}
+
 export default function SettingsTab({
   todoVisual,
   saveTodoVisual,
@@ -113,6 +196,9 @@ export default function SettingsTab({
   appIconSaving,
   onlineShopUrl,
   setOnlineShopUrl,
+  summaryImages,
+  addSummaryImage,
+  removeSummaryImage,
 }) {
   return (
     <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
@@ -140,6 +226,8 @@ export default function SettingsTab({
           allowJpeg={false}
           maxDimension={512}
         />
+
+        <SummaryImagesCard images={summaryImages} addSummaryImage={addSummaryImage} removeSummaryImage={removeSummaryImage} />
 
         <div className="border border-stone-200/80 rounded-xl p-4">
           <h3 className="font-medium text-sm text-stone-800 mb-1">オンラインショップのURL</h3>

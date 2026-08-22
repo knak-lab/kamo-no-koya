@@ -107,6 +107,13 @@ const SHEET_BIZPLAN_FILES = "事業計画_添付";
 const BIZPLAN_FILES_HDR = ["id", "itemId", "kind", "name", "mimeType", "fileId", "url", "uploadedAt"];
 const BIZPLAN_DRIVE_ROOT_FOLDER_NAME = "カモの小屋_事業計画_添付";
 
+// サマリタブ「今月実績」の上に表示する、自動で切り替わる小さな画像(カルーセル/ディゾルブ)。
+// 実ファイルはGoogle Driveに保存し、このシートには参照のみを持つ(方針はbizPlanFilesと同じ)。
+// 表示順はこのシートの行順(=登録順)をそのまま使う。
+const SHEET_SUMMARY_IMAGES = "サマリ画像";
+const SUMMARY_IMAGES_HDR = ["id", "name", "fileId", "url", "uploadedAt"];
+const SUMMARY_IMAGES_DRIVE_FOLDER_NAME = "カモの小屋_サマリ画像";
+
 const SHEET_SYNC_LOG = "Square同期ログ";
 const SYNC_LOG_HDR = ["timestamp", "type", "status", "message"];
 
@@ -443,20 +450,24 @@ function getBizPlanItemFolder_(itemId) {
   return root.createFolder(String(itemId));
 }
 
-// dataUrl("data:<mime>;base64,<...>")をDriveへ保存し、リンクを知っている全員が
-// 閲覧できるよう共有設定する(このアプリ自体がANYONE_ANONYMOUSで動く前提のため)
-function saveBizPlanBlobToDrive_(itemId, fileName, dataUrl) {
+// dataUrl("data:<mime>;base64,<...>")を指定フォルダ配下へDriveファイルとして保存し、
+// リンクを知っている全員が閲覧できるよう共有設定する(このアプリ自体がANYONE_ANONYMOUSで
+// 動く前提のため)。事業計画の添付・サマリ画像など、Drive保存が必要な機能全体で共用する。
+function saveDataUrlToDriveFile_(folder, fileName, dataUrl) {
   const match = String(dataUrl || "").match(/^data:([^;]+);base64,(.*)$/);
   if (!match) throw new Error("不正なファイルデータです");
   const contentType = match[1];
   const bytes = Utilities.base64Decode(match[2]);
   const blob = Utilities.newBlob(bytes, contentType, fileName || "file");
-  const folder = getBizPlanItemFolder_(itemId);
   const file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   const isImage = /^image\//.test(contentType);
   const url = isImage ? "https://drive.google.com/thumbnail?id=" + file.getId() + "&sz=w1000" : file.getUrl();
   return { fileId: file.getId(), contentType: contentType, url: url };
+}
+
+function saveBizPlanBlobToDrive_(itemId, fileName, dataUrl) {
+  return saveDataUrlToDriveFile_(getBizPlanItemFolder_(itemId), fileName, dataUrl);
 }
 
 function addBizPlanFile_(itemId, kind, fileName, mimeType, dataUrl) {
@@ -517,6 +528,54 @@ function removeBizPlanItem_(itemId) {
     // フォルダが既に無い場合でも、セクション行の削除は続行する
   }
   saveBizPlanItems_(getBizPlanItems_().filter(function (it) { return it.id !== String(itemId); }));
+  return { removed: true };
+}
+
+// ─────────────────────────────────────────
+//  サマリ画像(新規シート。今月実績の上に表示する自動切り替え画像)
+// ─────────────────────────────────────────
+
+function getSummaryImagesDriveFolder_() {
+  const folders = DriveApp.getFoldersByName(SUMMARY_IMAGES_DRIVE_FOLDER_NAME);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(SUMMARY_IMAGES_DRIVE_FOLDER_NAME);
+}
+
+function getSummaryImages_() {
+  const sheet = getOrCreateSheet_(SHEET_SUMMARY_IMAGES, SUMMARY_IMAGES_HDR, null, [1, 3]);
+  return rowsToObjects_(SUMMARY_IMAGES_HDR, getDataRows_(sheet)).map(function (r) {
+    return { id: String(r.id), name: r.name || "", fileId: r.fileId || "", url: r.url || "", uploadedAt: r.uploadedAt || "" };
+  });
+}
+
+function addSummaryImage_(fileName, dataUrl) {
+  const uploaded = saveDataUrlToDriveFile_(getSummaryImagesDriveFolder_(), fileName, dataUrl);
+  const record = {
+    id: Utilities.getUuid(),
+    name: fileName || "image",
+    fileId: uploaded.fileId,
+    url: uploaded.url,
+    uploadedAt: new Date().toISOString(),
+  };
+  const sheet = getOrCreateSheet_(SHEET_SUMMARY_IMAGES, SUMMARY_IMAGES_HDR, null, [1, 3]);
+  sheet.appendRow(objectsToRows_(SUMMARY_IMAGES_HDR, [record])[0]);
+  return record;
+}
+
+function removeSummaryImage_(imageId) {
+  const sheet = getOrCreateSheet_(SHEET_SUMMARY_IMAGES, SUMMARY_IMAGES_HDR, null, [1, 3]);
+  const rows = getDataRows_(sheet);
+  const idx = rows.findIndex(function (r) { return String(r[0]) === String(imageId); });
+  if (idx < 0) return { removed: false };
+  const fileId = rows[idx][2];
+  if (fileId) {
+    try {
+      DriveApp.getFileById(fileId).setTrashed(true);
+    } catch (ex) {
+      // Drive上に既にファイルが無い場合でも、シート側の行削除は続行する
+    }
+  }
+  sheet.deleteRow(idx + 2);
   return { removed: true };
 }
 
@@ -1251,6 +1310,7 @@ function getAll_() {
     calendarEvents: getCalendarEvents_(),
     bizPlanItems: getBizPlanItems_(),
     bizPlanFiles: getBizPlanFiles_(),
+    summaryImages: getSummaryImages_(),
     products: getProducts_(),
     productAliases: getProductAliases_(),
     packagingExemptions: getPackagingExemptions_(),
