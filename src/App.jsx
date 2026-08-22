@@ -35,6 +35,7 @@ import MasterTab from "./components/MasterTab";
 import SettingsTab from "./components/SettingsTab";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
+const APP_ICON_CACHE_KEY = "kamo-app-icon";
 
 // 読み込み中画面で、画面上をランダムに歩き回るカモ(絵文字)
 // タスクマニア(家族タブの「カモの小屋」PJ)側で完了操作されたサブタスクの状態を、
@@ -245,9 +246,27 @@ export default function App() {
   // ========== カレンダー(出店計画・イベント予定) ==========
   const [calendarEvents, setCalendarEvents] = useState([]); // [{id, date, title, memo}]
 
-  // ========== 設定(管理者向け。todoタブのビジュアル画像など) ==========
-  const [todoVisual, setTodoVisual] = useState(""); // PNG data URL または空文字
+  // ========== 設定(管理者向け。todoタブのビジュアル画像・アプリアイコンなど) ==========
+  const [todoVisual, setTodoVisual] = useState(""); // PNG/JPEG data URL または空文字
   const [todoVisualSaving, setTodoVisualSaving] = useState(false);
+  // アプリアイコンは読み込み中画面でも使うため、直前に取得できた値をlocalStorageに
+  // キャッシュしておき、次回起動時はGASからの応答を待たずに初期表示できるようにする
+  const [appIcon, setAppIcon] = useState(() => {
+    try {
+      return localStorage.getItem(APP_ICON_CACHE_KEY) || "";
+    } catch {
+      return "";
+    }
+  });
+  const [appIconSaving, setAppIconSaving] = useState(false);
+  const cacheAppIcon = (icon) => {
+    try {
+      if (icon) localStorage.setItem(APP_ICON_CACHE_KEY, icon);
+      else localStorage.removeItem(APP_ICON_CACHE_KEY);
+    } catch {
+      // localStorageが使えない環境でもアプリ自体は問題なく動作させる
+    }
+  };
 
   // ========== 初回ロード ==========
   useEffect(() => {
@@ -280,6 +299,8 @@ export default function App() {
         setSubtasks(data.subtasks || []);
         setSquareSyncFromSquare(data.settings?.squareSyncFromSquare ?? true);
         setTodoVisual(data.todoVisual || "");
+        setAppIcon(data.appIcon || "");
+        cacheAppIcon(data.appIcon || "");
         setSales(data.sales || []);
         setSquareSyncLog(data.squareSyncLog || []);
         hasLoadedRef.current = true;
@@ -1000,7 +1021,7 @@ export default function App() {
     }
   };
 
-  // --- ハンドラ: 設定(todoビジュアル画像) ---
+  // --- ハンドラ: 設定(todoビジュアル画像・アプリアイコン) ---
   const saveTodoVisual = async (dataUrl) => {
     setTodoVisualSaving(true);
     try {
@@ -1011,12 +1032,25 @@ export default function App() {
     }
   };
 
+  const saveAppIcon = async (dataUrl) => {
+    setAppIconSaving(true);
+    try {
+      const res = await gasApi.saveAppIcon(dataUrl);
+      setAppIcon(res.appIcon || "");
+      cacheAppIcon(res.appIcon || "");
+    } finally {
+      setAppIconSaving(false);
+    }
+  };
+
+  const appIconSrc = appIcon || `${import.meta.env.BASE_URL}icon-192.png`;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-amber-50 via-stone-50 to-stone-50 flex flex-col items-center justify-center gap-4 text-stone-500 text-sm overflow-hidden">
         <div className="relative flex items-center justify-center">
           <span className="absolute inset-0 rounded-full bg-amber-200/50 blur-2xl scale-110" />
-          <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="relative w-40 h-40 animate-pulse drop-shadow-lg" />
+          <img src={appIconSrc} alt="" className="relative w-40 h-40 animate-pulse drop-shadow-lg" />
         </div>
         <p className="font-display tracking-wide text-stone-400">読み込み中…</p>
         <WanderingDuck />
@@ -1040,7 +1074,7 @@ export default function App() {
               >
                 <Menu size={20} />
               </button>
-              <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="w-12 h-12 shrink-0 rounded-xl shadow-sm" />
+              <img src={appIconSrc} alt="" className="w-12 h-12 shrink-0 rounded-xl shadow-sm" />
               <div>
                 <p className="text-[11px] tracking-[0.2em] text-amber-700 font-semibold uppercase">カモの小屋 収益分析</p>
                 <h1 className="font-display text-2xl font-bold mt-1 text-stone-900">カモの小屋！</h1>
@@ -1174,7 +1208,14 @@ export default function App() {
         )}
 
         {tab === "settings" && (
-          <SettingsTab todoVisual={todoVisual} saveTodoVisual={saveTodoVisual} saving={todoVisualSaving} />
+          <SettingsTab
+            todoVisual={todoVisual}
+            saveTodoVisual={saveTodoVisual}
+            todoVisualSaving={todoVisualSaving}
+            appIcon={appIcon}
+            saveAppIcon={saveAppIcon}
+            appIconSaving={appIconSaving}
+          />
         )}
 
         {tab === "master" && (

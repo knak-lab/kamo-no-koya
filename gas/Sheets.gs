@@ -78,6 +78,13 @@ const TODO_VISUAL_HDR = ["chunk"];
 const TODO_VISUAL_CHUNK_SIZE = 40000;
 const TODO_VISUAL_MAX_BASE64_CHARS = 200000; // 約150KBのPNGまで(getAll応答が重くなりすぎないための上限)
 
+// アプリアイコン(トップ左上・読み込み画面用)。同じチャンク分割方式だが、
+// この用途はfaviconやPWAアイコンとの見た目の一貫性を保つためPNG限定とする。
+const SHEET_APP_ICON = "アプリアイコン";
+const APP_ICON_HDR = ["chunk"];
+const APP_ICON_CHUNK_SIZE = 40000;
+const APP_ICON_MAX_BASE64_CHARS = 200000;
+
 // カレンダータブの出店計画・イベント予定(日次設定の販売形態・TODOの期限とは別に、
 // タイトル/メモを日付ごとに複数登録できる)
 const SHEET_CALENDAR_EVENTS = "予定";
@@ -840,6 +847,36 @@ function saveTodoVisual_(dataUrl) {
   return { todoVisual: "data:" + mimeType + ";base64," + base64 };
 }
 
+// アプリアイコンはPNG限定のため、MIMEタイプ行は持たずbase64チャンクのみを保存する
+function getAppIcon_() {
+  const sheet = getOrCreateSheet_(SHEET_APP_ICON, APP_ICON_HDR, null, [1]);
+  const rows = getDataRows_(sheet);
+  if (rows.length === 0) return "";
+  const base64 = rows.map(function (r) { return r[0] === null || r[0] === undefined ? "" : String(r[0]); }).join("");
+  return base64 ? "data:image/png;base64," + base64 : "";
+}
+
+function saveAppIcon_(dataUrl) {
+  const sheet = getOrCreateSheet_(SHEET_APP_ICON, APP_ICON_HDR, null, [1]);
+  clearDataRows_(sheet);
+  const raw = String(dataUrl || "");
+  if (!raw) return { appIcon: "" };
+  const match = raw.match(/^data:image\/png;base64,(.*)$/);
+  if (!match) {
+    throw new Error("アプリアイコンはPNG画像のみ保存できます。");
+  }
+  const base64 = match[1];
+  if (base64.length > APP_ICON_MAX_BASE64_CHARS) {
+    throw new Error("画像が大きすぎます。もう少し小さい画像を選んでください。");
+  }
+  const rows = [];
+  for (let i = 0; i < base64.length; i += APP_ICON_CHUNK_SIZE) {
+    rows.push([base64.slice(i, i + APP_ICON_CHUNK_SIZE)]);
+  }
+  writeRows_(sheet, rows, APP_ICON_HDR.length, [1]);
+  return { appIcon: "data:image/png;base64," + base64 };
+}
+
 // ─────────────────────────────────────────
 //  TODO・サブタスク(実データ採用。snoozed列は新設)
 // ─────────────────────────────────────────
@@ -1084,6 +1121,7 @@ function getAll_() {
     subtasks: getSubtasks_(),
     settings: getSettings_(),
     todoVisual: getTodoVisual_(),
+    appIcon: getAppIcon_(),
     sales: getSales_(),
     squareSyncLog: getSquareSyncLog_(20),
   };

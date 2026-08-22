@@ -61,6 +61,9 @@ export const gasApi = {
   // BASEの注文を売上_Squareシートへチャネル"BASE"として取り込む
   syncOrdersFromBase: () => post({ action: "syncOrdersFromBase" }),
 
-  // todoタブに表示するビジュアル画像(PNG data URL)を保存。空文字で削除
+  // todoタブに表示するビジュアル画像(PNG/JPEG data URL)を保存。空文字で削除
   saveTodoVisual: (dataUrl) => post({ action: "saveTodoVisual", dataUrl }),
+
+  // トップ左上・読み込み画面のアプリアイコン(PNG data URL限定)を保存。空文字で削除
+  saveAppIcon: (dataUrl) => post({ action: "saveAppIcon", dataUrl }),
 };

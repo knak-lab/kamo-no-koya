@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { Upload, Trash2, Loader2 } from "lucide-react";
 
-const MAX_DIMENSION = 800; // 長辺をこのサイズ以下にリサイズしてから保存する
-const MAX_BASE64_CHARS = 200000; // GAS側の上限(約150KB)と合わせる
-const ACCEPTED_TYPES = ["image/png", "image/jpeg"];
-
-// 選んだPNG/JPEGファイルを長辺MAX_DIMENSION以下に縮小し、data URL(元と同じ形式)として返す
-function resizeToDataUrl(file) {
+// 選んだ画像ファイルを長辺maxDimension以下に縮小し、data URLとして返す。
+// mimeTypeが"image/jpeg"ならJPEGとして(品質0.85)、それ以外はPNGとして再エンコードする
+function resizeToDataUrl(file, maxDimension) {
   const mimeType = file.type === "image/jpeg" ? "image/jpeg" : "image/png";
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -16,8 +13,8 @@ function resizeToDataUrl(file) {
       img.onerror = () => reject(new Error("画像として読み込めませんでした"));
       img.onload = () => {
         let { width, height } = img;
-        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-          const scale = MAX_DIMENSION / Math.max(width, height);
+        if (width > maxDimension || height > maxDimension) {
+          const scale = maxDimension / Math.max(width, height);
           width = Math.round(width * scale);
           height = Math.round(height * scale);
         }
@@ -33,24 +30,29 @@ function resizeToDataUrl(file) {
   });
 }
 
-export default function SettingsTab({ todoVisual, saveTodoVisual, saving }) {
-  const [pendingPreview, setPendingPreview] = useState(null); // まだ保存していないプレビュー
+// 画像1件の選択・プレビュー・保存・削除を扱う共通カード。
+// allowJpeg=falseの場合はPNGのみ受け付ける(アプリアイコン用)。
+function ImageSettingCard({ title, description, currentValue, onSave, saving, allowJpeg, maxDimension }) {
+  const [pendingPreview, setPendingPreview] = useState(null);
   const [error, setError] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
+  const acceptedTypes = allowJpeg ? ["image/png", "image/jpeg"] : ["image/png"];
+  const acceptAttr = allowJpeg ? "image/png,image/jpeg" : "image/png";
+  const maxBase64Chars = 200000; // GAS側の上限(約150KB)と合わせる
 
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // 同じファイルを連続で選び直せるようにする
     if (!file) return;
     setError("");
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      setError("PNGまたはJPEGファイルを選んでください。");
+    if (!acceptedTypes.includes(file.type)) {
+      setError(allowJpeg ? "PNGまたはJPEGファイルを選んでください。" : "PNGファイルを選んでください。");
       return;
     }
     try {
-      const dataUrl = await resizeToDataUrl(file);
+      const dataUrl = await resizeToDataUrl(file, maxDimension);
       const base64Len = dataUrl.split(",")[1]?.length || 0;
-      if (base64Len > MAX_BASE64_CHARS) {
+      if (base64Len > maxBase64Chars) {
         setError("画像が大きすぎます。もう少し小さい・シンプルな画像を選んでください。");
         return;
       }
@@ -64,7 +66,7 @@ export default function SettingsTab({ todoVisual, saveTodoVisual, saving }) {
     if (!pendingPreview) return;
     setError("");
     try {
-      await saveTodoVisual(pendingPreview);
+      await onSave(pendingPreview);
       setPendingPreview(null);
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 2000);
@@ -74,18 +76,63 @@ export default function SettingsTab({ todoVisual, saveTodoVisual, saving }) {
   };
 
   const handleRemove = async () => {
-    if (!window.confirm("ビジュアル画像を削除しますか？")) return;
+    if (!window.confirm("画像を削除しますか？")) return;
     setError("");
     try {
-      await saveTodoVisual("");
+      await onSave("");
       setPendingPreview(null);
     } catch (err) {
       setError(String(err.message || err));
     }
   };
 
-  const previewSrc = pendingPreview || todoVisual;
+  const previewSrc = pendingPreview || currentValue;
 
+  return (
+    <div className="border border-stone-200/80 rounded-xl p-4">
+      <h3 className="font-medium text-sm text-stone-800 mb-1">{title}</h3>
+      <p className="text-xs text-stone-500 mb-3">{description}</p>
+
+      {previewSrc ? (
+        <div className="mb-3 flex justify-center bg-stone-50 rounded-xl p-3">
+          <img src={previewSrc} alt="" className="max-h-40 rounded-lg" />
+        </div>
+      ) : (
+        <p className="text-xs text-stone-400 mb-3">現在、画像は設定されていません。</p>
+      )}
+
+      {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-1 text-sm border border-stone-300 rounded-lg px-3.5 py-1.5 cursor-pointer hover:bg-stone-50 transition-colors">
+          <Upload size={14} />
+          画像を選ぶ
+          <input type="file" accept={acceptAttr} className="hidden" onChange={handleFileChange} />
+        </label>
+        <button
+          onClick={handleSave}
+          disabled={!pendingPreview || saving}
+          className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-40 disabled:shadow-none transition-all"
+        >
+          {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+          保存
+        </button>
+        {currentValue && (
+          <button
+            onClick={handleRemove}
+            disabled={saving}
+            className="flex items-center gap-1 text-sm text-stone-500 hover:text-red-600 disabled:opacity-40"
+          >
+            <Trash2 size={14} /> 画像を削除
+          </button>
+        )}
+        {savedFlash && <span className="text-xs text-emerald-600">保存しました</span>}
+      </div>
+    </div>
+  );
+}
+
+export default function SettingsTab({ todoVisual, saveTodoVisual, todoVisualSaving, appIcon, saveAppIcon, appIconSaving }) {
   return (
     <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
       <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">設定</h2>
@@ -93,48 +140,25 @@ export default function SettingsTab({ todoVisual, saveTodoVisual, saving }) {
         ここでの変更はアプリを使う全員に反映されます。開発者(Claude Code)に頼まなくても、この画面から直接変更できます。
       </p>
 
-      <div className="border border-stone-200/80 rounded-xl p-4">
-        <h3 className="font-medium text-sm text-stone-800 mb-1">todoタブのビジュアル画像</h3>
-        <p className="text-xs text-stone-500 mb-3">
-          todoタブの「タスク追加」ボタンの下に表示する画像です。PNGまたはJPEGファイルを選んで保存すると、全員の画面に反映されます。
-          長辺{MAX_DIMENSION}px程度に自動で縮小されます。
-        </p>
-
-        {previewSrc ? (
-          <div className="mb-3 flex justify-center bg-stone-50 rounded-xl p-3">
-            <img src={previewSrc} alt="" className="max-h-40 rounded-lg" />
-          </div>
-        ) : (
-          <p className="text-xs text-stone-400 mb-3">現在、画像は設定されていません。</p>
-        )}
-
-        {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
-
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1 text-sm border border-stone-300 rounded-lg px-3.5 py-1.5 cursor-pointer hover:bg-stone-50 transition-colors">
-            <Upload size={14} />
-            画像を選ぶ
-            <input type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleFileChange} />
-          </label>
-          <button
-            onClick={handleSave}
-            disabled={!pendingPreview || saving}
-            className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 text-sm shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-40 disabled:shadow-none transition-all"
-          >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : null}
-            保存
-          </button>
-          {todoVisual && (
-            <button
-              onClick={handleRemove}
-              disabled={saving}
-              className="flex items-center gap-1 text-sm text-stone-500 hover:text-red-600 disabled:opacity-40"
-            >
-              <Trash2 size={14} /> 画像を削除
-            </button>
-          )}
-          {savedFlash && <span className="text-xs text-emerald-600">保存しました</span>}
-        </div>
+      <div className="space-y-4">
+        <ImageSettingCard
+          title="todoタブのビジュアル画像"
+          description="todoタブの「タスク追加」ボタンの下に表示する画像です。PNGまたはJPEGファイルを選んで保存すると、全員の画面に反映されます。長辺800px程度に自動で縮小されます。"
+          currentValue={todoVisual}
+          onSave={saveTodoVisual}
+          saving={todoVisualSaving}
+          allowJpeg
+          maxDimension={800}
+        />
+        <ImageSettingCard
+          title="アプリアイコン"
+          description="トップ左上と読み込み中画面に表示するアイコンです。他のアイコン(favicon等)と見た目を揃えるため、PNGファイルのみ選べます。長辺512px程度に自動で縮小されます。"
+          currentValue={appIcon}
+          onSave={saveAppIcon}
+          saving={appIconSaving}
+          allowJpeg={false}
+          maxDimension={512}
+        />
       </div>
     </section>
   );
