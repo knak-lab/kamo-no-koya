@@ -138,7 +138,7 @@ function useAutosave(hasLoadedRef, snapshotRef, saveFn, setSaveState, deps) {
 }
 
 export default function App() {
-  const [tab, setTab] = useState("input");
+  const [tab, setTab] = useState("management");
   const [inputSubTab, setInputSubTab] = useState("intake");
   const [masterSubTab, setMasterSubTab] = useState("products");
 
