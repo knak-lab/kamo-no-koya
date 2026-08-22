@@ -911,13 +911,23 @@ export default function App() {
   const setDayField = (date, field, value) => setDailyMeta((prev) => ({ ...prev, [date]: { ...prev[date], [field]: value } }));
 
   // --- ハンドラ: カレンダー(出店計画・イベント予定) ---
-  const addCalendarEvent = (date, title, memo) => {
+  const addCalendarEvent = (date, title, memo, channelId) => {
     if (!date || !title.trim()) return;
-    setCalendarEvents((prev) => [...prev, { id: uid(), date, title: title.trim(), memo: memo || "" }]);
+    setCalendarEvents((prev) => [...prev, { id: uid(), date, title: title.trim(), memo: memo || "", channelId: channelId || "" }]);
   };
+  const updateCalendarEvent = (id, field, value) =>
+    setCalendarEvents((prev) => prev.map((e) => (e.id === id ? { ...e, [field]: value } : e)));
   const removeCalendarEvent = (id) => {
     if (!window.confirm("削除しますか？")) return;
     setCalendarEvents((prev) => prev.filter((e) => e.id !== id));
+  };
+  // 別日への複製や「同じ内容で予定を増やす」用途のコピー(タイトルに"（コピー）"を付けて末尾に追加)
+  const duplicateCalendarEvent = (id) => {
+    setCalendarEvents((prev) => {
+      const src = prev.find((e) => e.id === id);
+      if (!src) return prev;
+      return [...prev, { ...src, id: uid(), title: `${src.title}（コピー）` }];
+    });
   };
   const setMgmtBudgetField = (ym, field, value) =>
     setMgmtBudgets((prev) => ({
@@ -1143,7 +1153,9 @@ export default function App() {
           <CalendarTab
             calendarEvents={calendarEvents}
             addCalendarEvent={addCalendarEvent}
+            updateCalendarEvent={updateCalendarEvent}
             removeCalendarEvent={removeCalendarEvent}
+            duplicateCalendarEvent={duplicateCalendarEvent}
             dailyMeta={dailyMeta}
             setDayField={setDayField}
             salesChannels={salesChannels}

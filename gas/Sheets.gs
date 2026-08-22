@@ -88,7 +88,7 @@ const APP_ICON_MAX_BASE64_CHARS = 200000;
 // カレンダータブの出店計画・イベント予定(日次設定の販売形態・TODOの期限とは別に、
 // タイトル/メモを日付ごとに複数登録できる)
 const SHEET_CALENDAR_EVENTS = "予定";
-const CALENDAR_EVENTS_HDR = ["id", "date", "title", "memo"];
+const CALENDAR_EVENTS_HDR = ["id", "date", "title", "memo", "channelId"];
 
 const SHEET_SYNC_LOG = "Square同期ログ";
 const SYNC_LOG_HDR = ["timestamp", "type", "status", "message"];
@@ -367,7 +367,7 @@ function saveProducts_(products) {
 function getCalendarEvents_() {
   const sheet = getOrCreateSheet_(SHEET_CALENDAR_EVENTS, CALENDAR_EVENTS_HDR, null, [2]);
   return rowsToObjects_(CALENDAR_EVENTS_HDR, getDataRows_(sheet)).map(function (e) {
-    return { id: String(e.id), date: cellToStr_(e.date), title: e.title || "", memo: e.memo || "" };
+    return { id: String(e.id), date: cellToStr_(e.date), title: e.title || "", memo: e.memo || "", channelId: e.channelId || "" };
   });
 }
 

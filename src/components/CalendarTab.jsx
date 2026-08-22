@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
-import { TODO_CATEGORIES, TODO_STATUSES, yen } from "../lib/constants";
+import { TODO_CATEGORIES, TODO_STATUSES, yen, getEventChannelColor } from "../lib/constants";
+import CalendarEventModal from "./CalendarEventModal";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -41,7 +42,9 @@ const formatChannelLabel = (dMeta, rebateClients) => {
 export default function CalendarTab({
   calendarEvents,
   addCalendarEvent,
+  updateCalendarEvent,
   removeCalendarEvent,
+  duplicateCalendarEvent,
   dailyMeta,
   setDayField,
   salesChannels,
@@ -57,7 +60,8 @@ export default function CalendarTab({
   const today = todayStr();
   const [viewMonth, setViewMonth] = useState(today.slice(0, 7));
   const [selectedDate, setSelectedDate] = useState(today);
-  const [eventForm, setEventForm] = useState({ title: "", memo: "" });
+  const [selectedEventId, setSelectedEventId] = useState(null);
+  const [eventForm, setEventForm] = useState({ title: "", memo: "", channelId: "" });
   const [todoQuickForm, setTodoQuickForm] = useState({ category: TODO_CATEGORIES[0], task: "" });
   const [feeForm, setFeeForm] = useState({ item: "", hours: "" });
 
@@ -68,6 +72,7 @@ export default function CalendarTab({
   const feeItemOptions = Object.keys(expenseRates).filter((it) => it.includes("利用料"));
   const dayFees = expenses.filter((e) => e.date === selectedDate && e.item.includes("利用料"));
   const selectedFeeItem = feeForm.item || feeItemOptions[0] || "";
+  const selectedEvent = calendarEvents.find((e) => e.id === selectedEventId) || null;
 
   const submitFee = () => {
     if (!selectedFeeItem || !feeForm.hours) return;
@@ -77,8 +82,8 @@ export default function CalendarTab({
 
   const submitEvent = () => {
     if (!eventForm.title.trim()) return;
-    addCalendarEvent(selectedDate, eventForm.title, eventForm.memo);
-    setEventForm({ title: "", memo: "" });
+    addCalendarEvent(selectedDate, eventForm.title, eventForm.memo, eventForm.channelId);
+    setEventForm({ title: "", memo: "", channelId: "" });
   };
   const submitTodo = () => {
     if (!todoQuickForm.task.trim()) return;
@@ -136,10 +141,13 @@ export default function CalendarTab({
                 const isToday = date === today;
                 const isSelected = date === selectedDate;
                 return (
-                  <button
+                  <div
                     key={date}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setSelectedDate(date)}
-                    className={`text-left align-top rounded-md border p-1 min-h-[64px] text-[11px] ${
+                    onKeyDown={(ev) => ev.key === "Enter" && setSelectedDate(date)}
+                    className={`text-left align-top rounded-md border p-1 min-h-[64px] text-[11px] cursor-pointer ${
                       isSelected ? "border-amber-500 bg-amber-50" : "border-stone-100 hover:bg-stone-50"
                     }`}
                   >
@@ -147,16 +155,29 @@ export default function CalendarTab({
                     {dMeta.channelId && (
                       <div className="text-stone-400 truncate">{formatChannelLabel(dMeta, rebateClients)}</div>
                     )}
-                    {events.slice(0, 2).map((e) => (
-                      <div key={e.id} className="truncate text-amber-700">
-                        ・{e.title}
-                      </div>
-                    ))}
+                    <div className="space-y-0.5 mt-0.5">
+                      {events.slice(0, 2).map((e) => {
+                        const color = getEventChannelColor(e.channelId, salesChannels);
+                        return (
+                          <button
+                            key={e.id}
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              setSelectedDate(date);
+                              setSelectedEventId(e.id);
+                            }}
+                            className={`block w-full truncate text-left rounded px-1 ${color.chip} hover:opacity-80 transition-opacity`}
+                          >
+                            {e.title}
+                          </button>
+                        );
+                      })}
+                    </div>
                     {events.length > 2 && <div className="text-stone-400">他{events.length - 2}件</div>}
                     {openTodoCount > 0 && (
                       <div className="mt-0.5 inline-block bg-red-100 text-red-700 rounded px-1">TODO{openTodoCount}</div>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -278,19 +299,21 @@ export default function CalendarTab({
 
             <div className="mb-4">
               <h3 className="text-sm font-medium mb-1">予定(出店・イベント)</h3>
-              <div className="space-y-1 mb-2">
+              <p className="text-xs text-stone-500 mb-2">クリックすると詳細(編集・削除・コピー・タスク)を開けます。</p>
+              <div className="flex flex-wrap gap-1.5 mb-2">
                 {dayEvents.length === 0 && <p className="text-xs text-stone-400">この日の予定はまだありません。</p>}
-                {dayEvents.map((e) => (
-                  <div key={e.id} className="flex items-start justify-between gap-2 text-xs border-b border-stone-100 py-1">
-                    <div>
-                      <div className="font-medium">{e.title}</div>
-                      {e.memo && <div className="text-stone-500">{e.memo}</div>}
-                    </div>
-                    <button onClick={() => removeCalendarEvent(e.id)}>
-                      <Trash2 size={12} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
+                {dayEvents.map((e) => {
+                  const color = getEventChannelColor(e.channelId, salesChannels);
+                  return (
+                    <button
+                      key={e.id}
+                      onClick={() => setSelectedEventId(e.id)}
+                      className={`text-xs rounded-full px-2.5 py-1 ${color.chip} hover:opacity-80 transition-opacity`}
+                    >
+                      {e.title}
                     </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="flex flex-wrap gap-2 items-end text-xs">
                 <div>
@@ -301,6 +324,21 @@ export default function CalendarTab({
                     onChange={(e) => setEventForm((f) => ({ ...f, title: e.target.value }))}
                     placeholder="例: ○○マルシェ出店"
                   />
+                </div>
+                <div>
+                  <label className="block text-stone-500 mb-1">出店形態</label>
+                  <select
+                    className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
+                    value={eventForm.channelId}
+                    onChange={(e) => setEventForm((f) => ({ ...f, channelId: e.target.value }))}
+                  >
+                    <option value="">(未選択)</option>
+                    {salesChannels.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-stone-500 mb-1">メモ</label>
@@ -378,6 +416,20 @@ export default function CalendarTab({
             </div>
           </section>
         </>
+      )}
+
+      {selectedEvent && (
+        <CalendarEventModal
+          event={selectedEvent}
+          salesChannels={salesChannels}
+          todos={todos}
+          addTodoWithDeadline={addTodoWithDeadline}
+          updateTodo={updateTodo}
+          updateCalendarEvent={updateCalendarEvent}
+          removeCalendarEvent={removeCalendarEvent}
+          duplicateCalendarEvent={duplicateCalendarEvent}
+          onClose={() => setSelectedEventId(null)}
+        />
       )}
     </>
   );

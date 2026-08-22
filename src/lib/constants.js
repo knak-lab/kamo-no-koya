@@ -36,3 +36,25 @@ export const TABS = [
 
 export const METRIC_LABEL = { sales: "売上", profit: "営業利益" };
 export const METRIC_DAILY_FIELD = { sales: "売上_日次", profit: "営業利益_管理_日次" };
+
+// カレンダーの予定(出店)を出店形態ごとに色分けするための固定パレット。
+// salesChannelsは動的なリストのため、リスト内の並び順(index)でパレットを
+// 割り当てる(同じ形態なら常に同じ色になるよう、salesChannelsの並び順が安定している前提)。
+export const EVENT_CHANNEL_COLORS = [
+  { bg: "bg-amber-100", text: "text-amber-800", chip: "bg-amber-100 text-amber-800", dot: "bg-amber-500" },
+  { bg: "bg-blue-100", text: "text-blue-800", chip: "bg-blue-100 text-blue-800", dot: "bg-blue-500" },
+  { bg: "bg-emerald-100", text: "text-emerald-800", chip: "bg-emerald-100 text-emerald-800", dot: "bg-emerald-500" },
+  { bg: "bg-purple-100", text: "text-purple-800", chip: "bg-purple-100 text-purple-800", dot: "bg-purple-500" },
+  { bg: "bg-pink-100", text: "text-pink-800", chip: "bg-pink-100 text-pink-800", dot: "bg-pink-500" },
+  { bg: "bg-cyan-100", text: "text-cyan-800", chip: "bg-cyan-100 text-cyan-800", dot: "bg-cyan-500" },
+  { bg: "bg-orange-100", text: "text-orange-800", chip: "bg-orange-100 text-orange-800", dot: "bg-orange-500" },
+  { bg: "bg-teal-100", text: "text-teal-800", chip: "bg-teal-100 text-teal-800", dot: "bg-teal-500" },
+];
+export const EVENT_CHANNEL_NONE_COLOR = { bg: "bg-stone-100", text: "text-stone-600", chip: "bg-stone-100 text-stone-600", dot: "bg-stone-400" };
+
+export function getEventChannelColor(channelId, salesChannels) {
+  if (!channelId) return EVENT_CHANNEL_NONE_COLOR;
+  const idx = salesChannels.findIndex((c) => c.id === channelId);
+  if (idx < 0) return EVENT_CHANNEL_NONE_COLOR;
+  return EVENT_CHANNEL_COLORS[idx % EVENT_CHANNEL_COLORS.length];
+}
