@@ -1,8 +1,12 @@
-import { TrendingUp, TrendingDown, Info } from "lucide-react";
+import { useState } from "react";
+import { TrendingUp, TrendingDown, Info, ChevronDown, ChevronRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
 import { yen } from "../lib/constants";
 
 export default function PLTab({ monthlyRows }) {
+  const [openMonths, setOpenMonths] = useState({}); // { [yearMonth]: boolean } 月ごとの開閉(デフォルト全て閉じる)
+  const toggleMonth = (ym) => setOpenMonths((prev) => ({ ...prev, [ym]: !prev[ym] }));
+
   return (
     <div className="space-y-4">
       <p className="text-xs text-stone-500">
@@ -12,16 +16,21 @@ export default function PLTab({ monthlyRows }) {
       {monthlyRows.map((m) => {
         const diff = m.営業利益_財務 - (m.fBudget.profitBudget || 0);
         const 売上総利益 = m.売上_実績 - m.原材料仕入_実績;
+        const isOpen = !!openMonths[m.yearMonth];
         return (
           <div key={m.yearMonth} className="border border-stone-200/80 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-semibold">{m.yearMonth}</span>
+            <button onClick={() => toggleMonth(m.yearMonth)} className="w-full flex items-center justify-between mb-3">
+              <span className="flex items-center gap-1 font-semibold">
+                {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                {m.yearMonth}
+              </span>
               <span className={`flex items-center gap-1 text-sm font-medium ${diff >= 0 ? "text-emerald-700" : "text-red-600"}`}>
                 {diff >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                 予実差 {yen(diff)}
               </span>
-            </div>
-
+            </button>
+            {isOpen && (
+            <>
             {/* 損益計算書(縦積み) */}
             <div className="font-mono text-sm">
               <div className="flex justify-between py-1">
@@ -59,7 +68,8 @@ export default function PLTab({ monthlyRows }) {
                 </span>
               </span>
             </div>
-
+            </>
+            )}
           </div>
         );
       })}
