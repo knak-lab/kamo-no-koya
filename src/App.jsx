@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { Menu } from "lucide-react";
 import { gasApi, isGasReady, loadTaskmaniaProjects } from "./api/gas";
 import {
   uid,
@@ -8,7 +9,6 @@ import {
   FIXED_EXPENSE_ITEMS,
   TODO_CATEGORIES,
   STAFF_OPTIONS,
-  TABS,
 } from "./lib/constants";
 import {
   computeProductCosts,
@@ -26,6 +26,7 @@ import {
   getRecipe,
   getBreakdown,
 } from "./lib/calc";
+import Sidebar from "./components/Sidebar";
 import InputTab from "./components/InputTab";
 import CalendarTab from "./components/CalendarTab";
 import SummaryTab from "./components/SummaryTab";
@@ -139,6 +140,7 @@ function useAutosave(hasLoadedRef, snapshotRef, saveFn, setSaveState, deps) {
 
 export default function App() {
   const [tab, setTab] = useState("management");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inputSubTab, setInputSubTab] = useState("intake");
   const [masterSubTab, setMasterSubTab] = useState("products");
 
@@ -202,7 +204,7 @@ export default function App() {
   const [customerPeriod, setCustomerPeriod] = useState("month"); // 'month'|'day'
   const [customerChannel, setCustomerChannel] = useState("all");
   const [customerYearMonth, setCustomerYearMonth] = useState("all"); // 日次選択時のみ使用。'all'|'YYYY-MM'
-  const [targetForm, setTargetForm] = useState({ month: "", salesBudget: "", grossMarginRatio: "", profitBudget: "" });
+  const [targetForm, setTargetForm] = useState({ month: "", salesBudget: "", costRatio: "", profitBudget: "" });
   const [targetListOpen, setTargetListOpen] = useState(false);
   const [editingTargetMonth, setEditingTargetMonth] = useState(null);
   const [finBudgets, setFinBudgets] = useState({});
@@ -888,7 +890,7 @@ export default function App() {
   const setMgmtBudgetField = (ym, field, value) =>
     setMgmtBudgets((prev) => ({
       ...prev,
-      [ym]: { ...(prev[ym] || { salesBudget: 0, grossMarginRatio: 0, profitBudget: 0 }), [field]: Number(value) || 0 },
+      [ym]: { ...(prev[ym] || { salesBudget: 0, costRatio: 0, profitBudget: 0 }), [field]: Number(value) || 0 },
     }));
   const addTarget = () => {
     if (!targetForm.month) return;
@@ -898,11 +900,11 @@ export default function App() {
       ...prev,
       [ym]: {
         salesBudget: Number(targetForm.salesBudget) || 0,
-        grossMarginRatio: Number(targetForm.grossMarginRatio) || 0,
+        costRatio: Number(targetForm.costRatio) || 0,
         profitBudget: Number(targetForm.profitBudget) || 0,
       },
     }));
-    setTargetForm({ month: "", salesBudget: "", grossMarginRatio: "", profitBudget: "" });
+    setTargetForm({ month: "", salesBudget: "", costRatio: "", profitBudget: "" });
   };
   const removeTargetMonth = (ym) => {
     if (!window.confirm("削除しますか？")) return;
@@ -1006,12 +1008,21 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50/60 via-stone-50 to-stone-50 text-stone-900 font-sans">
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50/60 via-stone-50 to-stone-50 text-stone-900 font-sans md:flex md:items-start md:gap-6 md:max-w-6xl md:mx-auto md:px-4 md:py-6">
+      <Sidebar tab={tab} setTab={setTab} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="min-w-0 flex-1 max-w-5xl mx-auto px-4 py-6 md:px-0 md:py-0 space-y-6">
         <header className="relative overflow-hidden rounded-3xl bg-white border border-stone-200/70 shadow-sm shadow-stone-300/30 px-5 py-4">
           <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 rounded-full bg-amber-100/70 blur-3xl" />
           <div className="relative flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3.5">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="md:hidden shrink-0 text-stone-600 hover:text-stone-900 border border-stone-200/70 rounded-xl p-2"
+                aria-label="メニューを開く"
+              >
+                <Menu size={20} />
+              </button>
               <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="w-12 h-12 shrink-0 rounded-xl shadow-sm" />
               <div>
                 <p className="text-[11px] tracking-[0.2em] text-amber-700 font-semibold uppercase">カモの小屋 収益分析</p>
@@ -1022,22 +1033,6 @@ export default function App() {
             <SaveIndicator state={saveState} loadError={loadError} />
           </div>
         </header>
-
-        <div className="flex items-center gap-1 bg-stone-200/70 rounded-2xl p-1 w-fit flex-wrap backdrop-blur-sm">
-          {TABS.map((t, i) => (
-            <div key={t.key} className="flex items-center gap-1">
-              {i > 0 && t.group !== TABS[i - 1].group && <span className="w-px self-stretch bg-stone-400/40 mx-0.5" />}
-              <button
-                onClick={() => setTab(t.key)}
-                className={`px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
-                  tab === t.key ? "bg-white shadow-sm shadow-stone-300/50 text-amber-800" : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                {t.label}
-              </button>
-            </div>
-          ))}
-        </div>
 
         {tab === "input" && (
           <InputTab

@@ -153,7 +153,7 @@ export function computeMonthlyRows({ allYearMonths, dailyRows, mgmtBudgets, finB
     const 原価差異 = 原材料仕入_実績 - 原価標準_実績;
     const 営業利益_財務 = 営業利益_管理 - 原価差異;
 
-    const mBudget = mgmtBudgets[ym] || { salesBudget: 0, grossMarginRatio: 0, profitBudget: 0 };
+    const mBudget = mgmtBudgets[ym] || { salesBudget: 0, costRatio: 0, profitBudget: 0 };
     const fBudget = finBudgets[ym] || { rawMaterialBudget: 0, otherExpenseBudget: 0, profitBudget: 0 };
 
     return {
@@ -202,7 +202,10 @@ export function computeMonthlyChartData({ monthlyByChannel, monthMetric, monthCh
       実績: row[key],
       実績粗利率: row.売上 > 0 ? Math.round((row.粗利 / row.売上) * 1000) / 10 : 0,
       ...(showTarget
-        ? { 目標: getTargetAmount(mgmtBudgets, row.yearMonth, monthMetric), 目標粗利率: mgmtBudgets[row.yearMonth]?.grossMarginRatio || 0 }
+        ? {
+            目標: getTargetAmount(mgmtBudgets, row.yearMonth, monthMetric),
+            目標粗利率: mgmtBudgets[row.yearMonth]?.costRatio != null ? 100 - mgmtBudgets[row.yearMonth].costRatio : 0,
+          }
         : {}),
     }));
 }

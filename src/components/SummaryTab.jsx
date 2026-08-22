@@ -100,7 +100,7 @@ export default function SummaryTab({
 
       {/* 予実 */}
       <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
-        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">予実</h2>
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">売上・営業利益推移</h2>
         <div className="flex flex-wrap gap-4 mb-3">
           <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs">
             {["month", "day"].map((p) => (
@@ -127,7 +127,9 @@ export default function SummaryTab({
           <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs flex-wrap">
             <button
               onClick={() => setSummaryChannel("all")}
-              className={`px-3 py-1 rounded ${summaryChannel === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+              className={`px-3 py-1 rounded font-semibold transition-colors ${
+                summaryChannel === "all" ? "bg-amber-600 text-white shadow" : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+              }`}
             >
               全形態
             </button>
@@ -219,7 +221,9 @@ export default function SummaryTab({
           <div className="flex gap-1 bg-stone-100 rounded-xl p-1 w-fit text-xs flex-wrap">
             <button
               onClick={() => setCustomerChannel("all")}
-              className={`px-3 py-1 rounded ${customerChannel === "all" ? "bg-white shadow text-amber-800 font-medium" : "text-stone-500"}`}
+              className={`px-3 py-1 rounded font-semibold transition-colors ${
+                customerChannel === "all" ? "bg-amber-600 text-white shadow" : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+              }`}
             >
               全形態
             </button>

@@ -60,7 +60,7 @@ const EXPENSE_RATES_SEED = [
 ];
 
 const SHEET_MGMT_BUDGETS = "月次目標";
-const MGMT_BUDGETS_HDR = ["yearMonth", "salesBudget", "grossMarginRatio", "profitBudget"];
+const MGMT_BUDGETS_HDR = ["yearMonth", "salesBudget", "costRatio", "profitBudget"];
 
 const SHEET_FIN_BUDGETS = "月次PL予算";
 const FIN_BUDGETS_HDR = ["yearMonth", "rawMaterialBudget", "otherExpenseBudget", "profitBudget"];
@@ -730,13 +730,30 @@ function saveDailyMeta_(dailyMeta) {
 
 function getMgmtBudgets_() {
   const sheet = getOrCreateSheet_(SHEET_MGMT_BUDGETS, MGMT_BUDGETS_HDR, null, [1]);
+  migrateMgmtBudgetsCostRatio_(sheet);
   const map = {};
   getDataRows_(sheet).forEach(function (r) {
     const ym = cellToStr_(r[0]);
     if (!ym) return;
-    map[ym] = { salesBudget: Number(r[1]) || 0, grossMarginRatio: Number(r[2]) || 0, profitBudget: Number(r[3]) || 0 };
+    map[ym] = { salesBudget: Number(r[1]) || 0, costRatio: Number(r[2]) || 0, profitBudget: Number(r[3]) || 0 };
   });
   return map;
+}
+
+// 「粗利率目標」列から「原価率目標」列への一度きりの移行。
+// C1セルが"costRatio"でなければ未移行とみなし、既存の値を原価率(100−粗利率)に
+// 変換してからヘッダーを更新する。以降はC1が"costRatio"のため再変換されない。
+function migrateMgmtBudgetsCostRatio_(sheet) {
+  const headerCell = sheet.getRange(1, 3);
+  if (headerCell.getValue() === "costRatio") return;
+  const rows = getDataRows_(sheet);
+  if (rows.length > 0) {
+    const converted = rows.map(function (r) {
+      return [100 - (Number(r[2]) || 0)];
+    });
+    sheet.getRange(2, 3, converted.length, 1).setValues(converted);
+  }
+  headerCell.setValue("costRatio");
 }
 
 function saveMgmtBudgets_(mgmtBudgets) {
@@ -744,7 +761,7 @@ function saveMgmtBudgets_(mgmtBudgets) {
   clearDataRows_(sheet);
   const rows = Object.keys(mgmtBudgets || {}).map(function (ym) {
     const b = mgmtBudgets[ym] || {};
-    return [ym, Number(b.salesBudget) || 0, Number(b.grossMarginRatio) || 0, Number(b.profitBudget) || 0];
+    return [ym, Number(b.salesBudget) || 0, Number(b.costRatio) || 0, Number(b.profitBudget) || 0];
   });
   writeRows_(sheet, rows, MGMT_BUDGETS_HDR.length, [1]);
 }

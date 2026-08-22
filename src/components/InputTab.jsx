@@ -189,11 +189,11 @@ export default function InputTab({
         </div>
       </section>
 
-      {/* 目標(月単位・売上/粗利率/利益) */}
+      {/* 目標(月単位・売上/原価率/利益) */}
       <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
         <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">目標</h2>
         <p className="text-xs text-stone-500 mb-3">
-          月単位で売上・利益の目標額と、粗利率の目標を入力します。粗利目標(金額)は「売上目標 × 粗利率」で自動計算されます。
+          月単位で売上・利益の目標額と、原価率の目標を入力します。原価目標(金額)は「売上目標 × 原価率」で自動計算されます。
         </p>
         <div className="flex flex-wrap gap-2 items-end mb-3 text-sm">
           <div>
@@ -216,14 +216,14 @@ export default function InputTab({
             />
           </div>
           <div>
-            <label className="block text-xs text-stone-500 mb-1">粗利率目標(%)</label>
+            <label className="block text-xs text-stone-500 mb-1">原価率目標(%)</label>
             <input
               type="number"
               step="0.1"
               className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-24"
-              value={targetForm.grossMarginRatio}
+              value={targetForm.costRatio}
               onFocus={(e) => e.target.select()}
-              onChange={(e) => setTargetForm((f) => ({ ...f, grossMarginRatio: e.target.value }))}
+              onChange={(e) => setTargetForm((f) => ({ ...f, costRatio: e.target.value }))}
             />
           </div>
           <div>
@@ -256,7 +256,7 @@ export default function InputTab({
               .sort()
               .map((ym) => {
                 const b = mgmtBudgets[ym];
-                const grossAmount = (b.salesBudget || 0) * ((b.grossMarginRatio || 0) / 100);
+                const costAmount = (b.salesBudget || 0) * ((b.costRatio || 0) / 100);
                 const isEditing = editingTargetMonth === ym;
                 return (
                   <div key={ym} className="border border-stone-200/80 rounded-xl p-3">
@@ -288,19 +288,19 @@ export default function InputTab({
                           />
                         </div>
                         <div>
-                          <label className="block text-stone-500 mb-1">粗利率目標(%)</label>
+                          <label className="block text-stone-500 mb-1">原価率目標(%)</label>
                           <input
                             type="number"
                             step="0.1"
                             className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-24"
-                            value={b.grossMarginRatio || 0}
+                            value={b.costRatio || 0}
                             onFocus={(e) => e.target.select()}
-                            onChange={(e) => setMgmtBudgetField(ym, "grossMarginRatio", e.target.value)}
+                            onChange={(e) => setMgmtBudgetField(ym, "costRatio", e.target.value)}
                           />
                         </div>
                         <div>
-                          <div className="text-stone-500 mb-1">粗利目標(自動計算)</div>
-                          <div className="tabular-nums font-medium py-1">{yen(grossAmount)}</div>
+                          <div className="text-stone-500 mb-1">原価目標(自動計算)</div>
+                          <div className="tabular-nums font-medium py-1">{yen(costAmount)}</div>
                         </div>
                         <div>
                           <label className="block text-stone-500 mb-1">利益目標(円)</label>
@@ -320,12 +320,12 @@ export default function InputTab({
                           <div className="tabular-nums font-medium">{yen(b.salesBudget)}</div>
                         </div>
                         <div>
-                          <div className="text-stone-500">粗利率目標</div>
-                          <div className="tabular-nums font-medium">{(b.grossMarginRatio || 0).toFixed(1)}%</div>
+                          <div className="text-stone-500">原価率目標</div>
+                          <div className="tabular-nums font-medium">{(b.costRatio || 0).toFixed(1)}%</div>
                         </div>
                         <div>
-                          <div className="text-stone-500">粗利目標</div>
-                          <div className="tabular-nums font-medium">{yen(grossAmount)}</div>
+                          <div className="text-stone-500">原価目標</div>
+                          <div className="tabular-nums font-medium">{yen(costAmount)}</div>
                         </div>
                         <div>
                           <div className="text-stone-500">利益目標</div>
