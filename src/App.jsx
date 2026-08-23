@@ -1286,6 +1286,7 @@ export default function App() {
             todos={todos}
             addTodoWithDeadline={addTodoWithDeadline}
             updateTodo={updateTodo}
+            removeTodo={removeTodo}
             expenses={expenses}
             expenseRates={expenseRates}
             addHibiFee={addHibiFee}

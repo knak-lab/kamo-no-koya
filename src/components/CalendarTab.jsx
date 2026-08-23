@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
-import { TODO_CATEGORIES, TODO_STATUSES, yen, getEventChannelColor } from "../lib/constants";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { TODO_CATEGORIES, getEventChannelColor } from "../lib/constants";
 import CalendarEventModal from "./CalendarEventModal";
+import CalendarChannelModal from "./CalendarChannelModal";
+import CalendarTodoModal from "./CalendarTodoModal";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -52,6 +54,7 @@ export default function CalendarTab({
   todos,
   addTodoWithDeadline,
   updateTodo,
+  removeTodo,
   expenses,
   expenseRates,
   addHibiFee,
@@ -61,24 +64,18 @@ export default function CalendarTab({
   const [viewMonth, setViewMonth] = useState(today.slice(0, 7));
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedEventId, setSelectedEventId] = useState(null);
+  const [channelModalDate, setChannelModalDate] = useState(null);
+  const [selectedTodoId, setSelectedTodoId] = useState(null);
   const [eventForm, setEventForm] = useState({ title: "", memo: "", channelId: "" });
   const [todoQuickForm, setTodoQuickForm] = useState({ category: TODO_CATEGORIES[0], task: "" });
-  const [feeForm, setFeeForm] = useState({ item: "", hours: "" });
 
   const weeks = buildMonthWeeks(viewMonth);
-  const meta = dailyMeta[selectedDate] || {};
   const dayEvents = calendarEvents.filter((e) => e.date === selectedDate);
   const dayTodos = todos.filter((t) => t.deadline === selectedDate);
-  const feeItemOptions = Object.keys(expenseRates).filter((it) => it.includes("利用料"));
-  const dayFees = expenses.filter((e) => e.date === selectedDate && e.item.includes("利用料"));
-  const selectedFeeItem = feeForm.item || feeItemOptions[0] || "";
   const selectedEvent = calendarEvents.find((e) => e.id === selectedEventId) || null;
-
-  const submitFee = () => {
-    if (!selectedFeeItem || !feeForm.hours) return;
-    addHibiFee(selectedDate, selectedFeeItem, feeForm.hours);
-    setFeeForm((f) => ({ ...f, hours: "" }));
-  };
+  const selectedTodo = todos.find((t) => t.id === selectedTodoId) || null;
+  const channelModalMeta = channelModalDate ? dailyMeta[channelModalDate] || {} : {};
+  const selectedDateMeta = dailyMeta[selectedDate] || {};
 
   const submitEvent = () => {
     if (!eventForm.title.trim()) return;
@@ -136,8 +133,9 @@ export default function CalendarTab({
                 if (!date) return <div key={di} />;
                 const day = Number(date.slice(8, 10));
                 const dMeta = dailyMeta[date] || {};
+                const channelColor = getEventChannelColor(dMeta.channelId, salesChannels);
                 const events = calendarEvents.filter((e) => e.date === date);
-                const openTodoCount = todos.filter((t) => t.deadline === date && t.status !== "完了").length;
+                const openTodos = todos.filter((t) => t.deadline === date && t.status !== "完了");
                 const isToday = date === today;
                 const isSelected = date === selectedDate;
                 return (
@@ -153,7 +151,15 @@ export default function CalendarTab({
                   >
                     <div className={`text-xs ${isToday ? "font-bold text-amber-700" : "text-stone-600"}`}>{day}</div>
                     {dMeta.channelId && (
-                      <div className="text-stone-400 truncate">{formatChannelLabel(dMeta, rebateClients)}</div>
+                      <button
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          setChannelModalDate(date);
+                        }}
+                        className={`block w-full truncate text-left rounded px-1 mt-0.5 ${channelColor.chip} hover:opacity-80 transition-opacity`}
+                      >
+                        {formatChannelLabel(dMeta, rebateClients)}
+                      </button>
                     )}
                     <div className="space-y-0.5 mt-0.5">
                       {events.slice(0, 2).map((e) => {
@@ -174,9 +180,22 @@ export default function CalendarTab({
                       })}
                     </div>
                     {events.length > 2 && <div className="text-stone-400">他{events.length - 2}件</div>}
-                    {openTodoCount > 0 && (
-                      <div className="mt-0.5 inline-block bg-red-100 text-red-700 rounded px-1">TODO{openTodoCount}</div>
-                    )}
+                    <div className="space-y-0.5 mt-0.5">
+                      {openTodos.slice(0, 2).map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            setSelectedDate(date);
+                            setSelectedTodoId(t.id);
+                          }}
+                          className="block w-full truncate text-left rounded px-1 bg-red-50 text-red-700 hover:opacity-80 transition-opacity"
+                        >
+                          {t.task}
+                        </button>
+                      ))}
+                    </div>
+                    {openTodos.length > 2 && <div className="text-stone-400">他{openTodos.length - 2}件</div>}
                   </div>
                 );
               })}
@@ -191,111 +210,16 @@ export default function CalendarTab({
             <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-3">{formatDateLabel(selectedDate)}</h2>
 
             <div className="mb-4">
-              <h3 className="text-sm font-medium mb-1">販売形態・委託先</h3>
-              <div className="flex flex-wrap gap-3 text-xs">
-                <div>
-                  <label className="block text-stone-500 mb-0.5">販売形態</label>
-                  <select
-                    className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
-                    value={meta.channelId || ""}
-                    onChange={(e) => {
-                      const nextChannelId = e.target.value;
-                      setDayField(selectedDate, "channelId", nextChannelId);
-                      if (nextChannelId !== "委託販売" && meta.clientId) setDayField(selectedDate, "clientId", "");
-                    }}
-                  >
-                    <option value="">(未選択)</option>
-                    {salesChannels.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {meta.channelId === "委託販売" && (
-                  <div>
-                    <label className="block text-stone-500 mb-0.5">委託先(販売先)</label>
-                    <select
-                      className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
-                      value={meta.clientId || ""}
-                      onChange={(e) => setDayField(selectedDate, "clientId", e.target.value)}
-                    >
-                      <option value="">(未選択・リベート対象外)</option>
-                      {rebateClients.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
+              <h3 className="text-sm font-medium mb-1.5">販売形態</h3>
+              <button
+                onClick={() => setChannelModalDate(selectedDate)}
+                className={`text-xs rounded-full px-2.5 py-1 hover:opacity-80 transition-opacity ${
+                  getEventChannelColor(selectedDateMeta.channelId, salesChannels).chip
+                }`}
+              >
+                {selectedDateMeta.channelId ? formatChannelLabel(selectedDateMeta, rebateClients) : "未設定・タップして設定"}
+              </button>
             </div>
-
-            {meta.channelId === "hibi" && (
-              <div className="mb-4">
-                <h3 className="text-sm font-medium mb-1">利用料</h3>
-                <div className="space-y-1 mb-2">
-                  {dayFees.length === 0 && <p className="text-xs text-stone-400">この日の利用料はまだ登録されていません。</p>}
-                  {dayFees.map((e) => (
-                    <div key={e.id} className="flex items-center justify-between gap-2 text-xs border-b border-stone-100 py-1">
-                      <div>
-                        {e.item}
-                        {e.hours != null && <span className="text-stone-400">（{e.hours}h）</span>} ・ {yen(e.amount)}
-                      </div>
-                      <button onClick={() => removeExpense(e.id)}>
-                        <Trash2 size={12} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                {feeItemOptions.length === 0 ? (
-                  <p className="text-xs text-stone-400">
-                    「利用料」を含む経費項目が経費マスタにありません。マスタタブで項目を追加してください。
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-2 items-end text-xs">
-                    <div>
-                      <label className="block text-stone-500 mb-1">項目</label>
-                      <select
-                        className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
-                        value={selectedFeeItem}
-                        onChange={(e) => setFeeForm((f) => ({ ...f, item: e.target.value }))}
-                      >
-                        {feeItemOptions.map((it) => (
-                          <option key={it} value={it}>
-                            {it}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-stone-500 mb-1">時間(h)</label>
-                      <input
-                        type="number"
-                        step="0.5"
-                        className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-20"
-                        value={feeForm.hours}
-                        onFocus={(e) => e.target.select()}
-                        onChange={(e) => setFeeForm((f) => ({ ...f, hours: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <div className="text-stone-500 mb-1">金額(自動計算・時間単価¥{expenseRates[selectedFeeItem] || 0})</div>
-                      <div className="tabular-nums font-medium py-1.5">
-                        {yen((Number(feeForm.hours) || 0) * (expenseRates[selectedFeeItem] || 0))}
-                      </div>
-                    </div>
-                    <button
-                      onClick={submitFee}
-                      className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-3.5 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow transition-all"
-                    >
-                      <Plus size={14} /> 追加
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
 
             <div className="mb-4">
               <h3 className="text-sm font-medium mb-1">予定(出店・イベント)</h3>
@@ -360,26 +284,19 @@ export default function CalendarTab({
 
             <div>
               <h3 className="text-sm font-medium mb-1">この日が期限のTODO</h3>
-              <div className="space-y-1 mb-2">
+              <p className="text-xs text-stone-500 mb-2">クリックすると詳細(編集・削除)を開けます。</p>
+              <div className="flex flex-wrap gap-1.5 mb-2">
                 {dayTodos.length === 0 && <p className="text-xs text-stone-400">この日を期限とするタスクはありません。</p>}
                 {dayTodos.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between gap-2 text-xs border-b border-stone-100 py-1">
-                    <div>
-                      <span className="text-stone-400 mr-1">[{t.category}]</span>
-                      {t.task}
-                    </div>
-                    <select
-                      className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
-                      value={t.status}
-                      onChange={(e) => updateTodo(t.id, "status", e.target.value)}
-                    >
-                      {TODO_STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTodoId(t.id)}
+                    className={`text-xs rounded-full px-2.5 py-1 hover:opacity-80 transition-opacity ${
+                      t.status === "完了" ? "bg-emerald-100 text-emerald-800" : "bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {t.task}
+                  </button>
                 ))}
               </div>
               <div className="flex flex-wrap gap-2 items-end text-xs">
@@ -429,6 +346,31 @@ export default function CalendarTab({
           removeCalendarEvent={removeCalendarEvent}
           duplicateCalendarEvent={duplicateCalendarEvent}
           onClose={() => setSelectedEventId(null)}
+        />
+      )}
+
+      {channelModalDate && (
+        <CalendarChannelModal
+          date={channelModalDate}
+          dateLabel={formatDateLabel(channelModalDate)}
+          meta={channelModalMeta}
+          setDayField={setDayField}
+          salesChannels={salesChannels}
+          rebateClients={rebateClients}
+          expenses={expenses}
+          expenseRates={expenseRates}
+          addHibiFee={addHibiFee}
+          removeExpense={removeExpense}
+          onClose={() => setChannelModalDate(null)}
+        />
+      )}
+
+      {selectedTodo && (
+        <CalendarTodoModal
+          todo={selectedTodo}
+          updateTodo={updateTodo}
+          removeTodo={removeTodo}
+          onClose={() => setSelectedTodoId(null)}
         />
       )}
     </>
