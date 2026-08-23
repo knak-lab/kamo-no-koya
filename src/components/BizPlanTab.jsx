@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Trash2, ExternalLink, Upload, FileText, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { resizeToDataUrl, fileToDataUrl } from "../lib/image";
 
@@ -11,7 +11,17 @@ function BizPlanSection({ item, files, addFile, removeFile, updateItem, removeIt
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [previewFile, setPreviewFile] = useState(null);
   const thumbInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!previewFile) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setPreviewFile(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [previewFile]);
 
   const thumbnail = files.find((f) => f.itemId === item.id && f.kind === "thumbnail");
   const attachments = files.filter((f) => f.itemId === item.id && f.kind === "attachment");
@@ -203,8 +213,20 @@ function BizPlanSection({ item, files, addFile, removeFile, updateItem, removeIt
                       ) : (
                         <FileText size={16} className="shrink-0 text-stone-400" />
                       )}
-                      <a href={f.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0 text-xs text-stone-700 truncate hover:text-amber-700">
+                      <button
+                        onClick={() => setPreviewFile(f)}
+                        className="flex-1 min-w-0 text-left text-xs text-stone-700 truncate hover:text-amber-700"
+                      >
                         {f.name}
+                      </button>
+                      <a
+                        href={f.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Driveで開く"
+                        className="shrink-0 text-stone-300 hover:text-amber-700"
+                      >
+                        <ExternalLink size={13} />
                       </a>
                       <button onClick={() => removeFile(f.id)} className="shrink-0 text-stone-300 hover:text-red-600">
                         <X size={13} />
@@ -217,6 +239,49 @@ function BizPlanSection({ item, files, addFile, removeFile, updateItem, removeIt
           </div>
 
           {error && <p className="text-xs text-red-600">{error}</p>}
+        </div>
+      )}
+
+      {previewFile && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          onClick={() => setPreviewFile(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-stone-100">
+              <p className="text-sm font-medium text-stone-800 truncate">{previewFile.name}</p>
+              <div className="flex items-center gap-3 shrink-0">
+                <a
+                  href={previewFile.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Driveで開く"
+                  className="text-stone-400 hover:text-amber-700"
+                >
+                  <ExternalLink size={16} />
+                </a>
+                <button onClick={() => setPreviewFile(null)} className="text-stone-400 hover:text-red-600">
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 bg-stone-100 flex items-center justify-center overflow-auto">
+              {previewFile.mimeType?.startsWith("image/") ? (
+                <img src={previewFile.url} alt="" className="max-w-full max-h-[80vh] object-contain" />
+              ) : previewFile.fileId ? (
+                <iframe
+                  src={`https://drive.google.com/file/d/${previewFile.fileId}/preview`}
+                  className="w-full h-[75vh] border-0"
+                  title={previewFile.name}
+                />
+              ) : (
+                <p className="text-sm text-stone-500 p-6">プレビューできません。Driveで開いてください。</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
