@@ -1008,6 +1008,17 @@ export default function App() {
   };
   const updateBizPlanItem = (id, field, value) =>
     setBizPlanItems((prev) => prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)));
+  // 事業計画セクションの並び替え(1つ上/下と入れ替える)
+  const moveBizPlanItem = (id, direction) => {
+    setBizPlanItems((prev) => {
+      const idx = prev.findIndex((it) => it.id === id);
+      const swapIdx = idx + direction;
+      if (idx < 0 || swapIdx < 0 || swapIdx >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+      return next;
+    });
+  };
   const removeBizPlanItem = async (id) => {
     if (!window.confirm("このセクションを削除しますか？添付ファイルもすべて削除されます。")) return;
     setBizPlanItems((prev) => prev.filter((it) => it.id !== id));
@@ -1350,6 +1361,7 @@ export default function App() {
             addItem={addBizPlanItem}
             updateItem={updateBizPlanItem}
             removeItem={removeBizPlanItem}
+            moveItem={moveBizPlanItem}
             addFile={addBizPlanFile}
             removeFile={removeBizPlanFile}
           />

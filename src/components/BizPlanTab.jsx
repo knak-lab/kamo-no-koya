@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Trash2, ExternalLink, Upload, FileText, Image as ImageIcon, Loader2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Plus, Trash2, ExternalLink, Upload, FileText, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { resizeToDataUrl, fileToDataUrl } from "../lib/image";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10MB(GAS Web Appへのdata URL送信が現実的な上限の目安)
 
 // タイトル単位のセクション。デフォルト閉じており、開いている間だけ本体全体が
 // ドキュメント・写真のドロップ先になる。
-function BizPlanSection({ item, files, addFile, removeFile, updateItem, removeItem }) {
+function BizPlanSection({ item, files, addFile, removeFile, updateItem, removeItem, moveItem, isFirst, isLast }) {
   const [open, setOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -68,22 +68,39 @@ function BizPlanSection({ item, files, addFile, removeFile, updateItem, removeIt
 
   return (
     <div className="border border-stone-200/80 rounded-2xl overflow-hidden bg-white">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-stone-50 transition-colors"
-      >
-        {open ? <ChevronDown size={16} className="shrink-0 text-stone-400" /> : <ChevronRight size={16} className="shrink-0 text-stone-400" />}
-        {thumbnail ? (
-          <img src={thumbnail.url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-stone-200" />
-        ) : (
-          <div className="w-10 h-10 rounded-lg shrink-0 bg-stone-100 flex items-center justify-center text-stone-300">
-            <ImageIcon size={16} />
-          </div>
-        )}
-        <span className="flex-1 min-w-0 font-medium text-sm text-stone-800 truncate">{item.title || "(無題)"}</span>
-        {item.url && <ExternalLink size={13} className="text-stone-300 shrink-0" />}
-        {attachments.length > 0 && <span className="text-[11px] text-stone-400 shrink-0">添付{attachments.length}件</span>}
-      </button>
+      <div className="w-full flex items-center gap-1 px-4 py-3 hover:bg-stone-50 transition-colors">
+        <button onClick={() => setOpen((v) => !v)} className="flex-1 min-w-0 flex items-center gap-3 text-left">
+          {open ? <ChevronDown size={16} className="shrink-0 text-stone-400" /> : <ChevronRight size={16} className="shrink-0 text-stone-400" />}
+          {thumbnail ? (
+            <img src={thumbnail.url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-stone-200" />
+          ) : (
+            <div className="w-10 h-10 rounded-lg shrink-0 bg-stone-100 flex items-center justify-center text-stone-300">
+              <ImageIcon size={16} />
+            </div>
+          )}
+          <span className="flex-1 min-w-0 font-medium text-sm text-stone-800 truncate">{item.title || "(無題)"}</span>
+          {item.url && <ExternalLink size={13} className="text-stone-300 shrink-0" />}
+          {attachments.length > 0 && <span className="text-[11px] text-stone-400 shrink-0">添付{attachments.length}件</span>}
+        </button>
+        <div className="flex items-center shrink-0">
+          <button
+            onClick={() => moveItem(item.id, -1)}
+            disabled={isFirst}
+            title="上に移動"
+            className="p-1.5 text-stone-300 hover:text-amber-700 disabled:opacity-25 disabled:pointer-events-none"
+          >
+            <ChevronUp size={16} />
+          </button>
+          <button
+            onClick={() => moveItem(item.id, 1)}
+            disabled={isLast}
+            title="下に移動"
+            className="p-1.5 text-stone-300 hover:text-amber-700 disabled:opacity-25 disabled:pointer-events-none"
+          >
+            <ChevronDown size={16} />
+          </button>
+        </div>
+      </div>
 
       {open && (
         <div
@@ -288,7 +305,7 @@ function BizPlanSection({ item, files, addFile, removeFile, updateItem, removeIt
   );
 }
 
-export default function BizPlanTab({ items, files, addItem, updateItem, removeItem, addFile, removeFile }) {
+export default function BizPlanTab({ items, files, addItem, updateItem, removeItem, moveItem, addFile, removeFile }) {
   const [newTitle, setNewTitle] = useState("");
 
   const handleAdd = () => {
@@ -306,8 +323,19 @@ export default function BizPlanTab({ items, files, addItem, updateItem, removeIt
 
       <div className="space-y-2 mb-4">
         {items.length === 0 && <p className="text-xs text-stone-400">まだセクションがありません。下から追加してください。</p>}
-        {items.map((item) => (
-          <BizPlanSection key={item.id} item={item} files={files} addFile={addFile} removeFile={removeFile} updateItem={updateItem} removeItem={removeItem} />
+        {items.map((item, idx) => (
+          <BizPlanSection
+            key={item.id}
+            item={item}
+            files={files}
+            addFile={addFile}
+            removeFile={removeFile}
+            updateItem={updateItem}
+            removeItem={removeItem}
+            moveItem={moveItem}
+            isFirst={idx === 0}
+            isLast={idx === items.length - 1}
+          />
         ))}
       </div>
 
