@@ -64,7 +64,7 @@ function doPost(e) {
       case "saveTodos":
         return ok_(saveTodosAndSubtasks_(body));
       case "syncCatalogFromSquare":
-        return ok_(syncCatalogFromSquare());
+        return ok_(syncCatalogFromSquareById()); // 旧: syncCatalogFromSquare() 名前マッチ版。CatalogReconcile_20260906.gs の squareCatalogId 突合版に置換
       case "recalcZeroCostSales":
         return ok_(recalcZeroCostSales());
       case "syncSalesFromSquare":

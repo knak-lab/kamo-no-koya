@@ -28,3 +28,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# カタログ突合の作業データ(ローカルのみ・復旧用)
+突合_20260906/*.csv
+突合_20260906/backup_before_migration.json
