@@ -151,9 +151,14 @@ function getSs_() {
   return ssCache_;
 }
 
+// textCols指定シートは1リクエスト内で複数回呼ばれることがある(get*_/save*_の両方から等)ため、
+// 同一実行内での重複整形を防ぐメモ
+var textColsFormatted_ = {};
+
 function getOrCreateSheet_(name, headers, seedRows, textCols) {
   const ss = getSs_();
   let sheet = ss.getSheetByName(name);
+  const isNewSheet = !sheet;
   if (!sheet) {
     sheet = ss.insertSheet(name);
     sheet.appendRow(headers);
@@ -164,11 +169,20 @@ function getOrCreateSheet_(name, headers, seedRows, textCols) {
       sheet.getRange(2, 1, seedRows.length, headers.length).setValues(seedRows);
     }
   }
-  if (textCols && textCols.length) {
-    const rows = Math.max(sheet.getMaxRows() - 1, 1);
-    textCols.forEach(function (col) {
-      sheet.getRange(2, col, rows, 1).setNumberFormat("@");
-    });
+  // setNumberFormatは冪等だが、textCols指定シート1枚あたり毎回1回のRange操作が発生し、
+  // getAll_1回で10シート以上・doGet毎に積み重なるとレスポンスが遅くなる。
+  // 一度整形済みならその後は列の型が変わらない前提で、実行をまたいでもCacheServiceで間引く。
+  if (textCols && textCols.length && !textColsFormatted_[name]) {
+    textColsFormatted_[name] = true;
+    const cache = CacheService.getScriptCache();
+    const cacheKey = "textfmt_" + name;
+    if (isNewSheet || !cache.get(cacheKey)) {
+      const rows = Math.max(sheet.getMaxRows() - 1, 1);
+      textCols.forEach(function (col) {
+        sheet.getRange(2, col, rows, 1).setNumberFormat("@");
+      });
+      cache.put(cacheKey, "1", 21600); // 6時間
+    }
   }
   return sheet;
 }

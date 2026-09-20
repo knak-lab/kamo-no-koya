@@ -37,6 +37,24 @@ import BizPlanTab from "./components/BizPlanTab";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const APP_ICON_CACHE_KEY = "kamo-app-icon";
+// 起動時の読み込み待ちを短くするため、getAll()で取れる全データを丸ごとlocalStorageに
+// キャッシュしておく。次回起動時はこれを即描画してから、裏で最新を取りに行く。
+const DATA_CACHE_KEY = "kamo-app-data-cache-v1";
+function readCachedData_() {
+  try {
+    const raw = localStorage.getItem(DATA_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+function writeCachedData_(data) {
+  try {
+    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // 容量超過・プライベートモードなど。キャッシュ無しで動作を続ける。
+  }
+}
 
 // 読み込み中画面で、画面上をランダムに歩き回るカモ(絵文字)
 // タスクマニア(家族タブの「カモの小屋」PJ)側で完了操作されたサブタスクの状態を、
@@ -149,6 +167,10 @@ export default function App() {
 
   // ========== ロード・保存状態 ==========
   const [loading, setLoading] = useState(true);
+  // trueになるまでは、表示しているデータがキャッシュ由来(=サーバーの最新と限らない)である
+  // ことを示す。この間は編集を無効化し、キャッシュを基にした保存で他端末の変更を
+  // 意図せず上書きしてしまうのを防ぐ。
+  const [dataFresh, setDataFresh] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [saveState, setSaveState] = useState("idle"); // idle|saving|saved|error
   const hasLoadedRef = useRef(false);
@@ -282,6 +304,38 @@ export default function App() {
   // 設定シートの一部として他の設定と一括autosaveされる(専用の保存アクションは持たない)
   const [onlineShopUrl, setOnlineShopUrl] = useState("");
 
+  // getAll()のレスポンス(またはキャッシュ)を各stateへ反映する共通処理
+  const applyLoadedData = (data) => {
+    setMaterials(data.materials || []);
+    setCalendarEvents(data.calendarEvents || []);
+    setBizPlanItems(data.bizPlanItems || []);
+    setBizPlanFiles(data.bizPlanFiles || []);
+    setSummaryImages(data.summaryImages || []);
+    setProducts(data.products || []);
+    setProductCategories(data.productCategories || []);
+    setProductAliases(data.productAliases || {});
+    setSaleOverrides(data.saleOverrides || {});
+    setPackagingExemptions(data.packagingExemptions || []);
+    setRecipes(data.recipes || {});
+    setSetBreakdowns(data.setBreakdowns || {});
+    setRebateClients(data.rebateClients || []);
+    setSalesChannels(data.salesChannels || []);
+    setExpenseRates((prev) => ({ ...prev, ...(data.expenseRates || {}) }));
+    setExpenses(data.expenses || []);
+    setDailyMeta(data.dailyMeta || {});
+    setMgmtBudgets(data.mgmtBudgets || {});
+    setFinBudgets(data.finBudgets || {});
+    setTodos(data.todos || []);
+    setSubtasks(data.subtasks || []);
+    setSquareSyncFromSquare(data.settings?.squareSyncFromSquare ?? true);
+    setOnlineShopUrl(data.settings?.onlineShopUrl || "");
+    setTodoVisual(data.todoVisual || "");
+    setAppIcon(data.appIcon || "");
+    cacheAppIcon(data.appIcon || "");
+    setSales(data.sales || []);
+    setSquareSyncLog(data.squareSyncLog || []);
+  };
+
   // ========== 初回ロード ==========
   useEffect(() => {
     let cancelled = false;
@@ -291,39 +345,26 @@ export default function App() {
         setLoading(false);
         return;
       }
+      // 前回起動時のデータがあれば、通信を待たずに即描画する。
+      // ただしこの時点ではサーバーの最新かどうか分からないため、dataFreshはfalseのまま
+      // (=フル画面ローディングは消えるが、実際の編集操作は最新取得後まで無効化する。
+      //   全シート一括保存(saveAll)のため、古いデータを基に保存すると他端末の変更を
+      //   意図せず消してしまうおそれがある)
+      const cached = readCachedData_();
+      if (cached) {
+        applyLoadedData(cached);
+        hasLoadedRef.current = true;
+        setSaveState("idle");
+        setLoading(false);
+      }
       try {
         const data = await gasApi.getAll();
         if (cancelled) return;
-        setMaterials(data.materials || []);
-        setCalendarEvents(data.calendarEvents || []);
-        setBizPlanItems(data.bizPlanItems || []);
-        setBizPlanFiles(data.bizPlanFiles || []);
-        setSummaryImages(data.summaryImages || []);
-        setProducts(data.products || []);
-        setProductCategories(data.productCategories || []);
-        setProductAliases(data.productAliases || {});
-        setSaleOverrides(data.saleOverrides || {});
-        setPackagingExemptions(data.packagingExemptions || []);
-        setRecipes(data.recipes || {});
-        setSetBreakdowns(data.setBreakdowns || {});
-        setRebateClients(data.rebateClients || []);
-        setSalesChannels(data.salesChannels || []);
-        setExpenseRates((prev) => ({ ...prev, ...(data.expenseRates || {}) }));
-        setExpenses(data.expenses || []);
-        setDailyMeta(data.dailyMeta || {});
-        setMgmtBudgets(data.mgmtBudgets || {});
-        setFinBudgets(data.finBudgets || {});
-        setTodos(data.todos || []);
-        setSubtasks(data.subtasks || []);
-        setSquareSyncFromSquare(data.settings?.squareSyncFromSquare ?? true);
-        setOnlineShopUrl(data.settings?.onlineShopUrl || "");
-        setTodoVisual(data.todoVisual || "");
-        setAppIcon(data.appIcon || "");
-        cacheAppIcon(data.appIcon || "");
-        setSales(data.sales || []);
-        setSquareSyncLog(data.squareSyncLog || []);
+        applyLoadedData(data);
+        writeCachedData_(data);
         hasLoadedRef.current = true;
         setSaveState("idle");
+        setDataFresh(true);
         try {
           const { projects: taskmaniaProjects } = await loadTaskmaniaProjects();
           if (!cancelled) setSubtasks((prev) => mergeTaskmaniaCompletion(prev, taskmaniaProjects));
@@ -331,6 +372,12 @@ export default function App() {
           // タスクマニア側が読み込めなくても、カモの小屋自体の読み込みは成功扱いのまま続行する
         }
       } catch (e) {
+        if (cancelled) return;
+        if (cached) {
+          // キャッシュ表示中の通信失敗。編集をいつまでも無効化したままにはできないため、
+          // キャッシュを最新扱いにして進める(=フェイルオープン)。エラー自体は表示する。
+          setDataFresh(true);
+        }
         setLoadError(String(e.message || e));
       } finally {
         if (!cancelled) setLoading(false);
@@ -1197,7 +1244,19 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50/60 via-stone-50 to-stone-50 text-stone-900 font-sans md:flex md:items-start md:gap-6 md:max-w-6xl md:mx-auto md:px-4 md:py-6">
+    <>
+      {!dataFresh && (
+        <div className="fixed top-2 inset-x-0 z-50 flex justify-center pointer-events-none">
+          <span className="bg-stone-900/85 text-white text-xs rounded-full px-3 py-1.5 shadow-lg">
+            前回のデータを表示中・最新を確認しています…
+          </span>
+        </div>
+      )}
+      <div
+        className={`min-h-screen bg-gradient-to-b from-amber-50/60 via-stone-50 to-stone-50 text-stone-900 font-sans md:flex md:items-start md:gap-6 md:max-w-6xl md:mx-auto md:px-4 md:py-6${
+          dataFresh ? "" : " pointer-events-none select-none opacity-75"
+        }`}
+      >
       <Sidebar
         tab={tab}
         setTab={setTab}
@@ -1486,6 +1545,7 @@ export default function App() {
         )}
       </div>
     </div>
+    </>
   );
 }
 
