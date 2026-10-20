@@ -45,7 +45,7 @@ const SUBTASKS_FIELD_BY_HEADER = { "サブタスクID": "id", "親タスクID": 
 
 // ---- このアプリ専用の新規シート(実データとの衝突なし) ----
 const SHEET_PRODUCTS = "商品マスター_原価管理";
-const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion", "procedure", "baseItemId", "active", "category"];
+const PRODUCTS_HDR = ["id", "name", "price", "kind", "squareCatalogId", "squareCatalogVersion", "procedure", "baseItemId", "active", "category", "komechalle"];
 
 // 商品マスタのカテゴリ一覧(設定タブから編集可能。表示順=このシートの行順)
 const SHEET_PRODUCT_CATEGORIES = "商品カテゴリ";
@@ -395,6 +395,8 @@ function getProducts_() {
       // 列追加前の既存行は空欄のままなので、明示的にfalse(無効)でない限り有効として扱う
       active: p.active === false || p.active === "FALSE" ? false : true,
       category: p.category || "",
+      // 米チャレ！の商品の目印(シートで TRUE にする。Komechalle.gs の komechalleExport が使う)
+      komechalle: p.komechalle === true || String(p.komechalle).toUpperCase() === "TRUE",
     };
   });
 }

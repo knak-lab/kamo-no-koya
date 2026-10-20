@@ -6,6 +6,8 @@
 //        BASE側からのリダイレクトのためtoken認証は通さない)
 //    GET ?action=debugHeaders → 実データ9シートの生ヘッダー行を返す(読み取り専用。
 //        シートの作成・変更は一切行わない)
+//    GET ?action=komechalleExport&since=YYYY-MM-DD → 米チャレ！向けの商品と売上(読み取り専用。
+//        Komechalle.gs参照)
 //    GET (それ以外)            → getAll_() の内容を返す
 //    POST → body.action で分岐 ("saveAll" / "saveTodos" / "syncCatalogFromSquare" /
 //        "recalcZeroCostSales" / "syncSalesFromSquare" / "syncProductsToBase" / "syncOrdersFromBase" /
@@ -36,6 +38,9 @@ function doGet(e) {
   try {
     if (e.parameter.action === "debugHeaders") {
       return ok_({ headers: debugGetRawHeaders_() });
+    }
+    if (e.parameter.action === "komechalleExport") {
+      return ok_(komechalleExport_(e.parameter.since));
     }
     return ok_(getAll_());
   } catch (ex) {
