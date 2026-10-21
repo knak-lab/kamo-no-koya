@@ -1253,6 +1253,47 @@ function getCatalogReadOnly_() {
 // 売上_Squareを読み取り専用で整形。orderId は id 列(order.id + "_" + item.uid/name)から
 // 最後の "_" 区切りを取り除いて復元(既存シートに独立した伝票ID列が無いための推定ロジック)。
 // productId は 商品名 そのもの(商品マスター_原価管理も id=name のため突き合わせ不要)。
+// 売上の商品名を 商品マスター_原価管理 の商品名(id)に合わせる。
+//   1) そのまま一致 → そのまま
+//   2) 商品名エイリアスがある → applyAlias なら行き先、でなければそのまま(画面側の resolvedSales に任せる)
+//   3) Square のバリエーションID(売上_Square の squareVariationId 列)が一致 → その商品
+//   4) 「名前 / バリエーション名」の候補が1つだけ(有効な商品を優先) → その商品
+//      (Squareの売上は商品名だけ、商品マスターは「名前 / 通常」の形なのでずれる)
+//   どれでもなければ元の名前のまま
+function makeSaleNameResolver_(products, aliases) {
+  const names = {};
+  const byVid = {};
+  const byBase = {};
+  products.forEach(function (p) {
+    names[p.id] = true;
+    if (p.squareCatalogId) byVid[p.squareCatalogId] = p.id;
+    const i = p.id.indexOf(" / ");
+    if (i > 0) {
+      const base = p.id.slice(0, i);
+      (byBase[base] = byBase[base] || []).push(p);
+    }
+  });
+  return function (raw, variationId, applyAlias) {
+    if (names[raw]) return raw;
+    if (aliases[raw]) return applyAlias ? aliases[raw] : raw;
+    if (variationId && byVid[variationId]) return byVid[variationId];
+    const cands = byBase[raw] || [];
+    const active = cands.filter(function (p) { return p.active; });
+    if (active.length === 1) return active[0].id;
+    if (cands.length === 1) return cands[0].id;
+    return raw;
+  };
+}
+
+// 売上_Square の squareVariationId 列の値(行の順番どおり)。列が無ければ空の配列
+function readSalesVariationIds_(sheet, numRows) {
+  const lastCol = sheet.getLastColumn();
+  const headers = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+  const col = headers.indexOf("squareVariationId") + 1;
+  if (!col || numRows < 1) return [];
+  return sheet.getRange(2, col, numRows, 1).getValues().map(function (r) { return String(r[0] || ""); });
+}
+
 function getSales_() {
   const sheet = getSalesSheetReadOnly_();
   if (!sheet) return [];
@@ -1267,6 +1308,8 @@ function getSales_() {
   const costIdx = headers.indexOf("unitCostAtSale");
   const costSubIdx = headers.indexOf("costSubtotal");
   const channelIdx = headers.indexOf("チャネル");
+  const vidIdx = headers.indexOf("squareVariationId");
+  const resolve = makeSaleNameResolver_(getProducts_(), getProductAliases_());
 
   return data
     .slice(1)
@@ -1280,7 +1323,7 @@ function getSales_() {
         id: id,
         orderId: orderId,
         date: cellToStr_(r[dateIdx]),
-        productId: String(r[nameIdx] || ""),
+        productId: resolve(String(r[nameIdx] || ""), vidIdx >= 0 ? String(r[vidIdx] || "") : "", false),
         qty: Number(r[qtyIdx]) || 0,
         amount: Number(r[amountIdx]) || 0,
         // 過去にチャネル列が無かった頃の行(実質すべてSquare取込)は空欄のままなので"Square"扱いにする

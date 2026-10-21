@@ -26,6 +26,9 @@ function syncFromSquare() {
   try {
     syncOrders();
     syncCatalog();
+    // 「Square → アプリ」運用のときは、Squareの新商品・改名を 商品マスター_原価管理 にも毎回反映する
+    // (これまでアプリのボタンを押したときだけで、押し忘れると売上の商品名とずれていった)
+    if (getSettings_().squareSyncFromSquare) syncCatalogFromSquareById();
     Logger.log("✅ Square同期完了");
   } catch (e) {
     Logger.log("❌ エラー: " + e.message);
@@ -46,6 +49,7 @@ function syncOrders() {
     sheet.getRange(1,1,1,7).setFontWeight("bold").setBackground("#c8956c").setFontColor("#ffffff");
   }
   const channelCol = ensureSalesChannelColumn_(sheet); // 実店舗(Square)/ネット(BASE)の区別。定義はSheets.gs
+  const variationCol = ensureSalesVariationColumn_(sheet); // 商品をIDで結ぶためのSquareバリエーションID
 
   // 既存IDを取得(重複防止)
   const existing = new Set();
@@ -101,7 +105,8 @@ function syncOrders() {
           qty,
           amount,
           payment,
-          new Date().toLocaleString("ja-JP")
+          new Date().toLocaleString("ja-JP"),
+          item.catalog_object_id || ""
         ]);
         existing.add(uid);
       });
@@ -110,12 +115,24 @@ function syncOrders() {
 
   if (newRows.length > 0) {
     const startRow = sheet.getLastRow()+1;
-    sheet.getRange(startRow, 1, newRows.length, 7).setValues(newRows);
+    sheet.getRange(startRow, 1, newRows.length, 7).setValues(newRows.map(r => r.slice(0, 7)));
     sheet.getRange(startRow, channelCol, newRows.length, 1).setValues(newRows.map(() => ["Square"]));
+    sheet.getRange(startRow, variationCol, newRows.length, 1).setValues(newRows.map(r => [r[7]]));
     Logger.log(`売上 ${newRows.length}件 追加`);
   } else {
     Logger.log("売上: 新規データなし");
   }
+}
+
+// 売上_Square に squareVariationId 列(Squareの line_item.catalog_object_id)を確保して列番号を返す
+function ensureSalesVariationColumn_(sheet) {
+  const lastCol = sheet.getLastColumn();
+  const headers = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+  const idx = headers.indexOf("squareVariationId");
+  if (idx >= 0) return idx + 1;
+  const col = Math.max(lastCol, 10) + 1; // 8,9列目は原価、10列目付近はチャネル列のため、その後ろに置く
+  sheet.getRange(1, col).setValue("squareVariationId");
+  return col;
 }
 
 // ============================================================

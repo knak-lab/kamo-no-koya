@@ -90,6 +90,8 @@ function stampCostSnapshot() {
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return;
     const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+    const resolve = makeSaleNameResolver_(products, getProductAliases_());
+    const vids = readSalesVariationIds_(sheet, lastRow - 1);
 
     let updated = 0;
     for (let i = 0; i < data.length; i++) {
@@ -99,9 +101,9 @@ function stampCostSnapshot() {
       const alreadyStamped = row[7] !== "" && row[7] !== null && row[7] !== undefined;
       if (alreadyStamped) continue;
 
-      const name = String(row[2] || "");
+      // 商品マスター_原価管理は id = name。売上の名前は makeSaleNameResolver_ で合わせてから引く
+      const name = resolve(String(row[2] || ""), vids[i] || "", true);
       const qty = Number(row[3]) || 0;
-      // 商品マスター_原価管理は id = name のため、名前をそのままキーに引ける
       const cost = costs[name] ? costs[name].原価 : 0;
       const costSubtotal = cost * qty;
 
@@ -142,6 +144,8 @@ function recalcZeroCostSales() {
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return { updated: 0 };
     const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+    const resolve = makeSaleNameResolver_(products, getProductAliases_());
+    const vids = readSalesVariationIds_(sheet, lastRow - 1);
 
     let updated = 0;
     for (let i = 0; i < data.length; i++) {
@@ -153,7 +157,7 @@ function recalcZeroCostSales() {
       if (stampedCost !== 0) continue; // 0円以外(未確定含む)は対象外。未確定行はstampCostSnapshotに任せる
       if (row[7] === "" || row[7] === null) continue; // 未確定(空欄)はここでは対象外
 
-      const name = String(row[2] || "");
+      const name = resolve(String(row[2] || ""), vids[i] || "", true);
       const qty = Number(row[3]) || 0;
       const newCost = costs[name] ? costs[name].原価 : 0;
       if (newCost === 0) continue; // 現在も原価0円ならスキップ(実質変化なし)
