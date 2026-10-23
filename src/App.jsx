@@ -613,6 +613,10 @@ export default function App() {
   const toggleProductActive = (id) => {
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, active: p.active === false } : p)));
   };
+  // 米チャレ！の収支に取り込む商品の目印(komechalle 列。Komechalle.gs の komechalleExport が使う)
+  const toggleProductKomechalle = (id) => {
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, komechalle: !p.komechalle } : p)));
+  };
 
   // 商品マスタ一覧の「編集」ボタン(クイック編集モーダル)から、商品名・区分・価格をまとめて
   // 確定する。id=商品名のため、名前変更時はレシピ・セット内訳側の参照付け替えも合わせて行う。
@@ -1505,6 +1509,7 @@ export default function App() {
             updateProductBasicFields={updateProductBasicFields}
             setProducts={setProducts}
             toggleProductActive={toggleProductActive}
+            toggleProductKomechalle={toggleProductKomechalle}
             materialForm={materialForm}
             setMaterialForm={setMaterialForm}
             addMaterial={addMaterial}
