@@ -72,6 +72,10 @@ export const gasApi = {
   // BASEの注文を売上_Squareシートへチャネル"BASE"として取り込む
   syncOrdersFromBase: () => post({ action: "syncOrdersFromBase" }),
 
+  // Squareを使わずレジ代わりに直接記録する売上追加。1回の会計ぶん(複数商品)をまとめて送る
+  // items: [{ productName, qty, amount }]
+  addManualSales: (date, items) => post({ action: "addManualSales", date, items }),
+
   // todoタブに表示するビジュアル画像(PNG/JPEG data URL)を保存。空文字で削除
   saveTodoVisual: (dataUrl) => post({ action: "saveTodoVisual", dataUrl }),
 

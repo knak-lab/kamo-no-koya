@@ -90,6 +90,8 @@ function stampCostSnapshot() {
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return;
     const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+    const resolve = makeSaleNameResolver_(products, getProductAliases_());
+    const vids = readSalesVariationIds_(sheet, lastRow - 1);
 
     let updated = 0;
     for (let i = 0; i < data.length; i++) {
@@ -99,9 +101,9 @@ function stampCostSnapshot() {
       const alreadyStamped = row[7] !== "" && row[7] !== null && row[7] !== undefined;
       if (alreadyStamped) continue;
 
-      const name = String(row[2] || "");
+      // 商品マスター_原価管理は id = name。売上の名前は makeSaleNameResolver_ で合わせてから引く
+      const name = resolve(String(row[2] || ""), vids[i] || "", true);
       const qty = Number(row[3]) || 0;
-      // 商品マスター_原価管理は id = name のため、名前をそのままキーに引ける
       const cost = costs[name] ? costs[name].原価 : 0;
       const costSubtotal = cost * qty;
 
@@ -142,6 +144,8 @@ function recalcZeroCostSales() {
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return { updated: 0 };
     const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+    const resolve = makeSaleNameResolver_(products, getProductAliases_());
+    const vids = readSalesVariationIds_(sheet, lastRow - 1);
 
     let updated = 0;
     for (let i = 0; i < data.length; i++) {
@@ -153,7 +157,7 @@ function recalcZeroCostSales() {
       if (stampedCost !== 0) continue; // 0円以外(未確定含む)は対象外。未確定行はstampCostSnapshotに任せる
       if (row[7] === "" || row[7] === null) continue; // 未確定(空欄)はここでは対象外
 
-      const name = String(row[2] || "");
+      const name = resolve(String(row[2] || ""), vids[i] || "", true);
       const qty = Number(row[3]) || 0;
       const newCost = costs[name] ? costs[name].原価 : 0;
       if (newCost === 0) continue; // 現在も原価0円ならスキップ(実質変化なし)
@@ -184,6 +188,32 @@ function syncSalesFromSquare() {
     appendSyncLog_("syncSalesFromSquare", "error", String(ex));
     throw ex;
   }
+}
+
+// Squareを使わずレジ代わりにアプリへ直接売上を記録するための手動追加(1回の会計で複数商品ぶんを
+// まとめて登録できるよう配列で受け取る)。idには"manual_"接頭辞を付け、Square取込分のuid
+// ("order.id_uid")と衝突しないようにする(併用期間中に同じ売上をSquareへも登録してしまっても
+// 二重計上に気づけるように)。新規行は原価スナップショット列(8,9列目)を空欄のまま追加し、
+// 直後にstampCostSnapshotで未確定行として自動的に拾わせる(通常のSquare取込と同じ扱い)。
+function addManualSales_(date, items) {
+  if (!date) throw new Error("日付は必須です");
+  if (!items || !items.length) throw new Error("商品が選択されていません");
+
+  const sheet = getOrCreateSheet_(SALES_SHEET_NAME, ["id", "日付", "商品名", "数量", "金額(円)", "支払方法", "取得日時"], null, [1]);
+  const channelCol = ensureSalesChannelColumn_(sheet);
+  const now = new Date().toLocaleString("ja-JP");
+  const startRow = sheet.getLastRow() + 1;
+
+  const rows = items.map(function (item) {
+    if (!item.productName) throw new Error("商品は必須です");
+    return ["manual_" + Utilities.getUuid(), date, item.productName, Number(item.qty) || 0, Number(item.amount) || 0, "手動", now];
+  });
+  sheet.getRange(startRow, 1, rows.length, 7).setValues(rows);
+  sheet.getRange(startRow, channelCol, rows.length, 1).setValues(rows.map(function () { return ["手動"]; }));
+
+  stampCostSnapshot();
+  appendSyncLog_("addManualSale", "success", date + " " + items.length + "品目をレジ登録");
+  return { squareSyncLog: getSquareSyncLog_(20) };
 }
 
 // フェーズ1: 既存「商品マスター」(Square由来)の商品名・価格を

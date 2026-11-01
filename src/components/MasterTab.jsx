@@ -150,6 +150,7 @@ export default function MasterTab({
   updateProductBasicFields,
   setProducts,
   toggleProductActive,
+  toggleProductKomechalle,
   materialForm,
   setMaterialForm,
   addMaterial,
@@ -214,6 +215,11 @@ export default function MasterTab({
         <td className="py-1 pr-2 pl-2.5 font-medium">
           <div className="flex items-center gap-1">
             <span>{p.name}</span>
+            {p.komechalle && (
+              <span className="text-[10px] px-1 rounded bg-lime-100 text-lime-800 font-medium" title="米チャレ！の収支に取り込む商品">
+                米チャレ
+              </span>
+            )}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -378,6 +384,21 @@ export default function MasterTab({
                           }`}
                         >
                           {active ? "有効" : "無効"}
+                        </button>
+                      );
+                    })()}
+                  {!productDraft.isNew &&
+                    (() => {
+                      const on = !!products.find((p) => p.id === productDraft.id)?.komechalle;
+                      return (
+                        <button
+                          onClick={() => toggleProductKomechalle(productDraft.id)}
+                          title="オンにすると、米チャレ！の収支にこの商品の売上を取り込みます"
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-medium transition-colors ${
+                            on ? "bg-lime-100 text-lime-800 hover:bg-lime-200" : "bg-stone-100 text-stone-400 hover:bg-stone-200"
+                          }`}
+                        >
+                          {on ? "米チャレ ✓" : "米チャレ"}
                         </button>
                       );
                     })()}
