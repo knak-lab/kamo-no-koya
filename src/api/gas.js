@@ -1,4 +1,4 @@
-import { withIdToken } from "../auth/googleAuth";
+import { peekIdToken, withIdToken } from "../auth/googleAuth";
 
 const GAS_URL = import.meta.env.VITE_GAS_URL;
 const TASKMANIA_GAS_URL = import.meta.env.VITE_TASKMANIA_GAS_URL;
@@ -9,16 +9,21 @@ export const isGasReady = () => Boolean(GAS_URL);
 // タスクマニアのGAS Web Appはこのアプリと違い { projects: [...] } を直接返す(okラッパーなし)。
 // 認証はどちらのアプリも同じGoogleログイン(IDトークン)。
 export async function loadTaskmaniaProjects() {
-  if (!TASKMANIA_GAS_URL) return { projects: [] };
-  const data = await withIdToken(async (idToken) => {
+  // タスクマニアに登録されていない人(お店のアカウントなど)は読めなくて当然なので、
+  // 失敗してもログイン画面は出さずに空で返す
+  const idToken = peekIdToken();
+  if (!TASKMANIA_GAS_URL || !idToken) return { projects: [] };
+  try {
     const url = new URL(TASKMANIA_GAS_URL);
     url.searchParams.set("id_token", idToken);
     const res = await fetch(url.toString());
-    if (!res.ok) throw new Error(`Taskmania GAS load failed: ${res.status}`);
-    return res.json();
-  });
-  if (data && data.ok === false) throw new Error(data.error || "Taskmania API error");
-  return { projects: data.projects || [] };
+    if (!res.ok) return { projects: [] };
+    const data = await res.json();
+    if (!data || data.ok === false) return { projects: [] };
+    return { projects: data.projects || [] };
+  } catch {
+    return { projects: [] };
+  }
 }
 
 async function post(body) {
