@@ -42,7 +42,7 @@ function doGet(e) {
   // 認可コードそのものと、後続のclient_secretでのトークン交換・stateチェックが
   // このリクエストの正当性の担保になる。詳細はbase-sync.gs参照)
   if (e.parameter.code) return handleBaseOAuthCallback_(e);
-  if (!isAuthorized_(e.parameter)) return err_("Unauthorized");
+  if (!isAuthorized_(e.parameter)) return err_("Unauthorized: " + authFailReason_());
   try {
     if (e.parameter.action === "debugHeaders") {
       return ok_({ headers: debugGetRawHeaders_() });
@@ -70,7 +70,7 @@ function doPost(e) {
   }
   try {
     const body = JSON.parse(e.postData.contents);
-    if (!isAuthorized_(body)) return err_("Unauthorized");
+    if (!isAuthorized_(body)) return err_("Unauthorized: " + authFailReason_());
     switch (body.action) {
       case "saveAll":
         return ok_(saveAll_(body));
