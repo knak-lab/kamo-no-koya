@@ -58,7 +58,7 @@
 
 ```bash
 npm install
-cp .env.example .env.local   # VITE_GAS_URL にウェブアプリURLを設定、VITE_API_TOKENは設定した場合のみ
+cp .env.example .env.local   # VITE_GAS_URL と VITE_GOOGLE_CLIENT_ID を設定（認証は docs/security-google-login.md）
 npm run dev
 ```
 

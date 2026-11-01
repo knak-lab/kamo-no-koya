@@ -1,28 +1,37 @@
+import { withIdToken } from "../auth/googleAuth";
+
 const GAS_URL = import.meta.env.VITE_GAS_URL;
-const API_TOKEN = import.meta.env.VITE_API_TOKEN || "";
 const TASKMANIA_GAS_URL = import.meta.env.VITE_TASKMANIA_GAS_URL;
 
 export const isGasReady = () => Boolean(GAS_URL);
 
 // タスクマニアの完了状態(done)を読み取るための読み取り専用フェッチ。
 // タスクマニアのGAS Web Appはこのアプリと違い { projects: [...] } を直接返す(okラッパーなし)。
+// 認証はどちらのアプリも同じGoogleログイン(IDトークン)。
 export async function loadTaskmaniaProjects() {
   if (!TASKMANIA_GAS_URL) return { projects: [] };
-  const res = await fetch(TASKMANIA_GAS_URL);
-  if (!res.ok) throw new Error(`Taskmania GAS load failed: ${res.status}`);
-  const data = await res.json();
+  const data = await withIdToken(async (idToken) => {
+    const url = new URL(TASKMANIA_GAS_URL);
+    url.searchParams.set("id_token", idToken);
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error(`Taskmania GAS load failed: ${res.status}`);
+    return res.json();
+  });
+  if (data && data.ok === false) throw new Error(data.error || "Taskmania API error");
   return { projects: data.projects || [] };
 }
 
 async function post(body) {
   if (!GAS_URL) throw new Error("VITE_GAS_URLが設定されていません");
-  const res = await fetch(GAS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ ...body, token: API_TOKEN }),
+  const json = await withIdToken(async (idToken) => {
+    const res = await fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ ...body, id_token: idToken }),
+    });
+    if (!res.ok) throw new Error(`GAS request failed: ${res.status}`);
+    return res.json();
   });
-  if (!res.ok) throw new Error(`GAS request failed: ${res.status}`);
-  const json = await res.json();
   if (!json.ok) throw new Error(json.error || "API error");
   return json;
 }
@@ -31,11 +40,13 @@ export const gasApi = {
   // GAS Web AppはGETに対して常に全データを返す
   getAll: async () => {
     if (!GAS_URL) throw new Error("VITE_GAS_URLが設定されていません");
-    const url = new URL(GAS_URL);
-    if (API_TOKEN) url.searchParams.set("token", API_TOKEN);
-    const res = await fetch(url.toString());
-    if (!res.ok) throw new Error(`GAS request failed: ${res.status}`);
-    const json = await res.json();
+    const json = await withIdToken(async (idToken) => {
+      const url = new URL(GAS_URL);
+      url.searchParams.set("id_token", idToken);
+      const res = await fetch(url.toString());
+      if (!res.ok) throw new Error(`GAS request failed: ${res.status}`);
+      return res.json();
+    });
     if (!json.ok) throw new Error(json.error || "API error");
     return json;
   },

@@ -17,22 +17,30 @@
 //  fetchはContent-Type: text/plain;charset=utf-8 でJSON文字列を送る。
 //  (Content-Typeをapplication/jsonにするとプリフライトが走りGASでは失敗する)
 //
-//  認証: スクリプトプロパティ API_TOKEN を設定した場合のみ、
-//  リクエストのtokenパラメータと一致するか検証する(未設定なら誰でもアクセス可)。
+//  認証(Auth.gs):
+//    ・ブラウザから: GoogleログインのIDトークン(id_token)。許可メールのみ通す
+//    ・他のGASから(米チャレの収支取り込み等): スクリプトプロパティ SERVICE_TOKEN と
+//      一致する token。32文字以上のときだけ有効。フロントのJSには絶対に入れないこと
+//    どちらも無ければ拒否する(以前の「API_TOKEN未設定なら誰でも可」は廃止)
 // =============================================================
 
-function isAuthorized_(token) {
-  const expected = PropertiesService.getScriptProperties().getProperty("API_TOKEN");
-  if (!expected) return true;
-  return token === expected;
+function isServiceToken_(token) {
+  const expected = PropertiesService.getScriptProperties().getProperty("SERVICE_TOKEN");
+  if (!expected || expected.length < 32) return false;
+  return typeof token === "string" && token === expected;
+}
+
+function isAuthorized_(params) {
+  if (!params) return false;
+  return Boolean(verifyIdToken_(params.id_token)) || isServiceToken_(params.token);
 }
 
 function doGet(e) {
-  // BASEのOAuth認可リダイレクトはこのURLへcode付きで返ってくる(token認証は通さない。
+  // BASEのOAuth認可リダイレクトはこのURLへcode付きで返ってくる(ログイン認証は通さない。
   // 認可コードそのものと、後続のclient_secretでのトークン交換・stateチェックが
   // このリクエストの正当性の担保になる。詳細はbase-sync.gs参照)
   if (e.parameter.code) return handleBaseOAuthCallback_(e);
-  if (!isAuthorized_(e.parameter.token)) return err_("Unauthorized");
+  if (!isAuthorized_(e.parameter)) return err_("Unauthorized");
   try {
     if (e.parameter.action === "debugHeaders") {
       return ok_({ headers: debugGetRawHeaders_() });
@@ -57,7 +65,7 @@ function doPost(e) {
   }
   try {
     const body = JSON.parse(e.postData.contents);
-    if (!isAuthorized_(body.token)) return err_("Unauthorized");
+    if (!isAuthorized_(body)) return err_("Unauthorized");
     switch (body.action) {
       case "saveAll":
         return ok_(saveAll_(body));
