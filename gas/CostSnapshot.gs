@@ -190,6 +190,32 @@ function syncSalesFromSquare() {
   }
 }
 
+// Squareを使わずレジ代わりにアプリへ直接売上を記録するための手動追加(1回の会計で複数商品ぶんを
+// まとめて登録できるよう配列で受け取る)。idには"manual_"接頭辞を付け、Square取込分のuid
+// ("order.id_uid")と衝突しないようにする(併用期間中に同じ売上をSquareへも登録してしまっても
+// 二重計上に気づけるように)。新規行は原価スナップショット列(8,9列目)を空欄のまま追加し、
+// 直後にstampCostSnapshotで未確定行として自動的に拾わせる(通常のSquare取込と同じ扱い)。
+function addManualSales_(date, items) {
+  if (!date) throw new Error("日付は必須です");
+  if (!items || !items.length) throw new Error("商品が選択されていません");
+
+  const sheet = getOrCreateSheet_(SALES_SHEET_NAME, ["id", "日付", "商品名", "数量", "金額(円)", "支払方法", "取得日時"], null, [1]);
+  const channelCol = ensureSalesChannelColumn_(sheet);
+  const now = new Date().toLocaleString("ja-JP");
+  const startRow = sheet.getLastRow() + 1;
+
+  const rows = items.map(function (item) {
+    if (!item.productName) throw new Error("商品は必須です");
+    return ["manual_" + Utilities.getUuid(), date, item.productName, Number(item.qty) || 0, Number(item.amount) || 0, "手動", now];
+  });
+  sheet.getRange(startRow, 1, rows.length, 7).setValues(rows);
+  sheet.getRange(startRow, channelCol, rows.length, 1).setValues(rows.map(function () { return ["手動"]; }));
+
+  stampCostSnapshot();
+  appendSyncLog_("addManualSale", "success", date + " " + items.length + "品目をレジ登録");
+  return { squareSyncLog: getSquareSyncLog_(20) };
+}
+
 // フェーズ1: 既存「商品マスター」(Square由来)の商品名・価格を
 // 「商品マスター_原価管理」へ一方向で反映する。名前が一致すれば価格のみ更新、
 // 一致しなければ新規追加(kind='single' で作成し、レシピは空のまま)。

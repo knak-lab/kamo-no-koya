@@ -81,7 +81,7 @@ export default function TodoTab({
 
       {todoVisual && (
         <div className="flex justify-center">
-          <img src={todoVisual} alt="" className="max-h-40 rounded-2xl shadow-sm shadow-stone-300/30" />
+          <img src={todoVisual} alt="" className="max-h-64 rounded-2xl shadow-sm shadow-stone-300/30" />
         </div>
       )}
 

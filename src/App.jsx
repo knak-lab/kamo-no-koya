@@ -236,7 +236,9 @@ export default function App() {
   const [finBudgets, setFinBudgets] = useState({});
 
   // 売上入力フォームは廃止(Squareが正のデータのため、ここでは追加しない)
-  const [expenseForm, setExpenseForm] = useState({ date: todayStr(), item: RAW_MATERIAL_ITEM, amount: "", hours: "" });
+  // memoは経費シート既存の「メモ」列(既存データとの互換のため素通し保存されるだけの列)を
+  // 購入先の入力欄として使う(新規に列を増やさずに済む)
+  const [expenseForm, setExpenseForm] = useState({ date: todayStr(), item: RAW_MATERIAL_ITEM, amount: "", hours: "", memo: "" });
 
   // 経費マスタ(時間単価。店舗利用料2パターン・人件費が初期値だが、項目名は動的に追加できる)
   const [expenseRates, setExpenseRates] = useState({
@@ -946,7 +948,7 @@ export default function App() {
       if (!expenseForm.amount) return;
       amount = Number(expenseForm.amount);
     }
-    const entry = { id: uid(), date: expenseForm.date, item: expenseForm.item, amount };
+    const entry = { id: uid(), date: expenseForm.date, item: expenseForm.item, amount, memo: expenseForm.memo.trim() };
     if (isHourly) entry.hours = Number(expenseForm.hours);
     setExpenses((prev) => [...prev, entry]);
     setExpenseForm((f) => ({ ...f, amount: "", hours: "" }));
@@ -954,6 +956,11 @@ export default function App() {
   const removeExpense = (id) => {
     if (!window.confirm("削除しますか？")) return;
     setExpenses((prev) => prev.filter((x) => x.id !== id));
+  };
+  // 登録済みの経費(金額・購入先)を直接修正する(自動計算された金額が実態と違う場合や、
+  // 購入先の入力漏れの後追い用。時間(hours)は自動計算の元データとして残したまま上書きする)
+  const updateExpenseField = (id, field, value) => {
+    setExpenses((prev) => prev.map((x) => (x.id === id ? { ...x, [field]: field === "amount" ? Number(value) || 0 : value } : x)));
   };
   // カレンダーのhibi日から直接、利用料(店舗利用料等)だけを登録するための専用ハンドラ(expenseFormは触らない)
   const addHibiFee = (date, item, hours) => {
@@ -1181,6 +1188,23 @@ export default function App() {
       setSalesSyncing(false);
     }
   };
+  // Squareを使わずレジ代わりに直接記録する売上追加(1回の会計ぶん=複数商品をまとめて送る)。
+  // Squareへの入れ忘れ・入力ミスの後追いにも使える
+  const [manualSaleAdding, setManualSaleAdding] = useState(false);
+  const addManualSales = async (date, items) => {
+    setManualSaleAdding(true);
+    try {
+      const res = await gasApi.addManualSales(date, items);
+      if (res.squareSyncLog) setSquareSyncLog(res.squareSyncLog);
+      const fresh = await gasApi.getAll();
+      setSales(fresh.sales || []);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    } finally {
+      setManualSaleAdding(false);
+    }
+  };
   // --- ハンドラ: BASE連携 ---
   const runSyncProductsToBase = async () => {
     setBaseSyncing(true);
@@ -1300,6 +1324,9 @@ export default function App() {
             runSyncSalesFromSquare={runSyncSalesFromSquare}
             baseOrdersSyncing={baseOrdersSyncing}
             runSyncOrdersFromBase={runSyncOrdersFromBase}
+            manualSaleAdding={manualSaleAdding}
+            addManualSales={addManualSales}
+            productCategories={productCategories}
             targetForm={targetForm}
             setTargetForm={setTargetForm}
             addTarget={addTarget}
@@ -1324,6 +1351,7 @@ export default function App() {
             addExpense={addExpense}
             expenses={expenses}
             removeExpense={removeExpense}
+            updateExpenseField={updateExpenseField}
             dataGaps={dataGaps}
             onEditProduct={jumpToProductInMaster}
             onEditMaterial={jumpToMaterialInMaster}

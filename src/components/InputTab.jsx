@@ -3,6 +3,8 @@ import { Plus, Trash2, ChevronDown, ChevronRight, Pencil, Loader2 } from "lucide
 import { yen, RAW_MATERIAL_ITEM } from "../lib/constants";
 import DateAccordion from "./DateAccordion";
 
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
 const SUB_TABS = [
   { key: "intake", label: "取込・目標" },
   { key: "daily", label: "日次設定" },
@@ -17,6 +19,9 @@ export default function InputTab({
   runSyncSalesFromSquare,
   baseOrdersSyncing,
   runSyncOrdersFromBase,
+  manualSaleAdding,
+  addManualSales,
+  productCategories,
   targetForm,
   setTargetForm,
   addTarget,
@@ -41,6 +46,7 @@ export default function InputTab({
   addExpense,
   expenses,
   removeExpense,
+  updateExpenseField,
   dataGaps,
   onEditProduct,
   onEditMaterial,
@@ -50,6 +56,48 @@ export default function InputTab({
   packagingExemptions,
   togglePackagingExempt,
 }) {
+  // レジ入力(Squareを使わずアプリへ直接売上を記録する)。日付は連続入力しやすいよう会計後も引き継ぐ。
+  // 商品タイルをタップしてカートに積み、まとめて1回で登録する(1商品だけの会計はカート1件で同じ流れ)
+  const [registerDate, setRegisterDate] = useState(todayStr());
+  const [registerQuery, setRegisterQuery] = useState("");
+  const [cart, setCart] = useState([]); // [{ productId, name, price, qty, amount }]
+  const addToCart = (product) => {
+    setCart((prev) => {
+      const idx = prev.findIndex((c) => c.productId === product.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        const qty = next[idx].qty + 1;
+        next[idx] = { ...next[idx], qty, amount: product.price * qty };
+        return next;
+      }
+      return [...prev, { productId: product.id, name: product.name, price: product.price, qty: 1, amount: product.price }];
+    });
+  };
+  const updateCartQty = (productId, qty) => {
+    const q = Number(qty) || 0;
+    setCart((prev) =>
+      q <= 0
+        ? prev.filter((c) => c.productId !== productId)
+        : prev.map((c) => (c.productId === productId ? { ...c, qty: q, amount: c.price * q } : c))
+    );
+  };
+  const updateCartAmount = (productId, amount) =>
+    setCart((prev) => prev.map((c) => (c.productId === productId ? { ...c, amount: Number(amount) || 0 } : c)));
+  const removeCartLine = (productId) => setCart((prev) => prev.filter((c) => c.productId !== productId));
+  const cartTotal = cart.reduce((sum, c) => sum + c.amount, 0);
+  const submitCart = () => {
+    if (!registerDate || cart.length === 0) return;
+    addManualSales(
+      registerDate,
+      cart.map((c) => ({ productName: c.name, qty: c.qty, amount: c.amount }))
+    );
+    setCart([]);
+  };
+  const registerProducts = products.filter((p) => !registerQuery.trim() || p.name.toLowerCase().includes(registerQuery.trim().toLowerCase()));
+  const registerCategoryGroups = [...productCategories, ""]
+    .map((cat) => ({ category: cat, items: registerProducts.filter((p) => (p.category || "") === cat) }))
+    .filter((g) => g.items.length > 0);
+
   const [openChecks, setOpenChecks] = useState({}); // { [checkLabel]: boolean } ヌケモレチェック各項目の開閉(デフォルト全て閉じる)
   const toggleCheck = (label) => setOpenChecks((prev) => ({ ...prev, [label]: !prev[label] }));
   const [unknownSaleDrafts, setUnknownSaleDrafts] = useState({}); // { [saleId]: { productId, qty } }
@@ -163,6 +211,109 @@ export default function InputTab({
               "売上データ取込"
             )}
           </button>
+        </div>
+      </section>
+
+      {/* レジ入力(Squareを使わずアプリへ直接売上を記録する) */}
+      <section className="bg-white rounded-2xl border border-stone-200/70 shadow-sm shadow-stone-300/30 p-5">
+        <h2 className="font-semibold text-[15px] text-stone-800 tracking-tight mb-1">レジ入力</h2>
+        <p className="text-xs text-stone-500 mb-3">
+          Squareを使わず、その場の会計をここへ直接記録できます。商品をタップしてカートに積み、まとめて登録します。Squareの売上とは別に「チャネル: 手動」として記録され、日次・月次集計にそのまま反映されます。
+        </p>
+
+        <div className="flex flex-wrap gap-2 items-end mb-3 text-sm">
+          <div>
+            <label className="block text-xs text-stone-500 mb-1">日付</label>
+            <input
+              type="date"
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow"
+              value={registerDate}
+              onChange={(e) => setRegisterDate(e.target.value)}
+            />
+          </div>
+          <div className="flex-1 min-w-[140px]">
+            <label className="block text-xs text-stone-500 mb-1">商品を検索</label>
+            <input
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-full"
+              value={registerQuery}
+              onChange={(e) => setRegisterQuery(e.target.value)}
+              placeholder="商品名で絞り込み"
+            />
+          </div>
+        </div>
+
+        <div className="max-h-72 overflow-y-auto border border-stone-100 rounded-xl p-2 space-y-3 mb-4">
+          {registerCategoryGroups.length === 0 && <p className="text-xs text-stone-400 p-2">該当する商品がありません。</p>}
+          {registerCategoryGroups.map((g) => (
+            <div key={g.category || "__uncategorized__"}>
+              <div className="text-[11px] text-stone-400 font-medium mb-1 px-1">{g.category || "未分類"}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {g.items.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => addToCart(p)}
+                    className="text-xs bg-stone-50 hover:bg-amber-50 border border-stone-200 hover:border-amber-300 rounded-lg px-2.5 py-2 text-left transition-colors"
+                  >
+                    <div className="font-medium text-stone-800">{p.name}</div>
+                    <div className="text-stone-400 tabular-nums">{yen(p.price)}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-stone-100 pt-3">
+          <h3 className="text-xs font-semibold text-stone-600 mb-2">今回の会計{cart.length > 0 ? `(${cart.length}品目)` : ""}</h3>
+          {cart.length === 0 ? (
+            <p className="text-xs text-stone-400 mb-3">商品をタップしてカートに追加してください。</p>
+          ) : (
+            <div className="space-y-1.5 mb-3">
+              {cart.map((c) => (
+                <div key={c.productId} className="flex items-center gap-2 text-xs bg-stone-50 rounded-lg px-2.5 py-1.5">
+                  <span className="flex-1 min-w-0 truncate font-medium text-stone-700">{c.name}</span>
+                  <input
+                    type="number"
+                    min="1"
+                    className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white w-14 text-right tabular-nums"
+                    value={c.qty}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => updateCartQty(c.productId, e.target.value)}
+                  />
+                  <span className="text-stone-400">個</span>
+                  <input
+                    type="number"
+                    className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white w-20 text-right tabular-nums"
+                    value={c.amount}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => updateCartAmount(c.productId, e.target.value)}
+                  />
+                  <span className="text-stone-400">円</span>
+                  <button onClick={() => removeCartLine(c.productId)}>
+                    <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold">合計 {yen(cartTotal)}</span>
+            <button
+              onClick={submitCart}
+              disabled={manualSaleAdding || !registerDate || cart.length === 0}
+              className="flex items-center gap-1 bg-amber-700 text-white rounded-lg px-4 py-1.5 shadow-sm shadow-amber-900/20 hover:bg-amber-800 hover:shadow disabled:opacity-50 disabled:shadow-none transition-all"
+            >
+              {manualSaleAdding ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 size={14} className="animate-spin" /> 登録中…
+                </span>
+              ) : (
+                <>
+                  <Plus size={14} /> 会計を登録
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -495,6 +646,15 @@ export default function InputTab({
               ))}
             </select>
           </div>
+          <div>
+            <label className="block text-xs text-stone-500 mb-1">購入先</label>
+            <input
+              className="border border-stone-300 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-32"
+              value={expenseForm.memo}
+              onChange={(e) => setExpenseForm((f) => ({ ...f, memo: e.target.value }))}
+              placeholder="任意"
+            />
+          </div>
           {isHourlyExpenseItem(expenseForm.item) ? (
             <>
               <div>
@@ -539,10 +699,23 @@ export default function InputTab({
           renderDay={(dayExpenses) => (
             <div className="text-sm space-y-1">
               {dayExpenses.map((e) => (
-                <div key={e.id} className="flex justify-between border-b border-stone-100 py-1">
+                <div key={e.id} className="flex justify-between items-center border-b border-stone-100 py-1">
                   <span className={e.item === RAW_MATERIAL_ITEM ? "text-amber-700 font-medium" : ""}>{e.item}</span>
                   <span className="flex items-center gap-2">
-                    {yen(e.amount)}
+                    <input
+                      className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-24"
+                      value={e.memo || ""}
+                      onChange={(ev) => updateExpenseField(e.id, "memo", ev.target.value)}
+                      placeholder="購入先"
+                    />
+                    <span className="text-stone-400">¥</span>
+                    <input
+                      type="number"
+                      className="border border-stone-300 rounded-md px-1.5 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400 transition-shadow w-24 text-right tabular-nums"
+                      value={e.amount}
+                      onFocus={(ev) => ev.target.select()}
+                      onChange={(ev) => updateExpenseField(e.id, "amount", ev.target.value)}
+                    />
                     <button onClick={() => removeExpense(e.id)}>
                       <Trash2 size={13} className="text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md p-0.5 -m-0.5 transition-colors" style={{ boxSizing: "content-box" }} />
                     </button>

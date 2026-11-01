@@ -11,7 +11,7 @@
 //    GET (それ以外)            → getAll_() の内容を返す
 //    POST → body.action で分岐 ("saveAll" / "saveTodos" / "syncCatalogFromSquare" /
 //        "recalcZeroCostSales" / "syncSalesFromSquare" / "syncProductsToBase" / "syncOrdersFromBase" /
-//        "saveTodoVisual" / "saveAppIcon" /
+//        "addManualSales" / "saveTodoVisual" / "saveAppIcon" /
 //        "addBizPlanFile" / "removeBizPlanFile" / "removeBizPlanItem" /
 //        "addSummaryImage" / "removeSummaryImage")
 //
@@ -74,6 +74,8 @@ function doPost(e) {
         return ok_(recalcZeroCostSales());
       case "syncSalesFromSquare":
         return ok_(syncSalesFromSquare());
+      case "addManualSales":
+        return ok_(addManualSales_(body.date, body.items));
       case "syncProductsToBase":
         return ok_(syncProductsToBase());
       case "syncOrdersFromBase":
