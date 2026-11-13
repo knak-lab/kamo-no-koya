@@ -34,25 +34,26 @@ import TodoTab from "./components/TodoTab";
 import MasterTab from "./components/MasterTab";
 import SettingsTab from "./components/SettingsTab";
 import BizPlanTab from "./components/BizPlanTab";
+import { vaultGet, vaultSet } from "./auth/vault";
+import { DATA_CACHE_KEY } from "./auth/appConfig";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const APP_ICON_CACHE_KEY = "kamo-app-icon";
-// 起動時の読み込み待ちを短くするため、getAll()で取れる全データを丸ごとlocalStorageに
-// キャッシュしておく。次回起動時はこれを即描画してから、裏で最新を取りに行く。
-const DATA_CACHE_KEY = "kamo-app-data-cache-v1";
+// 起動時の読み込み待ちを短くするため、getAll()で取れる全データを丸ごと端末にキャッシュしておく。
+// 次回起動時はこれを即描画してから、裏で最新を取りに行く。
+// 置き場所は端末の金庫（指紋・顔認証で開く暗号化保存）。金庫が開くまでアプリ本体は表示されないので同期で読める
 function readCachedData_() {
   try {
-    const raw = localStorage.getItem(DATA_CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    return vaultGet(DATA_CACHE_KEY);
   } catch {
     return null;
   }
 }
 function writeCachedData_(data) {
   try {
-    localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(data));
+    vaultSet(DATA_CACHE_KEY, data);
   } catch {
-    // 容量超過・プライベートモードなど。キャッシュ無しで動作を続ける。
+    // 鍵がかかっているなど。キャッシュ無しで動作を続ける。
   }
 }
 
